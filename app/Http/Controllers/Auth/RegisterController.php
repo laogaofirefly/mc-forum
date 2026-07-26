@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class RegisterController extends Controller
@@ -25,8 +24,6 @@ class RegisterController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'mc_username' => ['nullable', 'string', 'max:16'],
         ]);
-
-        $validated['password'] = Hash::make($validated['password']);
 
         $user = User::create($validated);
 

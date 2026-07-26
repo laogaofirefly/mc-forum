@@ -6,19 +6,10 @@ use App\Models\Reply;
 use App\Models\Thread;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 
-class ReplyController extends Controller implements HasMiddleware
+class ReplyController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('auth'),
-        ];
-    }
-
     public function store(Request $request, Thread $thread): RedirectResponse
     {
         if ($thread->is_locked) {

@@ -50,7 +50,7 @@
         <div class="mc-card rounded-lg divide-y divide-gray-700">
             @foreach($popularThreads as $index => $thread)
                 <div class="p-4 hover:bg-gray-700/30 transition flex items-center space-x-3">
-                    <span class="text-lg font-bold {{ $index == 0 ? 'text-yellow-400' : ($index == 1 ? 'text-gray-300' : ($index == 2 ? 'text-orange-400' : 'text-gray-500')) }} w-6 text-center">{{ $index + 1 }}</span>
+                    <span class="text-lg font-bold w-6 text-center {{ $index == 0 ? 'text-yellow-400' : ($index == 1 ? 'text-gray-300' : ($index == 2 ? 'text-orange-400' : 'text-gray-500')) }}">{{ $index + 1 }}</span>
                     <div class="flex-1 min-w-0">
                         <a href="{{ route('threads.show', $thread->slug) }}" class="text-gray-200 hover:text-primary-400 transition truncate block">
                             {{ $thread->title }}

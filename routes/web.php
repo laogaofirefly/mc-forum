@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplyController;
+use App\Http\Controllers\ServerStatusController;
 use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -28,16 +29,18 @@ Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 
-Route::get('/threads/create', [ThreadController::class, 'create'])->name('threads.create');
-Route::post('/threads', [ThreadController::class, 'store'])->name('threads.store');
+Route::get('/threads/create', [ThreadController::class, 'create'])->name('threads.create')->middleware('auth');
+Route::post('/threads', [ThreadController::class, 'store'])->name('threads.store')->middleware('auth');
 Route::get('/threads/{thread:slug}', [ThreadController::class, 'show'])->name('threads.show');
-Route::get('/threads/{thread:slug}/edit', [ThreadController::class, 'edit'])->name('threads.edit');
-Route::put('/threads/{thread:slug}', [ThreadController::class, 'update'])->name('threads.update');
-Route::delete('/threads/{thread:slug}', [ThreadController::class, 'destroy'])->name('threads.destroy');
+Route::get('/threads/{thread:slug}/edit', [ThreadController::class, 'edit'])->name('threads.edit')->middleware('auth');
+Route::put('/threads/{thread:slug}', [ThreadController::class, 'update'])->name('threads.update')->middleware('auth');
+Route::delete('/threads/{thread:slug}', [ThreadController::class, 'destroy'])->name('threads.destroy')->middleware('auth');
 
-Route::post('/threads/{thread:slug}/replies', [ReplyController::class, 'store'])->name('replies.store');
-Route::get('/replies/{reply}/edit', [ReplyController::class, 'edit'])->name('replies.edit');
-Route::put('/replies/{reply}', [ReplyController::class, 'update'])->name('replies.update');
-Route::delete('/replies/{reply}', [ReplyController::class, 'destroy'])->name('replies.destroy');
+Route::post('/threads/{thread:slug}/replies', [ReplyController::class, 'store'])->name('replies.store')->middleware('auth');
+Route::get('/replies/{reply}/edit', [ReplyController::class, 'edit'])->name('replies.edit')->middleware('auth');
+Route::put('/replies/{reply}', [ReplyController::class, 'update'])->name('replies.update')->middleware('auth');
+Route::delete('/replies/{reply}', [ReplyController::class, 'destroy'])->name('replies.destroy')->middleware('auth');
 
-Route::post('/like/{type}/{id}', [LikeController::class, 'toggle'])->name('like.toggle');
+Route::post('/like/{type}/{id}', [LikeController::class, 'toggle'])->name('like.toggle')->middleware('auth');
+
+Route::get('/api/server-status', [ServerStatusController::class, 'index'])->name('server-status');

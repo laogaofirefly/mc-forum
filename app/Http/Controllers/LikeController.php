@@ -7,19 +7,10 @@ use App\Models\Thread;
 use App\Models\Reply;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 
-class LikeController extends Controller implements HasMiddleware
+class LikeController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('auth'),
-        ];
-    }
-
     public function toggle(Request $request, string $type, int $id): RedirectResponse
     {
         $user = Auth::user();

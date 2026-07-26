@@ -6,21 +6,12 @@ use App\Models\Category;
 use App\Models\Thread;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
-class ThreadController extends Controller implements HasMiddleware
+class ThreadController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('auth', except: ['index', 'show']),
-        ];
-    }
-
     public function create(Request $request): View
     {
         $categories = Category::active()->get();

@@ -23,6 +23,32 @@
                 <span class="text-gray-400">玩家</span>
                 <span class="text-white font-bold">{{ $serverStatus->players_online }} / {{ $serverStatus->players_max }}</span>
             </div>
+            @if($serverStatus->is_online)
+            <div class="pt-2 border-t border-gray-700">
+                @if(!empty($serverStatus->players_json))
+                    <div class="text-gray-400 text-sm mb-2">在线玩家</div>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($serverStatus->players_json as $player)
+                            @php
+                                $playerName = isset($player['name']) ? preg_replace('/§./', '', $player['name']) : '未知';
+                                $colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
+                                $colorIndex = ord(strtoupper(substr($playerName, 0, 1))) % count($colors);
+                            @endphp
+                            <div class="flex items-center bg-gray-700/50 rounded px-2 py-1">
+                                <span class="w-6 h-6 rounded-full {{ $colors[$colorIndex] }} mr-2 flex items-center justify-center text-xs font-bold text-white">
+                                    {{ strtoupper(substr($playerName, 0, 1)) }}
+                                </span>
+                                <span class="text-gray-200 text-sm">{{ $playerName }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @elseif($serverStatus->players_online > 0)
+                    <p class="text-gray-500 text-sm text-center py-2">{{ $serverStatus->players_online }} 名玩家在线（服务器未公开玩家列表）</p>
+                @else
+                    <p class="text-gray-500 text-sm text-center py-2">暂无玩家在线</p>
+                @endif
+            </div>
+            @endif
             @if($serverStatus->version)
             <div class="flex items-center justify-between">
                 <span class="text-gray-400">版本</span>

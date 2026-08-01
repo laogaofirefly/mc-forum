@@ -186,9 +186,9 @@ class MinecraftLogSyncService
             return null;
         }
 
-        // 跳过服务器广播消息（[Server] 开头）—— 这是 say 命令产生的
-        // 避免网站发消息后服务器日志回显又被当成新聊天
-        if (preg_match('/^\[Server\]/i', $body)) {
+        // 跳过网站通过 RCON say 发出的消息（格式：[Server] [网站] 玩家名：消息）
+        // 网站这边已经存过了，避免被服务器日志回显又重复入库
+        if (str_contains($body, '[网站]')) {
             return null;
         }
 

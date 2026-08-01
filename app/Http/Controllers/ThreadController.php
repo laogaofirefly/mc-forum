@@ -12,25 +12,19 @@ use Illuminate\View\View;
 
 class ThreadController extends Controller
 {
-    public function create(Request $request): View
+    public function create(): View
     {
-        $categories = Category::active()->get();
-        $selectedCategory = $request->get('category');
-
-        return view('threads.create', compact('categories', 'selectedCategory'));
+        return view('threads.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
-            'title' => ['required', 'string', 'min:5', 'max:100'],
+            'title' => ['required', 'string', 'min:1', 'max:100'],
             'body' => ['required', 'string', 'min:2', 'max:10000'],
         ], [
-            'category_id.required' => '请选择帖子板块',
-            'category_id.exists' => '所选板块不存在',
             'title.required' => '请填写帖子标题',
-            'title.min' => '标题至少5个字符',
+            'title.min' => '标题不能为空',
             'title.max' => '标题不能超过100个字符',
             'body.required' => '请填写帖子内容',
             'body.min' => '内容至少2个字符',
@@ -47,8 +41,11 @@ class ThreadController extends Controller
             $slug = $baseSlug . '-' . time();
         }
 
+        $category = Category::active()->first();
+        $categoryId = $category ? $category->id : 1;
+
         $thread = Thread::create([
-            'category_id' => $validated['category_id'],
+            'category_id' => $categoryId,
             'user_id' => Auth::id(),
             'title' => $validated['title'],
             'slug' => $slug,
@@ -63,7 +60,7 @@ class ThreadController extends Controller
     {
         $thread->incrementViews();
 
-        $thread->load(['user', 'category', 'replies.user', 'likes']);
+        $thread->load(['user', 'category', 'replies.user']);
         $replyCount = $thread->replies()->count();
 
         return view('threads.show', compact('thread', 'replyCount'));
@@ -75,9 +72,7 @@ class ThreadController extends Controller
             abort(403);
         }
 
-        $categories = Category::active()->get();
-
-        return view('threads.edit', compact('thread', 'categories'));
+        return view('threads.edit', compact('thread'));
     }
 
     public function update(Request $request, Thread $thread): RedirectResponse
@@ -87,8 +82,15 @@ class ThreadController extends Controller
         }
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'min:5', 'max:200'],
-            'body' => ['required', 'string', 'min:10'],
+            'title' => ['required', 'string', 'min:1', 'max:100'],
+            'body' => ['required', 'string', 'min:2', 'max:10000'],
+        ], [
+            'title.required' => '请填写帖子标题',
+            'title.min' => '标题不能为空',
+            'title.max' => '标题不能超过100个字符',
+            'body.required' => '请填写帖子内容',
+            'body.min' => '内容至少2个字符',
+            'body.max' => '内容不能超过10000个字符',
         ]);
 
         $thread->update($validated);
@@ -102,9 +104,8 @@ class ThreadController extends Controller
             abort(403);
         }
 
-        $category = $thread->category;
         $thread->delete();
 
-        return redirect()->route('categories.show', $category)->with('success', '帖子已删除。');
+        return redirect()->route('home')->with('success', '帖子已删除。');
     }
 }

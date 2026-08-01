@@ -183,7 +183,6 @@
                 </div>
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="{{ route('home') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">首页</a>
-                    <a href="{{ route('categories.index') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">板块</a>
                     @auth
                         <a href="{{ route('threads.create') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">发帖</a>
                     @endauth
@@ -218,7 +217,6 @@
         <div class="mobile-nav md:hidden border-t border-primary-700/50 bg-primary-900/95 backdrop-blur" id="mobileNav">
             <div class="px-4 py-3 space-y-1">
                 <a href="{{ route('home') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">🏠 首页</a>
-                <a href="{{ route('categories.index') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">📁 板块</a>
                 @auth
                     <a href="{{ route('threads.create') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">✏️ 发帖</a>
                     <a href="{{ route('profile.show', auth()->user()) }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">👤 我的主页</a>

@@ -17,30 +17,9 @@
             @csrf
             <div class="space-y-5">
                 <div>
-                    <label for="category_id" class="block text-sm font-medium text-gray-300 mb-1">
-                        选择板块 <span class="text-red-400">*</span>
-                    </label>
-                    <select id="category_id" name="category_id" required
-                        class="mc-input w-full px-4 py-2 rounded-lg @error('category_id') input-error @enderror">
-                        <option value="">请选择板块</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" {{ old('category_id', $selectedCategory ?? '') == $category->id ? 'selected' : '' }}>
-                                {{ $category->icon ?? '📁' }} {{ $category->name }}
-                                @if($category->description)
-                                    <span class="text-gray-500 ml-1">- {{ $category->description }}</span>
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('category_id')
-                        <p class="form-error">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
                     <label for="title" class="block text-sm font-medium text-gray-300 mb-1">
                         标题 <span class="text-red-400">*</span>
-                        <span class="text-gray-500 font-normal ml-1">(5-100字)</span>
+                        <span class="text-gray-500 font-normal ml-1">(最多100字)</span>
                     </label>
                     <input id="title" type="text" name="title" value="{{ old('title') }}" required
                         autocomplete="off" inputmode="text" data-maxlength="100"
@@ -96,10 +75,9 @@
                 </button>
             </div>
             <ul class="space-y-2 text-sm text-gray-300">
-                <li>📝 <b>标题</b>：简洁明了，突出主题（5-100字）</li>
+                <li>📝 <b>标题</b>：简洁明了，突出主题（最多100字）</li>
                 <li>📄 <b>正文</b>：内容清晰，适当分段方便阅读</li>
                 <li>🖼️ <b>图片</b>：暂不支持图片上传，可用文字描述</li>
-                <li>🏷️ <b>板块</b>：选择合适的板块，让更多人看到</li>
                 <li>⚠️ <b>规则</b>：禁止发布违规、广告、恶意内容</li>
             </ul>
             <button type="button" id="closeTipBtn" class="mc-button w-full text-white py-2 rounded-lg font-bold mt-4">知道了</button>
@@ -161,7 +139,7 @@
     // 未保存提醒
     const form = document.getElementById('threadForm');
     let touched = false;
-    [titleInput, bodyInput, document.getElementById('category_id')].forEach(function(el) {
+    [titleInput, bodyInput].forEach(function(el) {
         if (el) el.addEventListener('input', function() { touched = true; });
     });
     window.addEventListener('beforeunload', function(e) {
@@ -171,10 +149,5 @@
         }
     });
     form.addEventListener('submit', function() { form.dataset.submitted = '1'; });
-
-    // 自动聚焦错误字段
-    document.querySelectorAll('.input-error').forEach(function(el) {
-        if (el.offsetParent) { el.focus(); return false; }
-    });
 </script>
 @endsection

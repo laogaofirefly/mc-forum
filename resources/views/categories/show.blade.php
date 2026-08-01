@@ -15,7 +15,7 @@
             @endif
         </div>
         @auth
-            <a href="{{ route('threads.create', ['category' => $category->id]) }}" class="mc-button text-white px-4 py-2 rounded-lg font-bold">
+            <a href="{{ route('threads.create') }}" class="mc-button text-white px-4 py-2 rounded-lg font-bold">
                 + 发布新帖
             </a>
         @endauth

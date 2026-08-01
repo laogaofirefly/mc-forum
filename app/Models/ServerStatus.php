@@ -3,17 +3,17 @@
 namespace App\Models;
 
 use App\Services\MinecraftQueryService;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable([
-    'host', 'port', 'is_online', 'players_online', 'players_max',
-    'motd', 'version', 'favicon', 'players_json',
-])]
 class ServerStatus extends Model
 {
     protected $table = 'server_status';
     const CREATED_AT = null;
+
+    protected $fillable = [
+        'host', 'port', 'is_online', 'players_online', 'players_max',
+        'motd', 'version', 'favicon', 'players_json',
+    ];
 
     protected function casts(): array
     {

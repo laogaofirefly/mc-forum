@@ -124,6 +124,68 @@
         @include('partials.server-status')
     </div>
 
+    {{-- MC 服务器命令控制台（RCON） --}}
+    <div class="mc-card rounded-lg p-4 sm:p-5">
+        <h2 class="text-base sm:text-lg font-bold text-white mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            MC 命令控制台
+            <span class="ml-auto text-xs font-normal text-gray-400">通过 RCON 向服务器发送命令</span>
+        </h2>
+
+        {{-- 快捷命令按钮 --}}
+        <div class="flex flex-wrap gap-1.5 mb-3">
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" data-cmd="list">📋 在线玩家</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" data-cmd="time query day">🕑 游戏时间</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" data-cmd="weather query">🌦️ 天气</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" data-cmd="tps">⚡ 服务器TPS</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" data-cmd="whitelist list">📝 白名单</button>
+        </div>
+
+        <form id="rconForm" class="flex flex-col sm:flex-row gap-2 mb-3">
+            <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-mono select-none">/</span>
+                <input
+                    type="text"
+                    id="rconInput"
+                    autocomplete="off"
+                    list="rconHintList"
+                    placeholder="输入命令（如：gamemode creative Notch，不需要加 /）"
+                    class="w-full pl-7 pr-3 py-2 rounded-md bg-slate-950/60 border border-slate-700 text-gray-100 placeholder-slate-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 text-sm font-mono"
+                >
+            </div>
+            <button
+                type="submit"
+                id="rconSubmit"
+                class="px-4 py-2 rounded-md bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+                执行命令
+            </button>
+        </form>
+        <datalist id="rconHintList">
+            <option value="list">在线玩家列表</option>
+            <option value="gamemode creative 玩家名">切换创造</option>
+            <option value="gamemode survival 玩家名">切换生存</option>
+            <option value="tp 玩家A 玩家B">传送玩家</option>
+            <option value="give 玩家名 minecraft:diamond 64">给物品</option>
+            <option value="kick 玩家名 原因">踢出玩家</option>
+            <option value="ban 玩家名 原因">封禁玩家</option>
+            <option value="pardon 玩家名">解除封禁</option>
+            <option value="whitelist add 玩家名">加白名单</option>
+            <option value="whitelist remove 玩家名">移除白名单</option>
+            <option value="time set day">设置白天</option>
+            <option value="weather clear">清除天气</option>
+            <option value="tps">查看 TPS</option>
+            <option value="say 消息">服务器广播</option>
+            <option value="reload">重载插件</option>
+        </datalist>
+
+        {{-- 命令执行历史 --}}
+        <div id="rconHistory" class="text-xs sm:text-sm font-mono max-h-64 overflow-y-auto rounded-md bg-slate-950/60 border border-slate-800 p-2.5 space-y-2">
+            <div class="text-gray-500">还没有执行过命令。点击上方快捷按钮，或输入命令后点"执行命令"。</div>
+        </div>
+        <p class="mt-2 text-xs text-red-400/80">⚠️ 危险命令 /stop /restart 被禁止，请在服务器控制台执行。其他命令执行有风险，请谨慎操作。</p>
+    </div>
+
     {{-- 近期帖子统计（迷你） --}}
     <div class="mc-card rounded-lg p-4 sm:p-5">
         <h2 class="text-base sm:text-lg font-bold text-white mb-3 flex items-center">
@@ -207,6 +269,99 @@
     }
 
     refreshBtn.addEventListener('click', refresh);
+
+    // ========== 命令控制台 ==========
+    const rconForm = document.getElementById('rconForm');
+    const rconInput = document.getElementById('rconInput');
+    const rconSubmit = document.getElementById('rconSubmit');
+    const rconHistory = document.getElementById('rconHistory');
+    let rconRunning = false;
+    let rconEmpty = true;
+
+    document.querySelectorAll('.quick-cmd').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            rconInput.value = btn.getAttribute('data-cmd') || '';
+            rconInput.focus();
+            rconForm.requestSubmit();
+        });
+    });
+
+    function appendRconLog(entry) {
+        if (rconEmpty) {
+            rconHistory.innerHTML = '';
+            rconEmpty = false;
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'border-l-2 pl-2.5 ' + (entry.ok ? 'border-green-600/60' : 'border-red-600/60');
+        const head = document.createElement('div');
+        head.className = 'flex items-baseline gap-2 text-xs';
+        head.innerHTML =
+            '<span class="' + (entry.ok ? 'text-green-400' : 'text-red-400') + ' font-bold">' + entry.command + '</span>' +
+            '<span class="text-gray-500">' + entry.time + ' · ' + entry.user + '</span>';
+        const body = document.createElement('div');
+        body.className = entry.ok ? 'text-slate-300 mt-0.5 whitespace-pre-wrap break-all' : 'text-red-300 mt-0.5 whitespace-pre-wrap break-all';
+        body.textContent = entry.response;
+        wrap.appendChild(head);
+        wrap.appendChild(body);
+        rconHistory.appendChild(wrap);
+        rconHistory.scrollTop = rconHistory.scrollHeight;
+    }
+
+    rconForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (rconRunning) return;
+        const cmd = rconInput.value.trim();
+        if (!cmd) return;
+
+        rconRunning = true;
+        rconSubmit.disabled = true;
+        rconInput.disabled = true;
+        rconSubmit.textContent = '执行中...';
+
+        try {
+            const formData = new FormData();
+            formData.append('command', cmd);
+            const res = await fetch('{{ route("admin.rcon") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: formData,
+            });
+            const data = await res.json();
+            if (data && data.ok) {
+                appendRconLog({
+                    ok: true,
+                    command: data.command,
+                    response: data.response,
+                    time: data.time,
+                    user: data.user,
+                });
+                rconInput.value = '';
+            } else {
+                appendRconLog({
+                    ok: false,
+                    command: '/' + cmd,
+                    response: (data && data.message) ? data.message : '执行失败（未知错误）',
+                    time: (new Date()).toLocaleTimeString('zh-CN', { hour12: false }),
+                    user: '（本地）',
+                });
+            }
+        } catch(err) {
+            appendRconLog({
+                ok: false,
+                command: '/' + cmd,
+                response: '网络错误：' + err.message,
+                time: (new Date()).toLocaleTimeString('zh-CN', { hour12: false }),
+                user: '（本地）',
+            });
+        } finally {
+            rconRunning = false;
+            rconSubmit.disabled = false;
+            rconInput.disabled = false;
+            rconSubmit.textContent = '执行命令';
+            rconInput.focus();
+        }
+    });
 
     // 每 10 秒刷新一次指标 + 触发服务器状态 AJAX
     setInterval(function() {

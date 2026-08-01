@@ -50,6 +50,55 @@ Route::post('/game-chat/demo', [GameChatController::class, 'demo'])->name('game-
 Route::get('/admin/monitor', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'index'])->name('admin.monitor')->middleware('auth');
 Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
 
+// 管理员命令控制台：向 MC 服务器发送任意命令
+Route::post('/admin/rcon', function (\Illuminate\Http\Request $request) {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可执行命令'], 403);
+    }
+
+    $request->validate([
+        'command' => 'required|string|min:1|max:200',
+    ]);
+
+    $raw = trim($request->input('command'));
+    // 去掉开头的 /（如果用户加了）
+    $command = ltrim($raw, '/');
+    // 不允许执行 stop 等破坏服务器的命令
+    $blocklist = ['stop', 'restart'];
+    $firstWord = strtolower(explode(' ', $command)[0] ?? '');
+    if (in_array($firstWord, $blocklist, true)) {
+        return response()->json(['ok' => false, 'message' => "命令 {$firstWord} 被禁止，请到服务器控制台执行"]);
+    }
+
+    $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
+    $rconPort = (int) config('services.minecraft.rcon.port', 25575);
+    $rconPassword = config('services.minecraft.rcon.password', '');
+
+    if (empty($rconPassword)) {
+        return response()->json(['ok' => false, 'message' => 'RCON 未配置：请在 .env 里设置 MC_RCON_PASSWORD']);
+    }
+
+    try {
+        $rcon = new \App\Services\MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
+        $rcon->connect();
+        $response = $rcon->sendCommand($command);
+        $rcon->disconnect();
+
+        return response()->json([
+            'ok' => true,
+            'command' => '/' . $command,
+            'response' => $response !== '' ? $response : '（命令执行成功，服务器无返回文本）',
+            'time' => now()->format('H:i:s'),
+            'user' => auth()->user()->name,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'ok' => false,
+            'message' => '执行失败：' . $e->getMessage(),
+        ], 500);
+    }
+})->name('admin.rcon')->middleware('auth');
+
 Route::get('/api/server-status', [ServerStatusController::class, 'index'])->name('server-status');
 
 // 临时：聊天功能诊断页（访问 /chat-test 即可查看详细测试结果）

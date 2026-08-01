@@ -366,14 +366,14 @@ Route::get('/chat-test', function () {
     <?php
 });
 
-// 一键同步 MC 日志聊天记录（管理员才可以用）
+// 同步 MC 日志聊天记录（登录用户都可以触发，因为这是聊天页后台自动同步用的）
 Route::post('/chat-sync', function () {
-    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+    if (! auth()->check()) {
         return response()->json(['ok' => false, 'message' => '无权限'], 403);
     }
     try {
         $service = app(\App\Services\MinecraftLogSyncService::class);
-        $result = $service->sync();
+        $result = $service->setMaxBatch(50)->sync();
         return response()->json($result);
     } catch (Throwable $e) {
         return response()->json([

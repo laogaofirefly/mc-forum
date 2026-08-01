@@ -186,6 +186,12 @@ class MinecraftLogSyncService
             return null;
         }
 
+        // 跳过服务器广播消息（[Server] 开头）—— 这是 say 命令产生的
+        // 避免网站发消息后服务器日志回显又被当成新聊天
+        if (preg_match('/^\[Server\]/i', $body)) {
+            return null;
+        }
+
         // 可选前缀：[Not Secure] 或 [Secure] —— 1.19.3+ 聊天签名验证标记
         // 格式举例：[Not Secure] <玩家> 消息
         // 注意：可能有多个前缀叠加，循环去除直到没有为止

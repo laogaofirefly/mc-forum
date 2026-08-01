@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\GameChatMessage;
-use App\Services\MinecraftLogSyncService;
 use App\Services\MinecraftRconService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,16 +18,8 @@ class GameChatController extends Controller
         return view('game-chat.index', compact('messages'));
     }
 
-    public function fetch(Request $request, MinecraftLogSyncService $syncService): JsonResponse
+    public function fetch(Request $request): JsonResponse
     {
-        // 每次轮询时自动尝试同步 MC 日志，让玩家聊天能实时显示
-        // 同步失败不影响聊天页正常工作
-        try {
-            $syncService->setMaxBatch(50)->sync();
-        } catch (\Throwable $e) {
-            // 静默失败，不影响聊天列表加载
-        }
-
         $afterId = $request->integer('after_id', 0);
         $limit = min(200, max(10, $request->integer('limit', 100)));
 
@@ -88,7 +79,7 @@ class GameChatController extends Controller
         // 格式：say [网站] 玩家名：消息
         // MC 服务器会广播为：[Server] [网站] 玩家名：消息
         try {
-            $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
+            $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 2);
             $rcon->connect();
 
             // 转义可能影响命令解析的字符

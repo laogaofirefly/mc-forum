@@ -44,8 +44,7 @@
             @endif
             @foreach($messages as $m)
                 <div class="chat-row flex items-start px-2 py-1 rounded hover:bg-white/5 transition" data-id="{{ $m->id }}">
-                    <span class="text-gray-500 text-xs flex-shrink-0 pt-0.5 tabular-nums w-14 sm:w-16">{{ $m->timestamp?->format('H:i:s') ?? now()->format('H:i:s') }}</span>
-                    <span class="text-primary-400 font-medium flex-shrink-0 px-1 truncate max-w-[25%] sm:max-w-[20%]">{{ $m->player_name }}</span>
+                    <span class="text-primary-400 font-medium flex-shrink-0 px-1">{{ $m->player_name }}</span>
                     <span class="text-gray-400 flex-shrink-0 mr-1">:</span>
                     <span class="text-gray-100 break-words flex-1 leading-relaxed">{{ $m->message }}</span>
                 </div>
@@ -155,12 +154,15 @@
 
     function appendMessage(m) {
         if (emptyTip) emptyTip.remove();
+        // 用 ID 去重，避免同一条消息被重复添加
+        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
+            return;
+        }
         const row = document.createElement('div');
         row.className = 'chat-row flex items-start px-2 py-1 rounded hover:bg-white/5 transition';
         row.dataset.id = m.id;
         row.innerHTML =
-            '<span class="text-gray-500 text-xs flex-shrink-0 pt-0.5 tabular-nums w-14 sm:w-16">' + (m.timestamp || '') + '</span>' +
-            '<span class="text-primary-400 font-medium flex-shrink-0 px-1 truncate max-w-[25%] sm:max-w-[20%]">' + escapeHtml(m.player_name) + '</span>' +
+            '<span class="text-primary-400 font-medium flex-shrink-0 px-1">' + escapeHtml(m.player_name) + '</span>' +
             '<span class="text-gray-400 flex-shrink-0 mr-1">:</span>' +
             '<span class="text-gray-100 break-words flex-1 leading-relaxed">' + escapeHtml(m.message) + '</span>';
         chatBody.appendChild(row);
@@ -246,12 +248,17 @@
 
     // === 发消息到游戏 ===
     if (sendForm) {
+        let sending = false;
         sendForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            // 防止重复发送（按钮已禁用或正在发送中）
+            if (sending) return;
             const msg = sendInput.value.trim();
             if (!msg) return;
 
+            sending = true;
             sendBtn.disabled = true;
+            sendInput.disabled = true;
             sendBtn.textContent = '发送中...';
             sendHint.textContent = '正在发送到游戏服务器...';
             sendHint.className = 'text-xs text-yellow-400 mt-2';
@@ -266,11 +273,9 @@
                     body: formData,
                 });
                 const data = await res.json();
-                sendBtn.disabled = false;
-                sendBtn.textContent = '发送到游戏';
 
                 if (data && data.ok) {
-                    // 把自己发的消息直接加到列表
+                    // 把自己发的消息直接加到列表（appendMessage 内部有 ID 去重）
                     if (data.record) appendMessage(data.record);
                     sendInput.value = '';
                     sendHint.textContent = '✓ 已发送到游戏';
@@ -280,7 +285,6 @@
                         sendHint.className = 'text-xs text-gray-500 mt-2';
                     }, 3000);
                 } else {
-                    // 处理 Laravel 验证错误
                     let errMsg = (data && data.message) ? data.message : '发送失败';
                     if (data && data.errors && data.errors.message) {
                         errMsg = data.errors.message[0];
@@ -289,10 +293,14 @@
                     sendHint.className = 'text-xs text-red-400 mt-2';
                 }
             } catch(e) {
-                sendBtn.disabled = false;
-                sendBtn.textContent = '发送到游戏';
                 sendHint.textContent = '✗ 网络错误：' + e.message;
                 sendHint.className = 'text-xs text-red-400 mt-2';
+            } finally {
+                sending = false;
+                sendBtn.disabled = false;
+                sendInput.disabled = false;
+                sendBtn.textContent = '发送到游戏';
+                sendInput.focus();
             }
         });
     }
@@ -360,8 +368,17 @@
 
     // 初始滚动到底部
     scrollToBottom(false);
-    // 启动定时刷新
+    // 启动定时刷新（只拉数据，不读日志，速度快）
     refreshTimer = setInterval(fetchMessages, 5000);
+    // 单独定时同步 MC 日志（10 秒一次，与拉数据分开，避免阻塞发送）
+    setInterval(function() {
+        fetch('{{ route("chat-sync") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: '{}',
+        }).catch(function(){});
+    }, 10000);
 })();
 </script>
 @endsection

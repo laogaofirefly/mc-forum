@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['thread_id', 'user_id', 'body'])]
 class Reply extends Model
 {
+    protected $fillable = ['thread_id', 'user_id', 'body'];
+
     public function thread(): BelongsTo
     {
         return $this->belongsTo(Thread::class);

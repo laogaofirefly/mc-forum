@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['category_id', 'user_id', 'title', 'slug', 'body', 'is_pinned', 'is_locked', 'views_count', 'last_reply_at'])]
 class Thread extends Model
 {
+    protected $fillable = ['category_id', 'user_id', 'title', 'slug', 'body', 'is_pinned', 'is_locked', 'views_count', 'last_reply_at'];
+
     protected function casts(): array
     {
         return [

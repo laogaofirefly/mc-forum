@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class GameChatMessage extends Model
 {
+    public $timestamps = false;
+
     protected $fillable = ['player_uuid', 'player_name', 'message', 'channel', 'timestamp'];
 
     protected function casts(): array

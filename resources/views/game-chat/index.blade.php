@@ -64,8 +64,27 @@
     @auth
         @if(auth()->user()->isAdmin())
             <div class="mc-card rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-gray-400">
-                <p class="font-medium text-gray-300 mb-1">🛠️ 管理员接入说明</p>
-                <p>将 MC 服务器的聊天记录通过 Webhook / RCON 插件同步到 <code class="text-primary-400 bg-primary-900/30 px-1.5 py-0.5 rounded">/api/game-chat/send</code>，或在插件中直接向数据库 <code class="text-primary-400 bg-primary-900/30 px-1.5 py-0.5 rounded">game_chat_messages</code> 表插入记录即可。</p>
+                <div class="flex items-center justify-between mb-2">
+                    <p class="font-medium text-gray-300">🛠️ 管理员工具</p>
+                    <button type="button" id="toggleLogPreview" class="text-xs text-primary-400 hover:text-primary-300 px-2 py-1 rounded hover:bg-primary-900/30 transition">
+                        ▶ 查看日志解析情况
+                    </button>
+                </div>
+                <div id="logPreviewWrap" class="hidden mt-3 border-t border-gray-700 pt-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button type="button" id="loadLogPreview" class="text-xs px-3 py-1 rounded bg-slate-700/60 text-slate-200 border border-slate-600 hover:bg-slate-700 transition">
+                            读取最近 30 行日志
+                        </button>
+                        <span id="logPreviewMeta" class="text-xs text-gray-500"></span>
+                    </div>
+                    <div id="logPreviewBody" class="font-mono text-xs space-y-1 max-h-72 overflow-y-auto bg-slate-950/60 p-2 rounded border border-slate-800">
+                        <div class="text-gray-600">点击上方按钮加载日志...</div>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        <span class="inline-block w-2 h-2 bg-green-400 rounded-full"></span> 绿色 = 识别为聊天消息　
+                        <span class="inline-block w-2 h-2 bg-gray-500 rounded-full ml-2"></span> 灰色 = 系统消息（会被跳过）
+                    </p>
+                </div>
             </div>
         @endif
     @endauth
@@ -195,6 +214,67 @@
                 setStatus('<span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-1"></span> 同步异常', 'red');
             }
         });
+    }
+
+    // === 日志预览面板 ===
+    const toggleBtn = document.getElementById('toggleLogPreview');
+    const logWrap = document.getElementById('logPreviewWrap');
+    const loadBtn = document.getElementById('loadLogPreview');
+    const logBody = document.getElementById('logPreviewBody');
+    const logMeta = document.getElementById('logPreviewMeta');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            logWrap.classList.toggle('hidden');
+            toggleBtn.textContent = logWrap.classList.contains('hidden') ? '▶ 查看日志解析情况' : '▼ 收起日志预览';
+            if (!logWrap.classList.contains('hidden') && logBody.children.length <= 1) {
+                loadLogPreview();
+            }
+        });
+    }
+
+    if (loadBtn) {
+        loadBtn.addEventListener('click', loadLogPreview);
+    }
+
+    async function loadLogPreview() {
+        logBody.innerHTML = '<div class="text-yellow-400">读取中...</div>';
+        loadBtn.disabled = true;
+        try {
+            const res = await fetch('{{ route("chat-log-preview") }}', { credentials: 'same-origin' });
+            const data = await res.json();
+            loadBtn.disabled = false;
+            if (!data.ok) {
+                logBody.innerHTML = '<div class="text-red-400">错误：' + escapeHtml(data.error || '未知') + '</div>';
+                return;
+            }
+            logMeta.textContent = '路径：' + data.log_path;
+            const rows = data.rows || [];
+            if (rows.length === 0) {
+                logBody.innerHTML = '<div class="text-gray-500">日志为空</div>';
+                return;
+            }
+            let chatCount = 0;
+            logBody.innerHTML = '';
+            rows.forEach(function(r) {
+                const div = document.createElement('div');
+                const isChat = r.is_chat;
+                if (isChat) chatCount++;
+                div.className = 'flex items-start gap-2 ' + (isChat ? 'text-green-300' : 'text-gray-500');
+                const dot = '<span class="inline-block w-2 h-2 mt-1.5 rounded-full ' + (isChat ? 'bg-green-400' : 'bg-gray-600') + ' flex-shrink-0"></span>';
+                const text = '<span class="break-all">' + escapeHtml(r.raw) + '</span>';
+                let parsed = '';
+                if (isChat && r.parsed) {
+                    parsed = '<span class="text-blue-400 ml-2">→ [' + escapeHtml(r.parsed.player) + '] ' + escapeHtml(r.parsed.message) + '</span>';
+                }
+                div.innerHTML = dot + '<div class="flex-1">' + text + parsed + '</div>';
+                logBody.appendChild(div);
+            });
+            logMeta.textContent = '路径：' + data.log_path + '　|　共 ' + rows.length + ' 行，其中 ' + chatCount + ' 行被识别为聊天';
+        } catch(e) {
+            loadBtn.disabled = false;
+            logBody.innerHTML = '<div class="text-red-400">读取失败：' + escapeHtml(e.message) + '</div>';
+        }
     }
 
     // 初始滚动到底部

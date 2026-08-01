@@ -27,11 +27,15 @@ class MinecraftLogSyncService
     /** 单次最多解析多少条（防止日志巨大时卡死） */
     private int $maxBatch = 500;
 
+    /** 最近一次解析时跳过的行（调试用） */
+    private array $lastSkippedLines = [];
+
     /**
      * 执行一次同步，返回新增消息数等信息
      */
     public function sync(): array
     {
+        $this->lastSkippedLines = [];
         $logPath = $this->getLogPath();
 
         if (! $logPath || ! file_exists($logPath)) {
@@ -85,6 +89,7 @@ class MinecraftLogSyncService
         $inserted = 0;
         $newPos = $lastPos;
         $batchCount = 0;
+        $skipped = [];
 
         try {
             while (($line = fgets($handle, 4096)) !== false) {
@@ -93,6 +98,11 @@ class MinecraftLogSyncService
 
                 $msg = $this->parseLine($line);
                 if ($msg === null) {
+                    // 保留最近 20 条被跳过的行，方便调试
+                    $skipped[] = rtrim($line, "\r\n");
+                    if (count($skipped) > 20) {
+                        array_shift($skipped);
+                    }
                     continue;
                 }
 
@@ -119,6 +129,7 @@ class MinecraftLogSyncService
 
         // 保存本次读取到的位置
         $this->savePosition($newPos);
+        $this->lastSkippedLines = $skipped;
 
         return [
             'ok' => true,
@@ -128,8 +139,17 @@ class MinecraftLogSyncService
             'new_pos' => $newPos,
             'parsed' => $parsed,
             'inserted' => $inserted,
+            'skipped_sample' => $skipped,
             'message' => "解析 {$parsed} 行，新增 {$inserted} 条聊天消息",
         ];
+    }
+
+    /**
+     * 获取最近一次同步时被跳过的日志行（调试用）
+     */
+    public function getLastSkippedLines(): array
+    {
+        return $this->lastSkippedLines;
     }
 
     /**

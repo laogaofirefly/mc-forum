@@ -336,3 +336,52 @@ Route::post('/chat-sync', function () {
         ], 500);
     }
 })->name('chat-sync')->middleware('auth');
+
+// 日志预览：直接读取 MC 服务器日志最后 30 行并标注哪些会被识别为聊天
+Route::get('/chat-log-preview', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        abort(403);
+    }
+    $mcPath = config('services.minecraft.log_path', '');
+    $logPath = $mcPath ? (rtrim($mcPath, '\\/') . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'latest.log') : '';
+    $rows = [];
+    $error = null;
+
+    if (empty($mcPath)) {
+        $error = '未配置 MC_SERVER_PATH';
+    } elseif (! file_exists($logPath)) {
+        $error = '日志文件不存在：' . $logPath;
+    } elseif (! is_readable($logPath)) {
+        $error = '日志文件不可读：' . $logPath;
+    } else {
+        $lines = [];
+        $handle = fopen($logPath, 'rb');
+        if ($handle !== false) {
+            while (($line = fgets($handle, 4096)) !== false) {
+                $lines[] = rtrim($line, "\r\n");
+                if (count($lines) > 200) {
+                    array_shift($lines);
+                }
+            }
+            fclose($handle);
+        }
+        // 取最后 30 行
+        $tail = array_slice($lines, -30);
+        $service = app(\App\Services\MinecraftLogSyncService::class);
+        foreach ($tail as $line) {
+            $parsed = $service->parseLine($line);
+            $rows[] = [
+                'raw' => $line,
+                'is_chat' => $parsed !== null,
+                'parsed' => $parsed,
+            ];
+        }
+    }
+
+    return response()->json([
+        'ok' => $error === null,
+        'error' => $error,
+        'log_path' => $logPath,
+        'rows' => $rows,
+    ]);
+})->name('chat-log-preview')->middleware('auth');

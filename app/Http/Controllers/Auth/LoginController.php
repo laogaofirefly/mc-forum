@@ -17,20 +17,24 @@ class LoginController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $validated = $request->validate([
+            'login' => ['required', 'string'],
             'password' => ['required'],
+            'remember' => ['nullable', 'boolean'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $login = trim($validated['login']);
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+
+        if (Auth::attempt([$field => $login, 'password' => $validated['password']], !empty($validated['remember']))) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('home'))->with('success', '登录成功！');
+            return redirect()->intended(route('home'))->with('success', '登录成功！欢迎回来，' . Auth::user()->name);
         }
 
         return back()->withErrors([
-            'email' => '邮箱或密码错误。',
-        ])->onlyInput('email');
+            'login' => '账号或密码错误。',
+        ])->onlyInput('login');
     }
 
     public function destroy(Request $request): RedirectResponse

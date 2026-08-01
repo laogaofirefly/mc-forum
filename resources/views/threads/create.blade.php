@@ -4,43 +4,177 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto">
-    <div class="mc-card rounded-lg p-6">
-        <h2 class="text-xl font-bold text-white mb-6">发布新帖</h2>
-        <form method="POST" action="{{ route('threads.store') }}">
+    <div class="mc-card rounded-lg p-5 sm:p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl sm:text-2xl font-bold text-white">发布新帖</h2>
+            <button type="button" id="previewBtn" class="text-sm text-primary-400 hover:text-primary-300 px-3 py-2 rounded-md border border-primary-500/30 hover:border-primary-500/60 transition hidden sm:inline-flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                预览
+            </button>
+        </div>
+
+        <form method="POST" action="{{ route('threads.store') }}" id="threadForm" novalidate>
             @csrf
-            <div class="space-y-4">
+            <div class="space-y-5">
                 <div>
-                    <label for="category_id" class="block text-sm font-medium text-gray-300 mb-1">选择板块</label>
+                    <label for="category_id" class="block text-sm font-medium text-gray-300 mb-1">
+                        选择板块 <span class="text-red-400">*</span>
+                    </label>
                     <select id="category_id" name="category_id" required
-                        class="mc-input w-full px-4 py-2 rounded-lg">
+                        class="mc-input w-full px-4 py-2 rounded-lg @error('category_id') input-error @enderror">
                         <option value="">请选择板块</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" {{ old('category_id', $selectedCategory ?? '') == $category->id ? 'selected' : '' }}>
                                 {{ $category->icon ?? '📁' }} {{ $category->name }}
+                                @if($category->description)
+                                    <span class="text-gray-500 ml-1">- {{ $category->description }}</span>
+                                @endif
                             </option>
                         @endforeach
                     </select>
+                    @error('category_id')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
                 </div>
+
                 <div>
-                    <label for="title" class="block text-sm font-medium text-gray-300 mb-1">标题</label>
+                    <label for="title" class="block text-sm font-medium text-gray-300 mb-1">
+                        标题 <span class="text-red-400">*</span>
+                        <span class="text-gray-500 font-normal ml-1">(5-100字)</span>
+                    </label>
                     <input id="title" type="text" name="title" value="{{ old('title') }}" required
-                        class="mc-input w-full px-4 py-2 rounded-lg" placeholder="请输入帖子标题">
+                        autocomplete="off" inputmode="text" data-maxlength="100"
+                        class="mc-input w-full px-4 py-2 rounded-lg text-base @error('title') input-error @enderror"
+                        placeholder="请输入帖子标题，简洁明了地说明主题">
+                    @error('title')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
                 </div>
+
+                <div id="previewArea" class="hidden">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">预览</label>
+                    <div id="previewContent" class="mc-card p-4 text-gray-200 whitespace-pre-wrap break-words min-h-[200px] text-sm leading-relaxed">
+                    </div>
+                </div>
+
                 <div>
-                    <label for="body" class="block text-sm font-medium text-gray-300 mb-1">内容</label>
-                    <textarea id="body" name="body" rows="12" required
-                        class="mc-input w-full px-4 py-2 rounded-lg" placeholder="请输入帖子内容">{{ old('body') }}</textarea>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="body" class="block text-sm font-medium text-gray-300">
+                            内容 <span class="text-red-400">*</span>
+                            <span class="text-gray-500 font-normal ml-1">(支持换行)</span>
+                        </label>
+                        <button type="button" id="insertTipBtn" class="text-xs text-gray-500 hover:text-gray-300">💡 格式提示</button>
+                    </div>
+                    <textarea id="body" name="body" rows="10" required data-maxlength="10000"
+                        class="mc-input w-full px-4 py-3 rounded-lg text-base leading-relaxed @error('body') input-error @enderror"
+                        placeholder="分享你的想法、建筑、技术、问题...
+
+支持换行分段，内容清晰易读！">{{ old('body') }}</textarea>
+                    @error('body')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
                 </div>
-                <div class="flex items-center justify-between pt-4">
-                    <a href="{{ URL::previous() }}" class="text-gray-400 hover:text-gray-300 transition">
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 gap-3">
+                    <a href="{{ url()->previous() ?: route('home') }}" class="text-center text-gray-400 hover:text-gray-300 transition px-4 py-2 rounded-lg border border-gray-700 hover:border-gray-500">
                         ← 返回
                     </a>
-                    <button type="submit" class="mc-button text-white px-6 py-2 rounded-lg font-bold">
-                        发布帖子
+                    <button type="submit" class="mc-button text-white px-6 py-3 rounded-lg font-bold text-base">
+                        📝 发布帖子
                     </button>
                 </div>
             </div>
         </form>
     </div>
+
+    <div id="tipModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="mc-card rounded-lg p-5 max-w-md w-full">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white">发帖格式提示</h3>
+                <button type="button" id="closeTip" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <ul class="space-y-2 text-sm text-gray-300">
+                <li>📝 <b>标题</b>：简洁明了，突出主题（5-100字）</li>
+                <li>📄 <b>正文</b>：内容清晰，适当分段方便阅读</li>
+                <li>🖼️ <b>图片</b>：暂不支持图片上传，可用文字描述</li>
+                <li>🏷️ <b>板块</b>：选择合适的板块，让更多人看到</li>
+                <li>⚠️ <b>规则</b>：禁止发布违规、广告、恶意内容</li>
+            </ul>
+            <button type="button" id="closeTipBtn" class="mc-button w-full text-white py-2 rounded-lg font-bold mt-4">知道了</button>
+        </div>
+    </div>
 </div>
+
+<script>
+    // 预览功能
+    const previewBtn = document.getElementById('previewBtn');
+    const previewArea = document.getElementById('previewArea');
+    const previewContent = document.getElementById('previewContent');
+    const titleInput = document.getElementById('title');
+    const bodyInput = document.getElementById('body');
+    let previewOn = false;
+
+    function updatePreview() {
+        if (!previewOn) return;
+        const t = titleInput.value.trim() ? `<h3 class="text-lg font-bold text-primary-400 mb-3">${escapeHtml(titleInput.value)}</h3>` : '';
+        const b = escapeHtml(bodyInput.value);
+        previewContent.innerHTML = t + (b || '<span class="text-gray-500">（内容为空）</span>');
+    }
+
+    function escapeHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML.replace(/\n/g, '<br>');
+    }
+
+    if (previewBtn) {
+        previewBtn.classList.remove('hidden');
+        previewBtn.addEventListener('click', function() {
+            previewOn = !previewOn;
+            previewArea.classList.toggle('hidden', !previewOn);
+            previewBtn.classList.toggle('bg-primary-500/20', previewOn);
+            if (previewOn) {
+                updatePreview();
+                previewBtn.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>编辑';
+            } else {
+                previewBtn.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>预览';
+            }
+        });
+        titleInput.addEventListener('input', updatePreview);
+        bodyInput.addEventListener('input', updatePreview);
+    }
+
+    // 发帖提示弹窗
+    const tipBtn = document.getElementById('insertTipBtn');
+    const tipModal = document.getElementById('tipModal');
+    const closeTip = document.getElementById('closeTip');
+    const closeTipBtn = document.getElementById('closeTipBtn');
+    function openTip() { tipModal.classList.remove('hidden'); tipModal.classList.add('flex'); }
+    function hideTip() { tipModal.classList.add('hidden'); tipModal.classList.remove('flex'); }
+    if (tipBtn) tipBtn.addEventListener('click', openTip);
+    if (closeTip) closeTip.addEventListener('click', hideTip);
+    if (closeTipBtn) closeTipBtn.addEventListener('click', hideTip);
+    tipModal.addEventListener('click', function(e) { if (e.target === tipModal) hideTip(); });
+
+    // 未保存提醒
+    const form = document.getElementById('threadForm');
+    let touched = false;
+    [titleInput, bodyInput, document.getElementById('category_id')].forEach(function(el) {
+        if (el) el.addEventListener('input', function() { touched = true; });
+    });
+    window.addEventListener('beforeunload', function(e) {
+        if (touched && !form.dataset.submitted) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    form.addEventListener('submit', function() { form.dataset.submitted = '1'; });
+
+    // 自动聚焦错误字段
+    document.querySelectorAll('.input-error').forEach(function(el) {
+        if (el.offsetParent) { el.focus(); return false; }
+    });
+</script>
 @endsection

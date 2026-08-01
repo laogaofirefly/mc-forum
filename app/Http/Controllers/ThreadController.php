@@ -24,14 +24,27 @@ class ThreadController extends Controller
     {
         $validated = $request->validate([
             'category_id' => ['required', 'exists:categories,id'],
-            'title' => ['required', 'string', 'min:5', 'max:200'],
-            'body' => ['required', 'string', 'min:10'],
+            'title' => ['required', 'string', 'min:5', 'max:100'],
+            'body' => ['required', 'string', 'min:2', 'max:10000'],
+        ], [
+            'category_id.required' => '请选择帖子板块',
+            'category_id.exists' => '所选板块不存在',
+            'title.required' => '请填写帖子标题',
+            'title.min' => '标题至少5个字符',
+            'title.max' => '标题不能超过100个字符',
+            'body.required' => '请填写帖子内容',
+            'body.min' => '内容至少2个字符',
+            'body.max' => '内容不能超过10000个字符',
         ]);
 
-        $slug = Str::slug($validated['title']);
-        $count = Thread::where('slug', 'like', $slug . '%')->count();
+        $baseSlug = Str::slug($validated['title']);
+        if (empty($baseSlug)) {
+            $baseSlug = 'thread';
+        }
+        $slug = $baseSlug;
+        $count = Thread::where('slug', 'like', $baseSlug . '%')->count();
         if ($count > 0) {
-            $slug = $slug . '-' . ($count + 1);
+            $slug = $baseSlug . '-' . time();
         }
 
         $thread = Thread::create([

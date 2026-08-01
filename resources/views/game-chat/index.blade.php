@@ -80,7 +80,7 @@
                     发送到游戏
                 </button>
             </form>
-            <p id="sendHint" class="text-xs text-gray-500 mt-2">提示：消息会通过 RCON 发送到 MC 服务器，所有在线玩家都能看到。</p>
+            <p id="sendHint" class="text-xs text-gray-500 mt-2">提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。</p>
         </div>
     @endauth
 
@@ -260,7 +260,7 @@
             sendBtn.disabled = true;
             sendInput.disabled = true;
             sendBtn.textContent = '发送中...';
-            sendHint.textContent = '正在发送到游戏服务器...';
+            sendHint.textContent = '正在发送到游戏内玩家...';
             sendHint.className = 'text-xs text-yellow-400 mt-2';
 
             try {
@@ -281,7 +281,7 @@
                     sendHint.textContent = '✓ 已发送到游戏';
                     sendHint.className = 'text-xs text-green-400 mt-2';
                     setTimeout(() => {
-                        sendHint.textContent = '提示：消息会通过 RCON 发送到 MC 服务器，所有在线玩家都能看到。';
+                        sendHint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
                         sendHint.className = 'text-xs text-gray-500 mt-2';
                     }, 3000);
                 } else {

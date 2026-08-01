@@ -75,18 +75,22 @@ class GameChatController extends Controller
             ], 500);
         }
 
-        // 通过 RCON 发送 say 命令
-        // 格式：say [网站] 玩家名：消息
-        // MC 服务器会广播为：[Server] [网站] 玩家名：消息
+        // 通过 RCON 发送 tellraw 命令，伪装成玩家聊天格式 <玩家> 消息
+        // tellraw 格式：tellraw @a {"text":"<玩家名> 消息内容"}
+        // 这样游戏内显示为：<牢高> 你好呀
         try {
             $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 2);
             $rcon->connect();
 
-            // 转义可能影响命令解析的字符
-            $safeMessage = str_replace(['\\', '"', "\n", "\r"], ['\\\\', '\\"', ' ', ' '], $message);
-            $safeName = str_replace(['\\', '"', "\n", "\r"], ['\\\\', '\\"', ' ', ' '], $playerName);
+            // 转义 JSON 特殊字符：双引号、反斜杠、换行
+            $safeName = addslashes($playerName);
+            $safeMessage = addslashes($message);
 
-            $command = sprintf('say [网站] %s：%s', $safeName, $safeMessage);
+            // tellraw JSON：用 text 字段拼装，<玩家名> 前缀加上实际消息
+            $tellrawText = sprintf('<%s> %s', $safeName, $safeMessage);
+            $tellrawJson = sprintf('{"text":"%s"}', $tellrawText);
+
+            $command = 'tellraw @a ' . $tellrawJson;
             $rcon->sendCommand($command);
             $rcon->disconnect();
         } catch (\Throwable $e) {
@@ -97,13 +101,13 @@ class GameChatController extends Controller
         }
 
         // 同时把这条消息存进数据库（让网页聊天页也能看到自己发的）
-        // 用 player_name = 玩家名 + [网站] 标记
-        $saved = GameChatMessage::addMessage(
-            $playerName . ' [网站]',
-            $message,
-            null,
-            'web'
-        );
+        // channel 标记为 web，与游戏内 global 区分
+        $saved = GameChatMessage::create([
+            'player_name' => $playerName,
+            'message' => $message,
+            'channel' => 'web',
+            'timestamp' => now(),
+        ]);
 
         return response()->json([
             'ok' => true,

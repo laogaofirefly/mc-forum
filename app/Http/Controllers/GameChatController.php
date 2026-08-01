@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GameChatMessage;
 use App\Services\MinecraftLogSyncService;
+use App\Services\MinecraftRconService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,80 @@ class GameChatController extends Controller
                     'timestamp' => $m->timestamp?->format('H:i:s') ?? now()->format('H:i:s'),
                 ];
             }),
+        ]);
+    }
+
+    /**
+     * 从网站向游戏发消息（通过 RCON 调用 say 命令）
+     */
+    public function send(Request $request): JsonResponse
+    {
+        if (! Auth::check()) {
+            return response()->json(['ok' => false, 'message' => '请先登录'], 401);
+        }
+
+        $request->validate([
+            'message' => 'required|string|min:1|max:200',
+        ], [
+            'message.required' => '消息内容不能为空',
+            'message.max' => '消息最多 200 字',
+        ]);
+
+        $message = trim($request->input('message'));
+        $user = Auth::user();
+        $playerName = $user->name;
+
+        // 检查 RCON 配置
+        $rconPassword = config('services.minecraft.rcon.password', '');
+        $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
+        $rconPort = (int) config('services.minecraft.rcon.port', 25575);
+
+        if (empty($rconPassword)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'RCON 未配置：请在 .env 里设置 MC_RCON_PASSWORD（参考 MC 服务器 server.properties 里的 rcon.password）',
+            ], 500);
+        }
+
+        // 通过 RCON 发送 say 命令
+        // 格式：say [网站] 玩家名：消息
+        // MC 服务器会广播为：[Server] [网站] 玩家名：消息
+        try {
+            $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
+            $rcon->connect();
+
+            // 转义可能影响命令解析的字符
+            $safeMessage = str_replace(['\\', '"', "\n", "\r"], ['\\\\', '\\"', ' ', ' '], $message);
+            $safeName = str_replace(['\\', '"', "\n", "\r"], ['\\\\', '\\"', ' ', ' '], $playerName);
+
+            $command = sprintf('say [网站] %s：%s', $safeName, $safeMessage);
+            $rcon->sendCommand($command);
+            $rcon->disconnect();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => '发送到游戏失败：' . $e->getMessage(),
+            ], 500);
+        }
+
+        // 同时把这条消息存进数据库（让网页聊天页也能看到自己发的）
+        // 用 player_name = 玩家名 + [网站] 标记
+        $saved = GameChatMessage::addMessage(
+            $playerName . ' [网站]',
+            $message,
+            null,
+            'web'
+        );
+
+        return response()->json([
+            'ok' => true,
+            'message' => '已发送到游戏',
+            'record' => [
+                'id' => $saved->id,
+                'player_name' => $saved->player_name,
+                'message' => $saved->message,
+                'timestamp' => $saved->timestamp->format('H:i:s'),
+            ],
         ]);
     }
 

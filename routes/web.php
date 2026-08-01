@@ -44,6 +44,7 @@ Route::delete('/replies/{reply}', [ReplyController::class, 'destroy'])->name('re
 
 Route::get('/game-chat', [GameChatController::class, 'index'])->name('game-chat');
 Route::get('/game-chat/fetch', [GameChatController::class, 'fetch'])->name('game-chat.fetch');
+Route::post('/game-chat/send', [GameChatController::class, 'send'])->name('game-chat.send')->middleware('auth');
 Route::post('/game-chat/demo', [GameChatController::class, 'demo'])->name('game-chat.demo')->middleware('auth');
 
 Route::get('/admin/monitor', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'index'])->name('admin.monitor')->middleware('auth');
@@ -252,6 +253,51 @@ Route::get('/chat-test', function () {
             'ok' => null,
             'title' => '日志文件读取权限',
             'detail' => '前面步骤未通过，跳过',
+        ];
+    }
+
+    // 10. RCON 配置检查（网站→游戏 发消息需要）
+    $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
+    $rconPort = (int) config('services.minecraft.rcon.port', 25575);
+    $rconPassword = config('services.minecraft.rcon.password', '');
+
+    if (empty($rconPassword)) {
+        $steps[] = [
+            'ok' => false,
+            'title' => 'RCON 配置 (网站→游戏)',
+            'detail' => "未配置！网站向游戏发消息需要 RCON。\n请在 .env 文件加 3 行：\nMC_RCON_HOST=127.0.0.1\nMC_RCON_PORT=25575\nMC_RCON_PASSWORD=你设置的强密码\n\n同时 MC 服务器的 server.properties 里要有：\nenable-rcon=true\nrcon.port=25575\nrcon.password=同上\nserver-ip=127.0.0.1",
+        ];
+    } else {
+        $steps[] = [
+            'ok' => true,
+            'title' => 'RCON 配置 (网站→游戏)',
+            'detail' => "已配置：{$rconHost}:{$rconPort}（密码已设置）",
+        ];
+    }
+
+    // 11. RCON 连接测试
+    if (! empty($rconPassword)) {
+        try {
+            $rcon = new \App\Services\MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
+            $rcon->connect();
+            $rcon->disconnect();
+            $steps[] = [
+                'ok' => true,
+                'title' => 'RCON 连接测试',
+                'detail' => "连接成功 ✓ 可以从网站向游戏发消息了",
+            ];
+        } catch (Throwable $e) {
+            $steps[] = [
+                'ok' => false,
+                'title' => 'RCON 连接测试',
+                'detail' => '失败：' . $e->getMessage() . "\n\n常见原因：\n1. MC 服务器没开 RCON（检查 server.properties 里 enable-rcon=true）\n2. 密码不对\n3. 端口不对（默认 25575）\n4. MC 服务器没运行\n5. 改了 server.properties 后没重启 MC 服务器",
+            ];
+        }
+    } else {
+        $steps[] = [
+            'ok' => null,
+            'title' => 'RCON 连接测试',
+            'detail' => '前面 RCON 配置未通过，跳过',
         ];
     }
 

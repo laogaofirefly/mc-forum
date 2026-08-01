@@ -62,6 +62,30 @@
     </div>
 
     @auth
+        <div class="mc-card rounded-lg p-3 sm:p-4">
+            <form id="sendForm" class="flex flex-col sm:flex-row gap-2">
+                <input
+                    type="text"
+                    id="sendInput"
+                    name="message"
+                    maxlength="200"
+                    autocomplete="off"
+                    placeholder="向游戏内发送消息（以你的用户名牢高 [网站] 显示）..."
+                    class="flex-1 px-3 py-2 rounded-md bg-slate-950/60 border border-slate-700 text-gray-100 placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 text-sm"
+                >
+                <button
+                    type="submit"
+                    id="sendBtn"
+                    class="px-4 py-2 rounded-md bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                    发送到游戏
+                </button>
+            </form>
+            <p id="sendHint" class="text-xs text-gray-500 mt-2">提示：消息会通过 RCON 发送到 MC 服务器，所有在线玩家都能看到。</p>
+        </div>
+    @endauth
+
+    @auth
         @if(auth()->user()->isAdmin())
             <div class="mc-card rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-gray-400">
                 <div class="flex items-center justify-between mb-2">
@@ -99,6 +123,10 @@
     const scrollBtn = document.getElementById('scrollBottomBtn');
     const demoBtn = document.getElementById('demoMsgBtn');
     const syncBtn = document.getElementById('syncLogBtn');
+    const sendForm = document.getElementById('sendForm');
+    const sendInput = document.getElementById('sendInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendHint = document.getElementById('sendHint');
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
     let autoScroll = true;
@@ -212,6 +240,59 @@
                 syncBtn.disabled = false;
                 syncBtn.textContent = '📜 同步游戏日志';
                 setStatus('<span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-1"></span> 同步异常', 'red');
+            }
+        });
+    }
+
+    // === 发消息到游戏 ===
+    if (sendForm) {
+        sendForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const msg = sendInput.value.trim();
+            if (!msg) return;
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = '发送中...';
+            sendHint.textContent = '正在发送到游戏服务器...';
+            sendHint.className = 'text-xs text-yellow-400 mt-2';
+
+            try {
+                const formData = new FormData();
+                formData.append('message', msg);
+                const res = await fetch('{{ route("game-chat.send") }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    body: formData,
+                });
+                const data = await res.json();
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送到游戏';
+
+                if (data && data.ok) {
+                    // 把自己发的消息直接加到列表
+                    if (data.record) appendMessage(data.record);
+                    sendInput.value = '';
+                    sendHint.textContent = '✓ 已发送到游戏';
+                    sendHint.className = 'text-xs text-green-400 mt-2';
+                    setTimeout(() => {
+                        sendHint.textContent = '提示：消息会通过 RCON 发送到 MC 服务器，所有在线玩家都能看到。';
+                        sendHint.className = 'text-xs text-gray-500 mt-2';
+                    }, 3000);
+                } else {
+                    // 处理 Laravel 验证错误
+                    let errMsg = (data && data.message) ? data.message : '发送失败';
+                    if (data && data.errors && data.errors.message) {
+                        errMsg = data.errors.message[0];
+                    }
+                    sendHint.textContent = '✗ ' + errMsg;
+                    sendHint.className = 'text-xs text-red-400 mt-2';
+                }
+            } catch(e) {
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送到游戏';
+                sendHint.textContent = '✗ 网络错误：' + e.message;
+                sendHint.className = 'text-xs text-red-400 mt-2';
             }
         });
     }

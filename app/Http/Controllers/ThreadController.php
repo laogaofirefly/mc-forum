@@ -12,6 +12,24 @@ use Illuminate\View\View;
 
 class ThreadController extends Controller
 {
+    public function index(Request $request): View
+    {
+        $search = trim($request->input('q', ''));
+
+        $threads = Thread::with(['user', 'category', 'latestReply.user'])
+            ->withCount('replies')
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($w) use ($search) {
+                    $w->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('body', 'like', '%' . $search . '%');
+                });
+            })
+            ->orderByRaw('COALESCE(last_reply_at, created_at) DESC')
+            ->paginate(15);
+
+        return view('threads.index', compact('threads', 'search'));
+    }
+
     public function create(): View
     {
         return view('threads.create');

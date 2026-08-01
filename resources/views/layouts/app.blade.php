@@ -183,8 +183,13 @@
                 </div>
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="{{ route('home') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">首页</a>
+                    <a href="{{ route('threads.index') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">全部帖子</a>
+                    <a href="{{ route('game-chat') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">游戏聊天</a>
                     @auth
                         <a href="{{ route('threads.create') }}" class="text-primary-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition">发帖</a>
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.monitor') }}" class="text-yellow-300 hover:text-yellow-100 px-3 py-2 rounded-md text-sm font-medium transition">📊 监控</a>
+                        @endif
                     @endauth
                 </div>
                 <div class="hidden md:flex items-center space-x-4">
@@ -217,8 +222,13 @@
         <div class="mobile-nav md:hidden border-t border-primary-700/50 bg-primary-900/95 backdrop-blur" id="mobileNav">
             <div class="px-4 py-3 space-y-1">
                 <a href="{{ route('home') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">🏠 首页</a>
+                <a href="{{ route('threads.index') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">📋 全部帖子</a>
+                <a href="{{ route('game-chat') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">💬 游戏聊天</a>
                 @auth
                     <a href="{{ route('threads.create') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">✏️ 发帖</a>
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                        <a href="{{ route('admin.monitor') }}" class="block text-yellow-300 hover:bg-yellow-900/30 px-3 py-3 rounded-md font-medium transition">📊 服务器监控</a>
+                    @endif
                     <a href="{{ route('profile.show', auth()->user()) }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">👤 我的主页</a>
                     <a href="{{ route('profile.edit') }}" class="block text-primary-100 hover:bg-primary-800/50 px-3 py-3 rounded-md font-medium transition">⚙️ 设置</a>
                     <form method="POST" action="{{ route('logout') }}" class="block">
@@ -260,15 +270,20 @@
             </div>
         @endif
 
-        <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
-            <div class="flex-1 order-2 lg:order-1">
+        @if(request()->routeIs('home'))
+            <div class="max-w-4xl mx-auto">
                 @yield('content')
             </div>
-            <div class="w-full lg:w-80 space-y-6 order-1 lg:order-2">
-                @include('partials.server-status')
-                @include('partials.sidebar-categories')
+        @else
+            <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                <div class="flex-1 min-w-0">
+                    @yield('content')
+                </div>
+                <div class="w-full lg:w-80 space-y-6">
+                    @include('partials.server-status')
+                </div>
             </div>
-        </div>
+        @endif
     </main>
 
     <footer class="bg-gradient-to-r from-primary-900 via-primary-800 to-primary-900 border-t-4 border-primary-600 mt-12">

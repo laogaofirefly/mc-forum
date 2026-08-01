@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\GameChatController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplyController;
@@ -28,6 +29,7 @@ Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 
+Route::get('/threads', [ThreadController::class, 'index'])->name('threads.index');
 Route::get('/threads/create', [ThreadController::class, 'create'])->name('threads.create')->middleware('auth');
 Route::post('/threads', [ThreadController::class, 'store'])->name('threads.store')->middleware('auth');
 Route::get('/threads/{thread:slug}', [ThreadController::class, 'show'])->name('threads.show');
@@ -39,5 +41,12 @@ Route::post('/threads/{thread:slug}/replies', [ReplyController::class, 'store'])
 Route::get('/replies/{reply}/edit', [ReplyController::class, 'edit'])->name('replies.edit')->middleware('auth');
 Route::put('/replies/{reply}', [ReplyController::class, 'update'])->name('replies.update')->middleware('auth');
 Route::delete('/replies/{reply}', [ReplyController::class, 'destroy'])->name('replies.destroy')->middleware('auth');
+
+Route::get('/game-chat', [GameChatController::class, 'index'])->name('game-chat');
+Route::get('/game-chat/fetch', [GameChatController::class, 'fetch'])->name('game-chat.fetch');
+Route::post('/game-chat/demo', [GameChatController::class, 'demo'])->name('game-chat.demo')->middleware('auth');
+
+Route::get('/admin/monitor', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'index'])->name('admin.monitor')->middleware('auth');
+Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
 
 Route::get('/api/server-status', [ServerStatusController::class, 'index'])->name('server-status');

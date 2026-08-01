@@ -160,15 +160,38 @@ class MinecraftLogSyncService
         $line = rtrim($line, "\r\n");
 
         // 匹配日志头：[12:34:56] [.../INFO]: 后面是正文
-        // 注意第二段方括号里可能嵌套出现 "Async Chat Thread - #0/INFO"
-        // 导致日志格式变成：[Server thread/INFO]: [Async Chat Thread - #0/INFO]: <玩家> 消息
-        // 所以要匹配到最后一个 /INFO]: 才是真正的聊天正文起点
-        if (! preg_match('/^\[(\d{2}:\d{2}:\d{2})\]\s+\[[^\]]*\/INFO\]:\s*(?:\[[^\]]*\/INFO\]:\s*)?(.+)$/u', $line, $m)) {
+        // 第二段方括号可能是 "Server thread" / "Async Chat Thread - #0" / "VoiceChatPacketProcessingThread" 等
+        if (! preg_match('/^\[(\d{2}:\d{2}:\d{2})\]\s+\[[^\]]*\/INFO\]:\s*(.+)$/u', $line, $m)) {
             return null;
         }
 
         $time = $m[1];
         $body = $m[2];
+
+        // 关键过滤：只接受来自 "Server thread" 或 "Async Chat Thread" 的消息
+        // 其他线程（如 VoiceChatPacketProcessingThread / Netty Server / ...）的消息一律跳过
+        // 通过日志头判断（重新匹配一次，单独提取线程名）
+        if (! preg_match('/^\[\d{2}:\d{2}:\d{2}\]\s+\[([^\]]+)\/INFO\]:/', $line, $tm)) {
+            return null;
+        }
+        $thread = $tm[1];
+        $isChatThread = preg_match('/^(Server thread|Async Chat Thread\b)/', $thread);
+        if (! $isChatThread) {
+            return null;
+        }
+
+        // 跳过常见的非聊天 INFO 消息（玩家进出服、命令反馈等）
+        // 这些都是 Server thread 输出的，但不是聊天
+        if (preg_match('/\b(joined the game|left the game|lost connection|has earned the achievement|made the advancement|completed challenge|logged in with|moved too quickly|was slain by|drowned|fell from|blew up|withered away|died|hurt by|killed by|fell out of the world|walked into|hit the ground|burned to|tried to swim in)\b/i', $body)) {
+            return null;
+        }
+
+        // 可选前缀：[Not Secure] 或 [Secure] —— 1.19.3+ 聊天签名验证标记
+        // 格式举例：[Not Secure] <玩家> 消息
+        // 注意：可能有多个前缀叠加，循环去除直到没有为止
+        while (preg_match('/^\[(Not Secure|Secure|Filtered|Preview|System|Chat Type|Sender)\]\s*/u', $body)) {
+            $body = preg_replace('/^\[(Not Secure|Secure|Filtered|Preview|System|Chat Type|Sender)\]\s*/u', '', $body);
+        }
 
         // 匹配 <玩家名> 消息  —— 原版聊天格式（支持中英文数字下划线）
         if (preg_match('/^<([^>]{1,64})>\s*(.+)$/u', $body, $bm)) {
@@ -181,10 +204,27 @@ class MinecraftLogSyncService
 
         // 匹配 [玩家名] 消息  —— 某些插件 / /me 命令
         // 玩家名允许中文、英文、数字、下划线，长度 1-16
+        // 但要排除 [插件名] 开头的消息（如 [voicechat] / [Essentials] / [ LuckPerms] 等）
         if (preg_match('/^\[([\x{4e00}-\x{9fa5}A-Za-z0-9_]{1,16})\]\s*(.+)$/u', $body, $bm)) {
-            // 过滤掉明显的系统消息前缀
             $lower = strtolower($bm[1]);
-            if (! in_array($lower, ['async', 'server', 'system', 'chat'], true)) {
+            // 已知的插件前缀黑名单（持续可扩展）
+            $pluginBlacklist = [
+                'async', 'server', 'system', 'chat',
+                'voicechat', 'essentials', 'luckperms', 'vault',
+                'worldedit', 'worldguard', 'placeholderapi', 'papi',
+                'multiverse', 'multiverse-core', 'multiverse-netherportals',
+                'protocollib', 'viaversion', ' ProtocolLib',
+                'dynmap', 'bluemap', 'pl3xmap',
+                'discordsrv', 'simple-voice-chat', 'plasmo-voice',
+                'skript', 'mythicmobs', 'citizens', 'mythiclib',
+                'mmocore', 'mmoitems', 'towny', 'factions',
+                'coreprotect', 'logblock', 'hawk-eye',
+                'permissionsex', 'groupmanager', 'bPermissions',
+                'chestshop', 'quickshop', 'shop',
+                'mcmmo', 'aurelium', 'auraskills',
+                'event', 'config', 'console',
+            ];
+            if (! in_array($lower, $pluginBlacklist, true)) {
                 return [
                     'time' => $time,
                     'player' => $bm[1],

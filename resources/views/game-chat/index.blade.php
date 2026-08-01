@@ -18,6 +18,9 @@
             </span>
             @auth
                 @if(auth()->user()->isAdmin())
+                    <button type="button" id="syncLogBtn" class="text-xs sm:text-sm px-3 py-1.5 rounded-md bg-blue-700/40 text-blue-200 border border-blue-600/50 hover:bg-blue-700/60 transition">
+                        📜 同步游戏日志
+                    </button>
                     <button type="button" id="demoMsgBtn" class="text-xs sm:text-sm px-3 py-1.5 rounded-md bg-yellow-700/40 text-yellow-200 border border-yellow-600/50 hover:bg-yellow-700/60 transition">
                         🧪 插入一条测试消息
                     </button>
@@ -76,6 +79,7 @@
     const statusEl = document.getElementById('chatStatus');
     const scrollBtn = document.getElementById('scrollBottomBtn');
     const demoBtn = document.getElementById('demoMsgBtn');
+    const syncBtn = document.getElementById('syncLogBtn');
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
     let autoScroll = true;
@@ -157,6 +161,39 @@
                 demoBtn.disabled = false;
                 demoBtn.textContent = '🧪 插入一条测试消息';
             } catch(e) { demoBtn.disabled = false; demoBtn.textContent = '🧪 插入一条测试消息'; }
+        });
+    }
+
+    if (syncBtn) {
+        syncBtn.addEventListener('click', async function() {
+            try {
+                syncBtn.disabled = true;
+                syncBtn.textContent = '同步中...';
+                const res = await fetch('{{ route("chat-sync") }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: '{}',
+                });
+                const data = await res.json();
+                syncBtn.disabled = false;
+                syncBtn.textContent = '📜 同步游戏日志';
+                if (data && data.ok) {
+                    // 同步成功后立即拉一次新消息
+                    await fetchMessages();
+                    if (data.inserted > 0) {
+                        setStatus('<span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span> 同步成功，新增 ' + data.inserted + ' 条', 'green');
+                    } else {
+                        setStatus('<span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span> 已同步，暂无新消息', 'green');
+                    }
+                } else {
+                    setStatus('<span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-1"></span> ' + (data.message || '同步失败'), 'red');
+                }
+            } catch(e) {
+                syncBtn.disabled = false;
+                syncBtn.textContent = '📜 同步游戏日志';
+                setStatus('<span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-1"></span> 同步异常', 'red');
+            }
         });
     }
 

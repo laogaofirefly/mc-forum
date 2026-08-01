@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GameChatMessage;
+use App\Services\MinecraftLogSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,8 +18,16 @@ class GameChatController extends Controller
         return view('game-chat.index', compact('messages'));
     }
 
-    public function fetch(Request $request): JsonResponse
+    public function fetch(Request $request, MinecraftLogSyncService $syncService): JsonResponse
     {
+        // 每次轮询时自动尝试同步 MC 日志，让玩家聊天能实时显示
+        // 同步失败不影响聊天页正常工作
+        try {
+            $syncService->setMaxBatch(50)->sync();
+        } catch (\Throwable $e) {
+            // 静默失败，不影响聊天列表加载
+        }
+
         $afterId = $request->integer('after_id', 0);
         $limit = min(200, max(10, $request->integer('limit', 100)));
 

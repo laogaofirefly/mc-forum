@@ -190,6 +190,71 @@ Route::get('/chat-test', function () {
         }
     }
 
+    // 7. MC 服务器日志路径配置
+    $mcPath = config('services.minecraft.log_path', '');
+    $logPath = $mcPath ? (rtrim($mcPath, '\\/') . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'latest.log') : '';
+
+    if (empty($mcPath)) {
+        $steps[] = [
+            'ok' => false,
+            'title' => 'MC_SERVER_PATH 配置',
+            'detail' => "未配置！请在网站根目录的 .env 文件里加一行：\nMC_SERVER_PATH=C:\\Users\\Administrator\\Desktop\\server\n（改成你实际的 MC 服务器根目录）",
+        ];
+    } else {
+        $steps[] = [
+            'ok' => true,
+            'title' => 'MC_SERVER_PATH 配置',
+            'detail' => '已配置：' . $mcPath,
+        ];
+    }
+
+    // 8. 日志文件是否存在
+    if (! empty($logPath)) {
+        if (file_exists($logPath)) {
+            $size = filesize($logPath);
+            $steps[] = [
+                'ok' => true,
+                'title' => '日志文件 latest.log',
+                'detail' => '存在，路径：' . $logPath . "\n大小：" . number_format($size) . ' bytes',
+            ];
+        } else {
+            $steps[] = [
+                'ok' => false,
+                'title' => '日志文件 latest.log',
+                'detail' => '不存在：' . $logPath . "\n请确认 MC 服务器已启动过至少一次，并且路径正确",
+            ];
+        }
+    } else {
+        $steps[] = [
+            'ok' => null,
+            'title' => '日志文件 latest.log',
+            'detail' => '前面 MC_SERVER_PATH 未配置，跳过',
+        ];
+    }
+
+    // 9. 日志文件是否可读
+    if (! empty($logPath) && file_exists($logPath)) {
+        if (is_readable($logPath)) {
+            $steps[] = [
+                'ok' => true,
+                'title' => '日志文件读取权限',
+                'detail' => '可读 ✓',
+            ];
+        } else {
+            $steps[] = [
+                'ok' => false,
+                'title' => '日志文件读取权限',
+                'detail' => '不可读！需要给 Web 用户（IIS/IUSR 或 Apache 服务账户）对该文件的读取权限',
+            ];
+        }
+    } else {
+        $steps[] = [
+            'ok' => null,
+            'title' => '日志文件读取权限',
+            'detail' => '前面步骤未通过，跳过',
+        ];
+    }
+
     $allOk = collect($steps)->every(fn($s) => $s['ok'] === true || $s['ok'] === null);
     ?>
     <!doctype html>
@@ -246,9 +311,28 @@ Route::get('/chat-test', function () {
             <b>下一步：</b><br>
             1. 如果以上全部通过，请访问 <a href="/game-chat">/game-chat</a> 查看聊天页面（刷新一次页面即可看到刚插入的测试消息）。<br>
             2. 如果"模型 timestamps 设置"那项红色 ❌，说明你服务器上的 GameChatMessage.php 还没更新，把最新的 <b>app/Models/GameChatMessage.php</b> 上传覆盖即可。<br>
-            3. 如果"表不存在"那项红色 ❌，在 CMD 运行：<code style="background:#0f172a;padding:2px 6px;border-radius:4px">php artisan migrate --force</code>。
+            3. 如果"表不存在"那项红色 ❌，在 CMD 运行：<code style="background:#0f172a;padding:2px 6px;border-radius:4px">php artisan migrate --force</code>。<br>
+            4. 如果"MC_SERVER_PATH 配置"红色 ❌，编辑网站根目录的 <b>.env</b> 文件，加一行：<code style="background:#0f172a;padding:2px 6px;border-radius:4px">MC_SERVER_PATH=C:\Users\Administrator\Desktop\server</code>（改成你实际的 MC 服务器根目录）。<br>
+            5. 如果"日志文件读取权限"红色 ❌，给 Web 服务账户（IIS 的 IUSR，或 Apache 的 SYSTEM）对该日志文件的读取权限。
         </div>
     </body>
     </html>
     <?php
 });
+
+// 一键同步 MC 日志聊天记录（管理员才可以用）
+Route::post('/chat-sync', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '无权限'], 403);
+    }
+    try {
+        $service = app(\App\Services\MinecraftLogSyncService::class);
+        $result = $service->sync();
+        return response()->json($result);
+    } catch (Throwable $e) {
+        return response()->json([
+            'ok' => false,
+            'message' => '异常：' . $e->getMessage(),
+        ], 500);
+    }
+})->name('chat-sync')->middleware('auth');

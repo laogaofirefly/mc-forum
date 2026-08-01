@@ -38,6 +38,7 @@ return [
     'minecraft' => [
         'host' => env('MINECRAFT_SERVER_HOST', 'localhost'),
         'port' => env('MINECRAFT_SERVER_PORT', 25565),
+        'log_path' => env('MC_SERVER_PATH', ''),
     ],
 
 ];

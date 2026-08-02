@@ -61,9 +61,45 @@
     }
     #chatCard.fullscreen #chatBody {
         padding: 16px;
+        padding-top: 56px;
     }
     body.chat-fullscreen-active {
         overflow: hidden;
+    }
+    /* 浮动全屏按钮（聊天卡片右上角） */
+    #fullscreenBtn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 20;
+        width: 36px;
+        height: 36px;
+        min-height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(4px);
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+    }
+    #fullscreenBtn:hover {
+        background: #fff;
+        border-color: #10b981;
+        color: #10b981;
+    }
+    #fullscreenBtn:active {
+        transform: scale(0.95);
+    }
+    #chatCard.fullscreen #fullscreenBtn {
+        top: 12px;
+        right: 12px;
+        background: rgba(255,255,255,0.95);
     }
 </style>
 
@@ -85,7 +121,6 @@
                 <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
                 在线
             </span>
-            <button type="button" id="fullscreenBtn" class="btn-secondary no-disable text-xs" title="全屏 / 退出全屏">⛶</button>
             @auth
                 @if(auth()->user()->isAdmin())
                     <button type="button" id="syncLogBtn" class="btn-secondary no-disable text-xs">📜 同步</button>
@@ -95,7 +130,8 @@
         </div>
     </div>
 
-    <div id="chatCard" class="card overflow-hidden flex flex-col" style="height: calc(100vh - 240px); min-height: 400px;">
+    <div id="chatCard" class="card overflow-hidden flex flex-col relative" style="height: calc(100vh - 240px); min-height: 400px;">
+        <button type="button" id="fullscreenBtn" title="全屏 / 退出全屏" aria-label="全屏">⛶</button>
         <div id="chatBody" class="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-50/70">
             @if($messages->isEmpty())
                 <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
@@ -198,17 +234,23 @@
     function scrollToBottom(smooth) {
         chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     }
+    // 强制多次滚动到底部，确保异步样式/字体/图片加载后也能定位到最新消息
+    function forceScrollToBottom() {
+        scrollToBottom(false);
+        [50, 150, 300, 600, 1000].forEach(function(delay) {
+            setTimeout(function() { scrollToBottom(false); }, delay);
+        });
+    }
 
     // 全屏切换
     function toggleFullscreen() {
         const isFs = chatCard.classList.toggle('fullscreen');
         document.body.classList.toggle('chat-fullscreen-active', isFs);
         if (fullscreenBtn) {
-            fullscreenBtn.textContent = isFs ? '⛶' : '⛶';
             fullscreenBtn.title = isFs ? '退出全屏' : '全屏';
         }
-        // 切换后立即滚动到底部
-        requestAnimationFrame(function() { scrollToBottom(false); });
+        // 切换后强制滚动到底部
+        forceScrollToBottom();
     }
     if (fullscreenBtn) {
         fullscreenBtn.addEventListener('click', toggleFullscreen);
@@ -270,7 +312,7 @@
                 // 首次加载完成后强制滚动到底部（修复进入页面时未自动定位最新消息）
                 if (firstFetch) {
                     firstFetch = false;
-                    requestAnimationFrame(function() { scrollToBottom(false); });
+                    forceScrollToBottom();
                 }
             } else {
                 setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1"></span> 数据异常', 'yellow');
@@ -465,8 +507,8 @@
         }
     }
 
-    // 初始滚动到底部
-    scrollToBottom(false);
+    // 初始滚动到底部（多次重试，应对 Tailwind CDN 异步加载、字体渲染等导致的高度变化）
+    forceScrollToBottom();
     // 页面加载后立即拉取一次新消息（修复首次进入不刷新的 bug）
     fetchMessages();
     // 启动定时刷新（2 秒一次，接近实时）

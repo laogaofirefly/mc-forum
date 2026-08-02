@@ -17,6 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'mc_username', 'mc_uuid',
         'mc_verified', 'avatar', 'bio', 'is_admin',
+        'is_blocked', 'blocked_at', 'block_reason',
     ];
 
     protected $hidden = [
@@ -29,6 +30,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'mc_verified' => 'boolean',
             'is_admin' => 'boolean',
+            'is_blocked' => 'boolean',
+            'blocked_at' => 'datetime',
         ];
     }
 
@@ -55,6 +58,14 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->is_admin;
+    }
+
+    /**
+     * 是否被封禁
+     */
+    public function isBlocked(): bool
+    {
+        return (bool) $this->is_blocked;
     }
 
     public function getAvatarUrl(): string

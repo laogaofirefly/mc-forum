@@ -26,6 +26,15 @@ class LoginController extends Controller
         $login = trim($validated['login']);
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
 
+        // 先找到用户，检查是否被封禁
+        $user = \App\Models\User::where($field, $login)->first();
+        if ($user && $user->isBlocked()) {
+            $reason = $user->block_reason ? '（原因：' . $user->block_reason . '）' : '';
+            return back()->withErrors([
+                'login' => '该账号已被封禁' . $reason . '，请联系管理员。',
+            ])->onlyInput('login');
+        }
+
         if (Auth::attempt([$field => $login, 'password' => $validated['password']], !empty($validated['remember']))) {
             $request->session()->regenerate();
 

@@ -236,6 +236,7 @@
                     @auth
                         <a href="{{ route('threads.create') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">发帖</a>
                         @if(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.users.index') }}" class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-lg text-sm font-medium transition">用户管理</a>
                             <a href="{{ route('admin.monitor') }}" class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-lg text-sm font-medium transition">监控</a>
                         @endif
                     @endauth
@@ -281,6 +282,7 @@
                     <a href="{{ route('notifications.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🔔 消息通知 <span id="mobileNotifyCount" class="hidden ml-1 inline-block px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">0</span></a>
                     <a href="{{ route('threads.create') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">✏️ 发帖</a>
                     @if(auth()->check() && auth()->user()->isAdmin())
+                        <a href="{{ route('admin.users.index') }}" class="block text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition">👥 用户管理</a>
                         <a href="{{ route('admin.monitor') }}" class="block text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition">📊 服务器监控</a>
                     @endif
                     <a href="{{ route('profile.show', auth()->user()) }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">👤 我的主页</a>

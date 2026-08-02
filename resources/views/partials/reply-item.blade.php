@@ -4,7 +4,7 @@
         <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center flex-wrap gap-x-2 gap-y-1">
-                    <a href="{{ route('profile.show', $reply->user) }}" class="text-slate-900 font-semibold hover:text-primary-600 transition">{{ $reply->user->name }}</a>
+                    <a href="{{ route('profile.show', $reply->user) }}" class="text-slate-900 font-semibold hover:text-primary-600 transition text-sm">{{ $reply->user->name }}</a>
                     @if($reply->user->isAdmin())
                         <span class="badge bg-red-100 text-red-700">管理员</span>
                     @endif

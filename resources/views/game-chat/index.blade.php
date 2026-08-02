@@ -167,13 +167,16 @@
         if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
             return;
         }
+        const isMine = currentUserName && m.player_name === currentUserName;
+        const timeStr = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.substring(0, 5) : m.timestamp) : '--:--';
         const row = document.createElement('div');
-        row.className = 'chat-row flex items-start px-2 py-1 rounded hover:bg-slate-100 transition';
+        row.className = 'chat-row flex ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 py-1';
         row.dataset.id = m.id;
         row.innerHTML =
-            '<span class="text-primary-600 font-medium flex-shrink-0 px-1">' + escapeHtml(m.player_name) + '</span>' +
-            '<span class="text-slate-400 flex-shrink-0 mr-1">:</span>' +
-            '<span class="text-slate-700 break-words flex-1 leading-relaxed">' + escapeHtml(m.message) + '</span>';
+            '<div class="max-w-[75%] sm:max-w-[65%] ' + (isMine ? 'order-1' : '') + '">' +
+                '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
+                '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
+            '</div>';
         chatBody.appendChild(row);
         totalCount++;
         msgCountEl.textContent = totalCount;

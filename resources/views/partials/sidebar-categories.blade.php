@@ -9,7 +9,7 @@
         @foreach($categories ?? [] as $category)
             <li>
                 <a href="{{ route('categories.show', $category->slug) }}" class="flex items-center justify-between p-2 rounded hover:bg-gray-700/50 transition">
-                    <span class="text-gray-200 hover:text-primary-400 transition">
+                    <span class="text-gray-200 hover:text-primary-400 transition text-sm">
                         @if($category->icon)
                             <span class="mr-2">{{ $category->icon }}</span>
                         @endif

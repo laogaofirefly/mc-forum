@@ -12,7 +12,7 @@
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mb-1.5 flex items-center">
                     <span class="mr-2">⛏️</span>MC 玩家论坛
                 </h1>
-                <p class="text-primary-50 text-sm sm:text-base">分享你的建筑、生存、红石技巧，和 MC 玩家一起交流</p>
+                <p class="text-primary-50 text-base">分享你的建筑、生存、红石技巧，和 MC 玩家一起交流</p>
             </div>
             @auth
                 <a href="{{ route('threads.create') }}" class="bg-white text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-xl font-bold text-center whitespace-nowrap inline-block transition shadow-sm">

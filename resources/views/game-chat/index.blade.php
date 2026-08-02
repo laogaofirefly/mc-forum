@@ -306,7 +306,6 @@
 
             sending = true;
             sendBtn.disabled = true;
-            sendInput.disabled = true;
             sendBtn.textContent = '发送中';
             sendHint.textContent = '正在发送到游戏内玩家...';
             sendHint.className = 'text-xs text-amber-600 mt-1.5 px-1';
@@ -328,6 +327,9 @@
                     sendInput.style.height = 'auto';
                     sendHint.textContent = '✓ 已发送到游戏';
                     sendHint.className = 'text-xs text-primary-600 mt-1.5 px-1';
+                    // 发送成功后强制滚动到底部，显示最新消息（含自己发的）
+                    autoScroll = true;
+                    scrollToBottom(false);
                     setTimeout(() => {
                         sendHint.textContent = '以 {{ auth()->user()->name }} 的名义发送给游戏内所有在线玩家';
                         sendHint.className = 'text-xs text-slate-500 mt-1.5 px-1';
@@ -346,7 +348,6 @@
             } finally {
                 sending = false;
                 sendBtn.disabled = false;
-                sendInput.disabled = false;
                 sendBtn.textContent = '发送';
                 sendInput.focus();
             }

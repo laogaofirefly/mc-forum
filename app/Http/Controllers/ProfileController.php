@@ -70,6 +70,61 @@ class ProfileController extends Controller
         return redirect()->route('profile.show', $user)->with('success', '头像更新成功！');
     }
 
+
+/**
+     * 删除用户本地背景图文件（公共逻辑）
+     */
+    private function removeChatBgFile($chatBgPath): void
+    {
+        if ($chatBgPath && str_starts_with($chatBgPath, '/chat-bgs/')) {
+            $fullPath = public_path(ltrim($chatBgPath, '/'));
+            if (is_file($fullPath)) @unlink($fullPath);
+        }
+    }
+
+    /**
+     * 上传自定义聊天背景图
+     */
+    public function chatBg(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'chat_bg' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ], [
+            'chat_bg.required' => '请选择要上传的图片',
+            'chat_bg.image'    => '上传的文件必须是图片',
+            'chat_bg.mimes'    => '仅支持 JPG/PNG/WEBP 格式',
+            'chat_bg.max'      => '图片大小不能超过 5MB',
+        ]);
+
+        $user = Auth::user();
+        $this->removeChatBgFile($user->chat_bg);
+
+        $file = $request->file('chat_bg');
+        $name = sprintf('chat_bg_%d_%d.%s', $user->id, time(), $file->getClientOriginalExtension());
+
+        $dir = public_path('chat-bgs');
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $file->move($dir, $name);
+
+        $user->chat_bg = '/chat-bgs/' . $name;
+        $user->save();
+
+        return redirect()->route('profile.edit')->with('success', '聊天背景图已更新！');
+    }
+
+    /**
+     * 移除自定义聊天背景图
+     */
+    public function chatBgRemove(): RedirectResponse
+    {
+        $user = Auth::user();
+        $this->removeChatBgFile($user->chat_bg);
+        $user->chat_bg = null;
+        $user->save();
+
+        return redirect()->route('profile.edit')->with('success', '聊天背景图已移除。');
+    }
+
     public function mcBind(): View
     {
         $user = Auth::user();

@@ -26,6 +26,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit')->middleware('auth');
 Route::post('/profile/edit', [ProfileController::class, 'update'])->name('profile.update')->middleware('auth');
 Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar')->middleware('auth');
+Route::post("/profile/chat-bg", [ProfileController::class, "chatBg"])->name("profile.chat-bg")->middleware("auth");
+Route::post("/profile/chat-bg/remove", [ProfileController::class, "chatBgRemove"])->name("profile.chat-bg.remove")->middleware("auth");
 Route::get('/profile/mc-bind', [ProfileController::class, 'mcBind'])->name('profile.mc-bind')->middleware('auth');
 Route::post('/profile/mc-bind', [ProfileController::class, 'mcBindUpdate'])->name('profile.mc-bind.update')->middleware('auth');
 Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');

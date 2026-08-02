@@ -16,7 +16,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'mc_username', 'mc_uuid',
-        'mc_verified', 'avatar', 'bio', 'is_admin',
+        'mc_verified', 'avatar', 'bio', 'chat_bg', 'is_admin',
         'is_blocked', 'blocked_at', 'block_reason',
     ];
 
@@ -80,5 +80,24 @@ class User extends Authenticatable
 
         // 未上传自定义头像，无论是否绑定 MC 账号，都用名字首字母
         return PlayerAvatarService::initialAvatar($this->name ?: 'U');
+    }
+
+    /**
+     * 获取聊天背景图 URL，若无自定义则返回空（前端用默认背景）
+     */
+    /**
+     * 获取聊天背景图 URL（带缓存时间戳），若无自定义则返回空字符串。
+     * 使用 chat_bg 字段的修改时间戳而非用户整体 updated_at，避免
+     * 用户修改其他资料时背景图缓存也被错误刷新。
+     */
+    public function getChatBgUrl(): string
+    {
+        if (empty($this->chat_bg)) return '';
+        if (!str_starts_with($this->chat_bg, '/chat-bgs/')) return '';
+
+        // 从完整路径提取文件名，通过文件修改时间生成缓存戳
+        $path = public_path(ltrim($this->chat_bg, '/'));
+        $mtime = is_file($path) ? filemtime($path) : time();
+        return $this->chat_bg . '?v=' . $mtime;
     }
 }

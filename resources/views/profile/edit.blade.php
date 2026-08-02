@@ -24,7 +24,34 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('profile.update') }}">
+        
+        {{-- 聊天背景图区域 --}}
+        <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-100">
+            <div class="w-40 h-24 rounded-lg bg-cover bg-center shadow-inner ring-1 ring-slate-200 overflow-hidden flex-shrink-0" style="{{ auth()->user()->chat_bg ? 'background-image: url('' . e(auth()->user()->getChatBgUrl()) . '')' : 'background: linear-gradient(135deg, #e2e8f0, #cbd5e1)' }}"></div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-700 mb-1">🎨 游戏聊天背景图</p>
+                <p class="text-xs text-slate-500 mb-2">支持 JPG/PNG/WEBP，最大 5MB。不设置则使用默认背景。</p>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <form id="chatBgForm" action="{{ route('profile.chat-bg') }}" method="POST" enctype="multipart/form-data" class="contents">
+                        @csrf
+                        <input type="file" id="chatBgInput" name="chat_bg" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="document.getElementById('chatBgForm').submit()">
+                        <button type="button" id="chatBgBtn" class="btn-secondary text-sm" onclick="document.getElementById('chatBgInput').click()">
+                            🖼 选择背景图
+                        </button>
+                    </form>
+                    @if(auth()->user()->chat_bg)
+                    <form action="{{ route('profile.chat-bg.remove') }}" method="POST" class="contents" onsubmit="return confirm('确定要移除聊天背景图？')">
+                        @csrf
+                        <button type="submit" class="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50">
+                            ❌ 移除
+                        </button>
+                    </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+<form method="POST" action="{{ route('profile.update') }}">
             @csrf
             <div class="space-y-4">
                 <div>

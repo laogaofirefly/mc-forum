@@ -111,6 +111,115 @@ Route::post('/admin/rcon', function (\Illuminate\Http\Request $request) {
 
 Route::get('/api/server-status', [ServerStatusController::class, 'index'])->name('server-status');
 
+// 临时：成员列表诊断页（访问 /players-test 查看原始数据，定位重复玩家）
+Route::get('/players-test', function () {
+    $basePath = rtrim((string) config('services.minecraft.log_path', env('MC_SERVER_PATH')), '\\/');
+    $out = [];
+
+    $out[] = '=== 配置 ===';
+    $out[] = 'MC_SERVER_PATH / log_path = ' . ($basePath === '' ? '(未配置)' : $basePath);
+    $out[] = '';
+
+    if ($basePath === '') {
+        $out[] = '未配置路径，无法诊断。';
+        return response(implode("\n", $out), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    // usercache.json 原始内容
+    $usercachePath = $basePath . DIRECTORY_SEPARATOR . 'usercache.json';
+    $out[] = '=== usercache.json ===';
+    $out[] = '路径: ' . $usercachePath;
+    if (! is_file($usercachePath)) {
+        $out[] = '文件不存在';
+    } elseif (! is_readable($usercachePath)) {
+        $out[] = '文件不可读';
+    } else {
+        $raw = @file_get_contents($usercachePath);
+        $data = json_decode($raw ?: '', true);
+        if (! is_array($data)) {
+            $out[] = '解析失败，原始内容前 500 字符: ' . substr((string) $raw, 0, 500);
+        } else {
+            $out[] = '共 ' . count($data) . ' 条记录:';
+            foreach ($data as $i => $entry) {
+                $name = $entry['name'] ?? '?';
+                $uuid = $entry['uuid'] ?? '?';
+                $norm = strtolower(str_replace('-', '', (string) $uuid));
+                $out[] = sprintf('  [%d] name=%s | uuid=%s | 规范化=%s', $i, $name, $uuid, $norm);
+            }
+        }
+    }
+    $out[] = '';
+
+    // whitelist.json 原始内容
+    $whitelistPath = $basePath . DIRECTORY_SEPARATOR . 'whitelist.json';
+    $out[] = '=== whitelist.json ===';
+    $out[] = '路径: ' . $whitelistPath;
+    if (! is_file($whitelistPath)) {
+        $out[] = '文件不存在';
+    } elseif (! is_readable($whitelistPath)) {
+        $out[] = '文件不可读';
+    } else {
+        $raw = @file_get_contents($whitelistPath);
+        $data = json_decode($raw ?: '', true);
+        if (! is_array($data)) {
+            $out[] = '解析失败，原始内容前 500 字符: ' . substr((string) $raw, 0, 500);
+        } else {
+            $out[] = '共 ' . count($data) . ' 条记录:';
+            foreach ($data as $i => $entry) {
+                $name = $entry['name'] ?? '?';
+                $uuid = $entry['uuid'] ?? '?';
+                $norm = strtolower(str_replace('-', '', (string) $uuid));
+                $out[] = sprintf('  [%d] name=%s | uuid=%s | 规范化=%s', $i, $name, $uuid, $norm);
+            }
+        }
+    }
+    $out[] = '';
+
+    // 检查是否有其他可能包含玩家数据的文件
+    $out[] = '=== 服务器根目录下含 player 的文件 ===';
+    $candidates = ['usercache.json', 'whitelist.json', 'ops.json', 'banned-players.json', 'banned-ips.json', 'knownplayers.json'];
+    foreach ($candidates as $f) {
+        $p = $basePath . DIRECTORY_SEPARATOR . $f;
+        $exists = is_file($p);
+        $out[] = '  ' . $f . ': ' . ($exists ? '存在 (' . filesize($p) . ' bytes)' : '不存在');
+    }
+    $out[] = '';
+
+    // 调用实际服务看最终结果
+    $out[] = '=== 服务最终返回的成员列表 ===';
+    $svc = new \App\Services\MinecraftPlayerService();
+    $result = $svc->getAllPlayers();
+    $out[] = '总数: ' . $result['total'];
+    $out[] = '状态: ' . ($result['ok'] ? 'OK' : '失败 - ' . $result['message']);
+    foreach ($result['players'] as $p) {
+        $out[] = sprintf('  - %s (uuid=%s)', $p['name'], $p['uuid']);
+    }
+    $out[] = '';
+
+    // 找出重复的名字（大小写不敏感）
+    $out[] = '=== 名字重复检查（大小写不敏感）===';
+    $names = [];
+    foreach ($result['players'] as $p) {
+        $key = strtolower($p['name']);
+        $names[$key][] = ['name' => $p['name'], 'uuid' => $p['uuid']];
+    }
+    $hasDup = false;
+    foreach ($names as $key => $entries) {
+        if (count($entries) > 1) {
+            $hasDup = true;
+            $out[] = '名字 [' . $key . '] 出现 ' . count($entries) . ' 次:';
+            foreach ($entries as $e) {
+                $out[] = '  - ' . $e['name'] . ' (uuid=' . $e['uuid'] . ')';
+            }
+        }
+    }
+    if (! $hasDup) {
+        $out[] = '没有发现名字重复';
+    }
+
+    return response(implode("\n", $out), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+});
+
 // 临时：聊天功能诊断页（访问 /chat-test 即可查看详细测试结果）
 Route::get('/chat-test', function () {
     $steps = [];

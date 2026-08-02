@@ -30,7 +30,10 @@
     </div>
 
     <div class="card overflow-hidden">
-        <div id="chatBody" class="h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50" style="height:480px;overflow-y:auto;overflow-x:hidden;">
+        @php
+    $chatBgUrl = auth()->check() ? auth()->user()->getChatBgUrl() : '';
+@endphp
+    <div id="chatBody" class="h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50" style="height:480px;overflow-y:auto;overflow-x:hidden;@if($chatBgUrl) background-image: url('{{ $chatBgUrl }}'); background-size: cover; background-position: center; background-blend-mode: overlay; @endif">
             @if($messages->isEmpty())
                 <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
                     <div>

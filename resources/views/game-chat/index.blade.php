@@ -3,448 +3,402 @@
 @section('title', '游戏内聊天')
 
 @section('content')
-
-<div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#34d399,#059669);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">💬</div>
+<div class="space-y-4 sm:space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-            <div style="font-size:18px;font-weight:700;color:#0f172a;">MC 群聊</div>
-            <div style="font-size:12px;color:#64748b;">实时同步游戏内聊天</div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
+                <span class="mr-2">💬</span>游戏内聊天
+            </h1>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">实时查看 MC 服务器玩家聊天记录</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="chatStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-50 text-primary-700 border-primary-200">
+                <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
+                实时刷新中
+            </span>
+            @auth
+                @if(auth()->user()->isAdmin())
+                    <button type="button" id="syncLogBtn" class="btn-secondary no-disable text-xs sm:text-sm">
+                        📜 同步游戏日志
+                    </button>
+                    <button type="button" id="demoMsgBtn" class="btn-secondary no-disable text-xs sm:text-sm">
+                        🧪 插入一条测试消息
+                    </button>
+                @endif
+            @endauth
         </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-        <span id="statusText" style="font-size:12px;padding:2px 10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">
-            ● 在线
-        </span>
-        @auth
-            @if(auth()->user()->isAdmin())
-                <button type="button" onclick="syncLogClick()" style="font-size:12px;padding:6px 12px;background:#fff;color:#334155;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">📜 同步</button>
-                <button type="button" onclick="demoMsgClick()" style="font-size:12px;padding:6px 12px;background:#fff;color:#334155;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">🧪 测试</button>
+
+    <div class="card overflow-hidden">
+        <div id="chatBody" class="h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50" style="height:480px;overflow-y:auto;overflow-x:hidden;">
+            @if($messages->isEmpty())
+                <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
+                    <div>
+                        <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        暂无聊天记录
+                        <p class="mt-1 text-xs text-slate-400">有玩家在游戏内聊天时会自动显示在这里</p>
+                    </div>
+                </div>
             @endif
-        @endauth
+            @foreach($messages as $m)
+                <div class="chat-row flex items-start px-2 py-1 rounded hover:bg-slate-100 transition" data-id="{{ $m->id }}">
+                    <span class="text-primary-600 font-medium flex-shrink-0 px-1">{{ $m->player_name }}</span>
+                    <span class="text-slate-400 flex-shrink-0 mr-1">:</span>
+                    <span class="text-slate-700 break-words flex-1 leading-relaxed">{{ $m->message }}</span>
+                </div>
+            @endforeach
+        </div>
+        <div class="border-t border-slate-200 px-3 py-2 flex items-center justify-between bg-white">
+            <div class="text-xs text-slate-500">
+                共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · 每 <span class="text-primary-600">5 秒</span> 自动刷新
+            </div>
+            <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
+                ↓ 滚动到底部
+            </button>
+        </div>
     </div>
-</div>
 
-{{-- 聊天主容器：卡片 --}}
-<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    @auth
+        <div class="card p-3 sm:p-4">
+            <form id="sendForm" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
+                <textarea
+                    id="sendInput"
+                    name="message"
+                    maxlength="200"
+                    rows="1"
+                    autocomplete="off"
+                    placeholder="向游戏内发送消息（以你的用户名牢高 [网站] 显示）..."
+                    class="input flex-1 px-3 py-2 text-sm resize-none"
+                ></textarea>
+                <button
+                    type="submit"
+                    id="sendBtn"
+                    class="btn-primary text-sm whitespace-nowrap"
+                >
+                    发送到游戏
+                </button>
+            </form>
+            <p id="sendHint" class="text-xs text-slate-500 mt-2">提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。</p>
+        </div>
+    @endauth
 
-    {{-- 消息区域：固定高度，明确是滚动容器 --}}
-    <div id="chatBody" style="height:calc(100vh - 280px);min-height:300px;max-height:calc(100vh - 280px);overflow-y:auto;overflow-x:hidden;padding:16px;background:#f8fafc;-webkit-overflow-scrolling:touch;">
-
-        @if($messages->isEmpty())
-            <div id="emptyTip" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:#94a3b8;font-size:14px;">
-                <div>
-                    <p style="font-weight:600;color:#64748b;margin-bottom:4px;">还没有聊天消息</p>
-                    <p style="font-size:12px;">玩家在游戏内说话或你在下方发消息就会出现在这里</p>
+    @auth
+        @if(auth()->user()->isAdmin())
+            <div class="card p-3 sm:p-4 text-xs sm:text-sm text-slate-600">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="font-medium text-slate-900">🛠️ 管理员工具</p>
+                    <button type="button" id="toggleLogPreview" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
+                        ▶ 查看日志解析情况
+                    </button>
+                </div>
+                <div id="logPreviewWrap" class="hidden mt-3 border-t border-slate-200 pt-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button type="button" id="loadLogPreview" class="btn-secondary no-disable text-xs">
+                            读取最近 30 行日志
+                        </button>
+                        <span id="logPreviewMeta" class="text-xs text-slate-500"></span>
+                    </div>
+                    <div id="logPreviewBody" class="card bg-slate-50 font-mono text-xs space-y-1 max-h-72 overflow-y-auto p-2">
+                        <div class="text-slate-400">点击上方按钮加载日志...</div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">
+                        <span class="inline-block w-2 h-2 bg-primary-500 rounded-full"></span> 绿色 = 识别为聊天消息　
+                        <span class="inline-block w-2 h-2 bg-slate-400 rounded-full ml-2"></span> 灰色 = 系统消息（会被跳过）
+                    </p>
                 </div>
             </div>
         @endif
-
-        @foreach($messages as $m)
-            @php
-                $isSelf = auth()->check() && $m->player_name === auth()->user()->name;
-            @endphp
-            <div id="msg-{{ $m->id }}" style="display:flex;flex-direction:column;margin-bottom:12px;{{ $isSelf ? 'align-items:flex-end;' : '' }}">
-                <div style="font-size:11px;color:#94a3b8;margin:0 4px 4px;font-weight:500;{{ $isSelf ? 'text-align:right;' : '' }}">{{ $m->player_name }}</div>
-                <div style="max-width:80%;padding:9px 13px;border-radius:14px;word-break:break-word;line-height:1.55;font-size:14px;
-                    {{ $isSelf
-                        ? 'background:#10b981;color:#fff;border-top-right-radius:4px;'
-                        : 'background:#fff;color:#1e293b;border:1px solid #e8edf3;border-top-left-radius:4px;'
-                    }}">{{ $m->message }}</div>
-            </div>
-        @endforeach
-    </div>
-
-    {{-- 发送区 --}}
-    @auth
-        <div style="border-top:1px solid #e2e8f0;padding:12px 16px;background:#fff;">
-            <div style="display:flex;gap:8px;align-items:flex-end;">
-                <textarea
-                    id="sendInput"
-                    maxlength="200"
-                    rows="1"
-                    placeholder="发送消息到游戏内..."
-                    onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();sendClick();return false;}"
-                    oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';"
-                    style="flex:1;min-height:44px;max-height:100px;padding:10px 14px;font-size:14px;border:1px solid #e2e8f0;border-radius:10px;resize:none;outline:none;font-family:inherit;line-height:1.5;"
-                ></textarea>
-                <button type="button" onclick="sendClick()" id="sendBtn" style="flex-shrink:0;background:#10b981;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;min-height:44px;">发送</button>
-            </div>
-            <p id="sendHint" style="font-size:12px;color:#64748b;margin:6px 2px 0;">以 {{ auth()->user()->name }} 的名义发送给游戏内所有在线玩家</p>
-        </div>
-    @else
-        <div style="border-top:1px solid #e2e8f0;padding:16px;text-align:center;font-size:14px;color:#64748b;background:#fff;">
-            <a href="{{ route('login') }}" style="color:#059669;font-weight:600;">登录</a> 后可向游戏内发送消息
-        </div>
     @endauth
 </div>
 
-@auth
-    @if(auth()->user()->isAdmin())
-        <div style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;font-size:13px;color:#475569;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <p style="font-weight:600;color:#0f172a;margin:0;">🛠️ 管理员工具</p>
-                <button type="button" onclick="toggleLogPanel()" style="font-size:12px;color:#059669;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;" id="toggleLogBtn">▶ 查看日志解析情况</button>
-            </div>
-            <div id="logWrap" style="display:none;margin-top:12px;border-top:1px solid #e2e8f0;padding-top:12px;">
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <button type="button" onclick="loadLogClick()" id="loadLogBtn" style="font-size:12px;padding:6px 12px;background:#fff;color:#334155;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">读取最近 30 行日志</button>
-                    <span id="logMeta" style="font-size:12px;color:#64748b;"></span>
-                </div>
-                <div id="logBody" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-family:monospace;font-size:12px;padding:8px;max-height:280px;overflow-y:auto;">
-                    <div style="color:#94a3b8;">点击上方按钮加载日志...</div>
-                </div>
-            </div>
-        </div>
-    @endif
-@endauth
-
 <script>
-/* ============================================================
-   游戏聊天 JS - 最简可靠实现
-   - 所有按钮直接 onclick 属性绑定
-   - 不用 form submit，完全绕开全局表单监听器
-   - 不用外部文件，直接内联
-   - 所有请求路径硬编码，避免 route() 缓存问题
-   ============================================================ */
+(function() {
+    const chatBody = document.getElementById('chatBody');
+    const emptyTip = document.getElementById('emptyTip');
+    const msgCountEl = document.getElementById('msgCount');
+    const statusEl = document.getElementById('chatStatus');
+    const scrollBtn = document.getElementById('scrollBottomBtn');
+    const demoBtn = document.getElementById('demoMsgBtn');
+    const syncBtn = document.getElementById('syncLogBtn');
+    const sendForm = document.getElementById('sendForm');
+    const sendInput = document.getElementById('sendInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendHint = document.getElementById('sendHint');
+    let lastId = {{ $messages->last()?->id ?? 0 }};
+    let totalCount = {{ $messages->count() }};
+    let autoScroll = true;
+    let refreshTimer = null;
 
-// 全局配置（硬编码路径，避免路由缓存影响）
-var _FETCH_URL = '/game-chat/fetch';
-var _SEND_URL  = '/game-chat/send';
-var _DEMO_URL  = '/game-chat/demo';
-var _SYNC_URL  = '/chat-sync';
-var _LOG_URL   = '/chat-log-preview';
-var _CSRF      = '{{ csrf_token() }}';
-var _ME        = {{ auth()->check() ? json_encode(auth()->user()->name) : 'null' }};
-var _LAST_ID   = {{ $messages->last()?->id ?? 0 }};
-
-// 防重复渲染的消息 ID 集合
-var _MSG_IDS = {};
-@foreach($messages as $m)
-    _MSG_IDS[{{ $m->id }}] = true;
-@endforeach
-
-// 安全 HTML 转义
-function _esc(s) {
-    var d = document.createElement('div');
-    d.textContent = s == null ? '' : String(s);
-    return d.innerHTML;
-}
-
-// 滚动到底部
-function _scrollBottom() {
-    var el = document.getElementById('chatBody');
-    if (!el) return;
-    try {
-        el.scrollTop = el.scrollHeight;
-    } catch(e) {}
-}
-
-// 判断是否在底部附近
-function _isAtBottom() {
-    var el = document.getElementById('chatBody');
-    if (!el) return true;
-    return (el.scrollHeight - el.clientHeight - el.scrollTop) < 80;
-}
-
-// 设置状态栏
-function _setStatus(text, type) {
-    var el = document.getElementById('statusText');
-    if (!el) return;
-    var cfg = {
-        green:  ['#ecfdf5', '#047857', '#a7f3d0'],
-        yellow: ['#fffbeb', '#b45309', '#fde68a'],
-        red:    ['#fef2f2', '#b91c1c', '#fecaca']
-    };
-    var c = cfg[type] || cfg.green;
-    el.style.background = c[0];
-    el.style.color = c[1];
-    el.style.borderColor = c[2];
-    el.textContent = text;
-}
-
-// 添加一条消息到页面
-function _addMsg(m) {
-    if (!m) return;
-    if (m.id && _MSG_IDS[m.id]) return; // 去重
-    if (m.id) _MSG_IDS[m.id] = true;
-
-    // 隐藏空提示
-    var tip = document.getElementById('emptyTip');
-    if (tip) tip.style.display = 'none';
-
-    var body = document.getElementById('chatBody');
-    if (!body) return;
-
-    var isSelf = _ME && m.player_name === _ME;
-    var wrap = document.createElement('div');
-    wrap.id = m.id ? ('msg-' + m.id) : '';
-    wrap.style.display = 'flex';
-    wrap.style.flexDirection = 'column';
-    wrap.style.marginBottom = '12px';
-    if (isSelf) wrap.style.alignItems = 'flex-end';
-
-    var nameDiv = document.createElement('div');
-    nameDiv.style.fontSize = '11px';
-    nameDiv.style.color = '#94a3b8';
-    nameDiv.style.margin = '0 4px 4px';
-    nameDiv.style.fontWeight = '500';
-    if (isSelf) nameDiv.style.textAlign = 'right';
-    nameDiv.textContent = m.player_name;
-
-    var bubble = document.createElement('div');
-    bubble.style.maxWidth = '80%';
-    bubble.style.padding = '9px 13px';
-    bubble.style.borderRadius = '14px';
-    bubble.style.wordBreak = 'break-word';
-    bubble.style.lineHeight = '1.55';
-    bubble.style.fontSize = '14px';
-    if (isSelf) {
-        bubble.style.background = '#10b981';
-        bubble.style.color = '#fff';
-        bubble.style.borderTopRightRadius = '4px';
-    } else {
-        bubble.style.background = '#fff';
-        bubble.style.color = '#1e293b';
-        bubble.style.border = '1px solid #e8edf3';
-        bubble.style.borderTopLeftRadius = '4px';
-    }
-    bubble.textContent = m.message;
-
-    wrap.appendChild(nameDiv);
-    wrap.appendChild(bubble);
-    body.appendChild(wrap);
-}
-
-// 容错 JSON 解析
-function _jsonOrError(res) {
-    return res.text().then(function(t) {
-        try { return JSON.parse(t); }
-        catch(e) { return { ok:false, message:'服务器返回异常：' + t.substring(0,100) }; }
+    chatBody.addEventListener('scroll', function() {
+        const bottom = chatBody.scrollHeight - chatBody.clientHeight - chatBody.scrollTop;
+        autoScroll = bottom < 60;
     });
-}
+    function scrollToBottom(smooth) {
+        chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    }
+    scrollBtn.addEventListener('click', function() { scrollToBottom(true); });
 
-// ============ 拉取新消息 ============
-function _fetch() {
-    fetch(_FETCH_URL + '?after_id=' + _LAST_ID + '&_=' + Date.now(), { credentials: 'same-origin' })
-        .then(_jsonOrError)
-        .then(function(d) {
-            if (!d || !d.ok) {
-                _setStatus('● ' + (d.message || '数据异常'), 'yellow');
-                return;
+    function setStatus(text, color) {
+        const colorMap = {
+            green: 'bg-primary-50 text-primary-700 border-primary-200',
+            yellow: 'bg-amber-50 text-amber-700 border-amber-200',
+            red: 'bg-red-50 text-red-700 border-red-200',
+        };
+        statusEl.className = 'badge text-xs sm:text-sm px-2.5 py-1 border ' + (colorMap[color] || colorMap.green);
+        statusEl.innerHTML = text;
+    }
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    function appendMessage(m) {
+        if (emptyTip) emptyTip.remove();
+        // 用 ID 去重，避免同一条消息被重复添加
+        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
+            return;
+        }
+        const row = document.createElement('div');
+        row.className = 'chat-row flex items-start px-2 py-1 rounded hover:bg-slate-100 transition';
+        row.dataset.id = m.id;
+        row.innerHTML =
+            '<span class="text-primary-600 font-medium flex-shrink-0 px-1">' + escapeHtml(m.player_name) + '</span>' +
+            '<span class="text-slate-400 flex-shrink-0 mr-1">:</span>' +
+            '<span class="text-slate-700 break-words flex-1 leading-relaxed">' + escapeHtml(m.message) + '</span>';
+        chatBody.appendChild(row);
+        totalCount++;
+        msgCountEl.textContent = totalCount;
+        if (autoScroll) scrollToBottom(false);
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    async function fetchMessages() {
+        try {
+            setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1 animate-pulse"></span> 刷新中...', 'yellow');
+            const res = await fetch('{{ route("game-chat.fetch") }}?after_id=' + lastId, { credentials: 'same-origin' });
+            const data = await res.json();
+            if (data && data.ok) {
+                (data.messages || []).forEach(appendMessage);
+                if (data.last_id > lastId) lastId = data.last_id;
+                setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 实时刷新中', 'green');
+            } else {
+                setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1"></span> 数据异常', 'yellow');
             }
-            var wasBottom = _isAtBottom();
-            if (d.messages && d.messages.length > 0) {
-                d.messages.forEach(function(m) {
-                    _addMsg(m);
-                    if (m.id > _LAST_ID) _LAST_ID = m.id;
+        } catch (e) {
+            setStatus('<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span> 刷新失败，稍后重试', 'red');
+        }
+    }
+
+    if (demoBtn) {
+        demoBtn.addEventListener('click', async function() {
+            try {
+                demoBtn.disabled = true;
+                demoBtn.textContent = '发送中...';
+                const res = await fetch('{{ route("game-chat.demo") }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: '{}',
                 });
-            }
-            _setStatus('● 在线', 'green');
-            if (wasBottom) _scrollBottom();
-        })
-        .catch(function() { _setStatus('● 刷新失败', 'red'); });
-}
-
-// ============ 发送消息 ============
-var _sending = false;
-function sendClick() {
-    if (_sending) return;
-    var input = document.getElementById('sendInput');
-    var btn = document.getElementById('sendBtn');
-    var hint = document.getElementById('sendHint');
-    if (!input || !btn) return;
-    var msg = input.value.trim();
-    if (!msg) return;
-
-    _sending = true;
-    btn.disabled = true;
-    btn.textContent = '发送中';
-    if (hint) { hint.textContent = '正在发送到游戏内玩家...'; hint.style.color = '#b45309'; }
-
-    var fd = new FormData();
-    fd.append('message', msg);
-
-    fetch(_SEND_URL, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': _CSRF, 'Accept': 'application/json' },
-        credentials: 'same-origin',
-        body: fd
-    })
-    .then(_jsonOrError)
-    .then(function(d) {
-        if (d && d.ok) {
-            // 显示自己发的消息
-            if (d.record) _addMsg(d.record);
-            input.value = '';
-            input.style.height = 'auto';
-            if (hint) { hint.textContent = '✓ 已发送到游戏'; hint.style.color = '#059669'; }
-            // 强制滚到底
-            _scrollBottom();
-            setTimeout(_scrollBottom, 50);
-            setTimeout(_scrollBottom, 200);
-            // 3秒后恢复提示
-            setTimeout(function() {
-                if (hint) { hint.textContent = '以 ' + _ME + ' 的名义发送给游戏内所有在线玩家'; hint.style.color = '#64748b'; }
-            }, 3000);
-        } else {
-            var err = (d && d.message) ? d.message : '发送失败';
-            if (d && d.errors && d.errors.message) err = d.errors.message[0];
-            if (hint) { hint.textContent = '✗ ' + err; hint.style.color = '#dc2626'; }
-        }
-    })
-    .catch(function(e) {
-        if (hint) { hint.textContent = '✗ 网络错误：' + (e.message || e); hint.style.color = '#dc2626'; }
-    })
-    .finally(function() {
-        _sending = false;
-        btn.disabled = false;
-        btn.textContent = '发送';
-        try { input.focus(); } catch(e) {}
-    });
-}
-
-// ============ 测试消息按钮 ============
-function demoMsgClick() {
-    var btn = event.target;
-    btn.disabled = true;
-    btn.textContent = '发送中...';
-    fetch(_DEMO_URL, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': _CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: '{}'
-    })
-    .then(_jsonOrError)
-    .then(function(d) {
-        if (d && d.ok && d.message) {
-            _addMsg(d.message);
-            _scrollBottom();
-        }
-    })
-    .catch(function(){})
-    .finally(function() {
-        btn.disabled = false;
-        btn.textContent = '🧪 测试';
-    });
-}
-
-// ============ 同步日志按钮 ============
-function syncLogClick() {
-    var btn = event.target;
-    btn.disabled = true;
-    btn.textContent = '同步中...';
-    fetch(_SYNC_URL, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': _CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: '{}'
-    })
-    .then(_jsonOrError)
-    .then(function(d) {
-        btn.disabled = false;
-        btn.textContent = '📜 同步';
-        if (d && d.ok) {
-            _fetch(); // 同步后立即拉一次
-            _setStatus('● ' + (d.inserted > 0 ? '新增 ' + d.inserted + ' 条' : '已同步'), 'green');
-        } else {
-            _setStatus('● ' + (d.message || '同步失败'), 'red');
-        }
-    })
-    .catch(function() {
-        btn.disabled = false;
-        btn.textContent = '📜 同步';
-        _setStatus('● 同步异常', 'red');
-    });
-}
-
-// ============ 日志面板 ============
-function toggleLogPanel() {
-    var wrap = document.getElementById('logWrap');
-    var btn = document.getElementById('toggleLogBtn');
-    if (!wrap) return;
-    var show = wrap.style.display === 'none';
-    wrap.style.display = show ? 'block' : 'none';
-    btn.textContent = show ? '▼ 收起日志预览' : '▶ 查看日志解析情况';
-    if (show) {
-        var body = document.getElementById('logBody');
-        if (body && body.children.length <= 1) loadLogClick();
-    }
-}
-
-function loadLogClick() {
-    var btn = document.getElementById('loadLogBtn');
-    var body = document.getElementById('logBody');
-    if (!body) return;
-    if (btn) { btn.disabled = true; btn.textContent = '读取中...'; }
-    body.innerHTML = '<div style="color:#b45309;">读取中...</div>';
-    fetch(_LOG_URL + '?_=' + Date.now(), { credentials: 'same-origin' })
-        .then(_jsonOrError)
-        .then(function(d) {
-            if (btn) { btn.disabled = false; btn.textContent = '读取最近 30 行日志'; }
-            if (!d || !d.ok) {
-                body.innerHTML = '<div style="color:#dc2626;">错误：' + _esc(d.error || '未知') + '</div>';
-                return;
-            }
-            var meta = document.getElementById('logMeta');
-            if (meta) meta.textContent = '路径：' + d.log_path;
-            var rows = d.rows || [];
-            if (!rows.length) {
-                body.innerHTML = '<div style="color:#64748b;">日志为空</div>';
-                return;
-            }
-            var cnt = 0;
-            var html = '';
-            for (var i = 0; i < rows.length; i++) {
-                var r = rows[i];
-                if (r.is_chat) cnt++;
-                var dotC = r.is_chat ? '#10b981' : '#94a3b8';
-                var txtC = r.is_chat ? '#047857' : '#64748b';
-                var parsed = '';
-                if (r.is_chat && r.parsed) {
-                    parsed = '<span style="color:#059669;margin-left:8px;">→ [' + _esc(r.parsed.player) + '] ' + _esc(r.parsed.message) + '</span>';
-                }
-                html += '<div style="color:' + txtC + ';display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;">' +
-                        '<span style="display:inline-block;width:8px;height:8px;margin-top:6px;border-radius:50%;flex-shrink:0;background:' + dotC + ';"></span>' +
-                        '<div style="flex:1;"><span style="word-break:break-all;">' + _esc(r.raw) + '</span>' + parsed + '</div></div>';
-            }
-            body.innerHTML = html;
-            if (meta) meta.textContent = '路径：' + d.log_path + '　|　共 ' + rows.length + ' 行，' + cnt + ' 行聊天';
-        })
-        .catch(function(e) {
-            if (btn) { btn.disabled = false; btn.textContent = '读取最近 30 行日志'; }
-            body.innerHTML = '<div style="color:#dc2626;">读取失败：' + _esc(e.message || e) + '</div>';
+                const data = await res.json();
+                if (data && data.ok) appendMessage(data.message);
+                demoBtn.disabled = false;
+                demoBtn.textContent = '🧪 插入一条测试消息';
+            } catch(e) { demoBtn.disabled = false; demoBtn.textContent = '🧪 插入一条测试消息'; }
         });
-}
+    }
 
-// ============ 初始化：滚动到底 + 启动定时器 ============
-// 立即滚 + 延迟滚，确保 DOM/字体 等加载完后一定到最底
-_scrollBottom();
-setTimeout(_scrollBottom, 50);
-setTimeout(_scrollBottom, 100);
-setTimeout(_scrollBottom, 200);
-setTimeout(_scrollBottom, 500);
-setTimeout(_scrollBottom, 1000);
-setTimeout(_scrollBottom, 1500);
-if (document.readyState === 'complete') {
-    _scrollBottom();
-} else {
-    window.addEventListener('load', function() {
-        _scrollBottom();
-        setTimeout(_scrollBottom, 200);
-        setTimeout(_scrollBottom, 800);
-    });
-}
+    if (syncBtn) {
+        syncBtn.addEventListener('click', async function() {
+            try {
+                syncBtn.disabled = true;
+                syncBtn.textContent = '同步中...';
+                const res = await fetch('{{ route("chat-sync") }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: '{}',
+                });
+                const data = await res.json();
+                syncBtn.disabled = false;
+                syncBtn.textContent = '📜 同步游戏日志';
+                if (data && data.ok) {
+                    // 同步成功后立即拉一次新消息
+                    await fetchMessages();
+                    if (data.inserted > 0) {
+                        setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 同步成功，新增 ' + data.inserted + ' 条', 'green');
+                    } else {
+                        setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 已同步，暂无新消息', 'green');
+                    }
+                } else {
+                    setStatus('<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span> ' + (data.message || '同步失败'), 'red');
+                }
+            } catch(e) {
+                syncBtn.disabled = false;
+                syncBtn.textContent = '📜 同步游戏日志';
+                setStatus('<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span> 同步异常', 'red');
+            }
+        });
+    }
 
-// 轮询：拉消息 3秒 / 同步日志 10秒
-setInterval(_fetch, 3000);
-setInterval(function() {
-    fetch(_SYNC_URL, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': _CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: '{}'
-    }).catch(function(){});
-}, 10000);
+    // === 发消息到游戏 ===
+    if (sendForm) {
+        let sending = false;
+        sendForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            // 防止重复发送（按钮已禁用或正在发送中）
+            if (sending) return;
+            const msg = sendInput.value.trim();
+            if (!msg) return;
+
+            sending = true;
+            sendBtn.disabled = true;
+            sendBtn.textContent = '发送中...';
+            sendHint.textContent = '正在发送到游戏内玩家...';
+            sendHint.className = 'text-xs text-amber-600 mt-2';
+
+            try {
+                const formData = new FormData();
+                formData.append('message', msg);
+                const res = await fetch('{{ route("game-chat.send") }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    body: formData,
+                });
+                const data = await res.json();
+
+                if (data && data.ok) {
+                    // 把自己发的消息直接加到列表（appendMessage 内部有 ID 去重）
+                    if (data.record) appendMessage(data.record);
+                    sendInput.value = '';
+                    sendHint.textContent = '✓ 已发送到游戏';
+                    sendHint.className = 'text-xs text-primary-600 mt-2';
+                    // 强制滚到底部
+                    autoScroll = true;
+                    scrollToBottom(false);
+                    setTimeout(function() { scrollToBottom(false); }, 50);
+                    setTimeout(function() { scrollToBottom(false); }, 200);
+                    setTimeout(function() { scrollToBottom(false); }, 500);
+                    setTimeout(() => {
+                        sendHint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
+                        sendHint.className = 'text-xs text-slate-500 mt-2';
+                    }, 3000);
+                } else {
+                    let errMsg = (data && data.message) ? data.message : '发送失败';
+                    if (data && data.errors && data.errors.message) {
+                        errMsg = data.errors.message[0];
+                    }
+                    sendHint.textContent = '✗ ' + errMsg;
+                    sendHint.className = 'text-xs text-red-600 mt-2';
+                }
+            } catch(e) {
+                sendHint.textContent = '✗ 网络错误：' + e.message;
+                sendHint.className = 'text-xs text-red-600 mt-2';
+            } finally {
+                sending = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送到游戏';
+                // 不 disable sendInput，直接 focus
+                try { sendInput.focus(); } catch(e) {}
+            }
+        });
+    }
+
+    // === 日志预览面板 ===
+    const toggleBtn = document.getElementById('toggleLogPreview');
+    const logWrap = document.getElementById('logPreviewWrap');
+    const loadBtn = document.getElementById('loadLogPreview');
+    const logBody = document.getElementById('logPreviewBody');
+    const logMeta = document.getElementById('logPreviewMeta');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            logWrap.classList.toggle('hidden');
+            toggleBtn.textContent = logWrap.classList.contains('hidden') ? '▶ 查看日志解析情况' : '▼ 收起日志预览';
+            if (!logWrap.classList.contains('hidden') && logBody.children.length <= 1) {
+                loadLogPreview();
+            }
+        });
+    }
+
+    if (loadBtn) {
+        loadBtn.addEventListener('click', loadLogPreview);
+    }
+
+    async function loadLogPreview() {
+        logBody.innerHTML = '<div class="text-amber-600">读取中...</div>';
+        loadBtn.disabled = true;
+        try {
+            const res = await fetch('{{ route("chat-log-preview") }}', { credentials: 'same-origin' });
+            const data = await res.json();
+            loadBtn.disabled = false;
+            if (!data.ok) {
+                logBody.innerHTML = '<div class="text-red-600">错误：' + escapeHtml(data.error || '未知') + '</div>';
+                return;
+            }
+            logMeta.textContent = '路径：' + data.log_path;
+            const rows = data.rows || [];
+            if (rows.length === 0) {
+                logBody.innerHTML = '<div class="text-slate-500">日志为空</div>';
+                return;
+            }
+            let chatCount = 0;
+            logBody.innerHTML = '';
+            rows.forEach(function(r) {
+                const div = document.createElement('div');
+                const isChat = r.is_chat;
+                if (isChat) chatCount++;
+                div.className = 'flex items-start gap-2 ' + (isChat ? 'text-primary-700' : 'text-slate-500');
+                const dot = '<span class="inline-block w-2 h-2 mt-1.5 rounded-full ' + (isChat ? 'bg-primary-500' : 'bg-slate-400') + ' flex-shrink-0"></span>';
+                const text = '<span class="break-all">' + escapeHtml(r.raw) + '</span>';
+                let parsed = '';
+                if (isChat && r.parsed) {
+                    parsed = '<span class="text-primary-600 ml-2">→ [' + escapeHtml(r.parsed.player) + '] ' + escapeHtml(r.parsed.message) + '</span>';
+                }
+                div.innerHTML = dot + '<div class="flex-1">' + text + parsed + '</div>';
+                logBody.appendChild(div);
+            });
+            logMeta.textContent = '路径：' + data.log_path + '　|　共 ' + rows.length + ' 行，其中 ' + chatCount + ' 行被识别为聊天';
+        } catch(e) {
+            loadBtn.disabled = false;
+            logBody.innerHTML = '<div class="text-red-600">读取失败：' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    // 初始滚动到底部（多次延迟确保生效）
+    scrollToBottom(false);
+    setTimeout(function() { scrollToBottom(false); }, 50);
+    setTimeout(function() { scrollToBottom(false); }, 100);
+    setTimeout(function() { scrollToBottom(false); }, 200);
+    setTimeout(function() { scrollToBottom(false); }, 500);
+    setTimeout(function() { scrollToBottom(false); }, 1000);
+    setTimeout(function() { scrollToBottom(false); }, 1500);
+    if (document.readyState === 'complete') {
+        scrollToBottom(false);
+    } else {
+        window.addEventListener('load', function() {
+            scrollToBottom(false);
+            setTimeout(function() { scrollToBottom(false); }, 300);
+            setTimeout(function() { scrollToBottom(false); }, 800);
+        });
+    }
+    // 启动定时刷新（只拉数据，不读日志，速度快）
+    refreshTimer = setInterval(fetchMessages, 5000);
+    // 单独定时同步 MC 日志（10 秒一次，与拉数据分开，避免阻塞发送）
+    setInterval(function() {
+        fetch('{{ route("chat-sync") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: '{}',
+        }).catch(function(){});
+    }, 10000);
+})();
 </script>
 @endsection

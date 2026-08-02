@@ -342,6 +342,8 @@
         });
 
         document.querySelectorAll('form').forEach(function(form) {
+            // 跳过 AJAX 表单（聊天等使用 fetch 提交的表单）
+            if (form.hasAttribute('data-no-autodisable')) return;
             form.addEventListener('submit', function() {
                 const btns = form.querySelectorAll('button[type="submit"]');
                 btns.forEach(function(btn) {

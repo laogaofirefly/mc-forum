@@ -169,7 +169,7 @@
 
     @auth
         <div id="chatFooter">
-            <form id="sendForm" autocomplete="off">
+            <form id="sendForm" autocomplete="off" data-no-autodisable>
                 <div class="send-row">
                     <textarea
                         id="sendInput"
@@ -178,7 +178,7 @@
                         rows="1"
                         placeholder="发送消息到游戏内..."
                     ></textarea>
-                    <button type="submit" id="sendBtn" class="send-btn">发送</button>
+                    <button type="submit" id="sendBtn" class="send-btn no-disable">发送</button>
                 </div>
                 <p id="sendHint" style="font-size:12px;color:#64748b;margin:6px 2px 0;">以 {{ auth()->user()->name }} 的名义发送给游戏内所有在线玩家</p>
             </form>

@@ -41,13 +41,11 @@
                         @foreach($serverStatus->players_json as $player)
                             @php
                                 $playerName = isset($player['name']) ? preg_replace('/§./', '', $player['name']) : '未知';
-                                $colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
-                                $colorIndex = ord(strtoupper(substr($playerName, 0, 1))) % count($colors);
+                                $playerUuid = $player['id'] ?? ($player['uuid'] ?? '');
+                                $avatarUrl = \App\Services\PlayerAvatarService::url($playerName, $playerUuid);
                             @endphp
                             <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg pl-1 pr-2 py-1">
-                                <span class="w-6 h-6 rounded-md {{ $colors[$colorIndex] }} mr-1.5 flex items-center justify-center text-xs font-bold text-white">
-                                    {{ strtoupper(substr($playerName, 0, 1)) }}
-                                </span>
+                                <img src="{{ $avatarUrl }}" alt="{{ $playerName }}" class="w-6 h-6 rounded-md mr-1.5 object-cover bg-white flex-shrink-0" loading="lazy">
                                 <span class="text-slate-700 text-sm">{{ $playerName }}</span>
                             </div>
                         @endforeach
@@ -86,14 +84,6 @@
 
 <script>
 (function() {
-    const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
-    function colorFor(name) {
-        if (!name) return colors[0];
-        const first = strtoupper(String(name).charAt(0));
-        const code = first.charCodeAt ? first.charCodeAt(0) : 0;
-        return colors[code % colors.length];
-    }
-    function strtoupper(s) { return s.toUpperCase ? s.toUpperCase() : s; }
     function escapeHtml(s) {
         const d = document.createElement('div');
         d.textContent = s == null ? '' : String(s);
@@ -119,10 +109,9 @@
             const playersHtml = data.players_json && data.players_json.length
                 ? '<div class="flex flex-wrap gap-1.5">' + data.players_json.map(function(p) {
                     const name = (p.name || '未知').replace(/§./g, '');
-                    const cls = colorFor(name);
-                    const letter = strtoupper(name.charAt(0));
+                    const avatar = p.avatar || '';
                     return '<div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg pl-1 pr-2 py-1">' +
-                        '<span class="w-6 h-6 rounded-md ' + cls + ' mr-1.5 flex items-center justify-center text-xs font-bold text-white">' + escapeHtml(letter) + '</span>' +
+                        (avatar ? '<img src="' + escapeHtml(avatar) + '" alt="' + escapeHtml(name) + '" class="w-6 h-6 rounded-md mr-1.5 object-cover bg-white flex-shrink-0" loading="lazy">' : '') +
                         '<span class="text-slate-700 text-sm">' + escapeHtml(name) + '</span></div>';
                 }).join('') + '</div>'
                 : (data.players_online > 0

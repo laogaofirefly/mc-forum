@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PlayerAvatarService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -70,6 +71,7 @@ class User extends Authenticatable
             return 'https://crafatar.com/avatars/' . $this->mc_uuid . '?size=100&default=MHF_Steve';
         }
 
-        return 'https://crafatar.com/avatars/MHF_Steve?size=100';
+        // 兜底：未设置头像且未绑定 MC 账号，用名字首字母生成头像
+        return PlayerAvatarService::initialAvatar($this->name ?: 'U');
     }
 }

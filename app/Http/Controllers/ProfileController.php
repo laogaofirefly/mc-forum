@@ -84,18 +84,32 @@ class ProfileController extends Controller
             'mc_username' => ['required', 'string', 'max:16'],
         ]);
 
-        $uuid = $this->getMinecraftUuid($validated['mc_username']);
+        $mcUsername = $validated['mc_username'];
+        $uuid = $this->getMinecraftUuid($mcUsername);
 
-        if ($uuid) {
-            $user->mc_username = $validated['mc_username'];
-            $user->mc_uuid = $uuid;
-            $user->mc_verified = true;
-            $user->save();
-
-            return redirect()->route('profile.show', $user)->with('success', 'MC 账号绑定成功！');
+        if (! $uuid) {
+            return back()->withErrors(['mc_username' => '无法验证该 MC 用户名，请检查后重试。'])->withInput();
         }
 
-        return back()->withErrors(['mc_username' => '无法验证该 MC 用户名，请检查后重试。'])->withInput();
+        // 限制同一个 MC 账号不能绑定两个网站账号
+        // 通过用户名（大小写不敏感）或 UUID 判断是否已被其他账号绑定
+        $duplicate = User::where('id', '!=', $user->id)
+            ->where(function ($q) use ($mcUsername, $uuid) {
+                $q->whereRaw('LOWER(mc_username) = ?', [strtolower($mcUsername)])
+                  ->orWhere('mc_uuid', $uuid);
+            })
+            ->exists();
+
+        if ($duplicate) {
+            return back()->withErrors(['mc_username' => '该 MC 账号已被其他网站账号绑定，如需解绑请联系管理员。'])->withInput();
+        }
+
+        $user->mc_username = $mcUsername;
+        $user->mc_uuid = $uuid;
+        $user->mc_verified = true;
+        $user->save();
+
+        return redirect()->route('profile.show', $user)->with('success', 'MC 账号绑定成功！');
     }
 
     private function getMinecraftUuid(string $username): ?string

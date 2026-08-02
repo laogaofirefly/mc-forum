@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServerStatus;
+use App\Services\PlayerAvatarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,6 +28,9 @@ class ServerStatusController extends Controller
         $status = ServerStatus::getStatus($host, $port);
 
         if ($request->wantsJson() || $request->input('json') || $request->expectsJson()) {
+            // 给每个在线玩家补上头像 URL
+            $players = $this->enrichPlayersWithAvatar($status?->players_json ?? []);
+
             return response()->json([
                 'ok' => true,
                 'online' => $status?->is_online ?? false,
@@ -34,7 +38,7 @@ class ServerStatusController extends Controller
                 'players_max' => $status?->players_max ?? 0,
                 'motd' => $status?->motd,
                 'version' => $status?->version,
-                'players_json' => $status?->players_json ?? [],
+                'players_json' => $players,
                 'updated_at' => $status?->updated_at?->diffForHumans(),
                 'updated_at_ts' => $status?->updated_at?->timestamp,
             ]);
@@ -42,5 +46,22 @@ class ServerStatusController extends Controller
 
         // 兼容旧路由：返回服务器状态视图（首页通过 AppServiceProvider 直接注入即可）
         return response()->json(['ok' => true, 'data' => $status]);
+    }
+
+    /**
+     * 给在线玩家列表补上头像字段
+     * 优先级：绑定的网站账号头像 > MC 皮肤(crafatar) > 名字首字母
+     */
+    private function enrichPlayersWithAvatar(array $players): array
+    {
+        return array_map(function ($p) {
+            if (! is_array($p)) {
+                return $p;
+            }
+            $name = isset($p['name']) ? preg_replace('/§./', '', $p['name']) : '';
+            $uuid = $p['id'] ?? ($p['uuid'] ?? '');
+            $p['avatar'] = PlayerAvatarService::url($name, $uuid);
+            return $p;
+        }, $players);
     }
 }

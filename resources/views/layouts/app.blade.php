@@ -190,6 +190,12 @@
                         <a href="{{ route('login') }}" class="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg text-sm font-medium transition">登录</a>
                         <a href="{{ route('register') }}" class="btn-primary px-4 py-2 rounded-lg text-sm">注册</a>
                     @else
+                        <a href="{{ route('notifications.index') }}" class="relative text-slate-600 hover:text-primary-600 px-2 py-2 rounded-lg transition" title="消息通知" id="navNotifyBtn">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <span id="navNotifyDot" class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center hidden">0</span>
+                        </a>
                         <a href="{{ route('profile.show', auth()->user()) }}" class="flex items-center space-x-2 text-slate-700 hover:text-primary-600 transition">
                             <img src="{{ auth()->user()->getAvatarUrl() }}" alt="{{ auth()->user()->name }}" class="w-8 h-8 rounded-full ring-2 ring-slate-200">
                             <span class="text-sm font-medium">{{ auth()->user()->name }}</span>
@@ -215,6 +221,7 @@
                 <a href="{{ route('threads.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">📋 全部帖子</a>
                 <a href="{{ route('game-chat') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">💬 游戏聊天</a>
                 @auth
+                    <a href="{{ route('notifications.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🔔 消息通知 <span id="mobileNotifyCount" class="hidden ml-1 inline-block px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">0</span></a>
                     <a href="{{ route('threads.create') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">✏️ 发帖</a>
                     @if(auth()->check() && auth()->user()->isAdmin())
                         <a href="{{ route('admin.monitor') }}" class="block text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition">📊 服务器监控</a>
@@ -359,6 +366,38 @@
                 });
             });
         });
+
+        // 通知红点：定时拉取未读数
+        @auth
+        function updateNotifyDot() {
+            fetch('{{ route("notifications.unread") }}', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    var count = d.count || 0;
+                    var dot = document.getElementById('navNotifyDot');
+                    var mob = document.getElementById('mobileNotifyCount');
+                    if (dot) {
+                        if (count > 0) {
+                            dot.textContent = count > 99 ? '99+' : count;
+                            dot.classList.remove('hidden');
+                        } else {
+                            dot.classList.add('hidden');
+                        }
+                    }
+                    if (mob) {
+                        if (count > 0) {
+                            mob.textContent = count > 99 ? '99+' : count;
+                            mob.classList.remove('hidden');
+                        } else {
+                            mob.classList.add('hidden');
+                        }
+                    }
+                })
+                .catch(function() {});
+        }
+        updateNotifyDot();
+        setInterval(updateNotifyDot, 30000);  // 30秒检查一次
+        @endauth
     </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GameChatController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplyController;
 use App\Http\Controllers\ServerStatusController;
@@ -42,6 +43,10 @@ Route::post('/threads/{thread:slug}/replies', [ReplyController::class, 'store'])
 Route::get('/replies/{reply}/edit', [ReplyController::class, 'edit'])->name('replies.edit')->middleware('auth');
 Route::put('/replies/{reply}', [ReplyController::class, 'update'])->name('replies.update')->middleware('auth');
 Route::delete('/replies/{reply}', [ReplyController::class, 'destroy'])->name('replies.destroy')->middleware('auth');
+
+// 通知中心
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index')->middleware('auth');
+Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread')->middleware('auth');
 
 Route::get('/game-chat', [GameChatController::class, 'index'])->name('game-chat');
 Route::get('/game-chat/fetch', [GameChatController::class, 'fetch'])->name('game-chat.fetch');

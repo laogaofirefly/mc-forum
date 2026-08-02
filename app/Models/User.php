@@ -67,11 +67,7 @@ class User extends Authenticatable
             return $this->avatar;
         }
 
-        if ($this->mc_uuid) {
-            return 'https://crafatar.com/avatars/' . $this->mc_uuid . '?size=100&default=MHF_Steve';
-        }
-
-        // 兜底：未设置头像且未绑定 MC 账号，用名字首字母生成头像
+        // 未上传自定义头像，无论是否绑定 MC 账号，都用名字首字母
         return PlayerAvatarService::initialAvatar($this->name ?: 'U');
     }
 }

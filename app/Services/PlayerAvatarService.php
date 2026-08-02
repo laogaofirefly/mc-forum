@@ -8,10 +8,10 @@ use App\Models\User;
  * 玩家头像服务
  *
  * 统一头像获取逻辑，优先级：
- *   1. 绑定了网站账号 → 使用网站账号头像（自定义上传 / MC 皮肤）
- *   2. 有 UUID → 使用 crafatar 获取 MC 皮肤头像
- *   3. 兜底 → 用名字首字母生成 SVG 头像
+ *   1. 绑定了网站账号且该账号上传了自定义头像 → 使用网站账号头像
+ *   2. 兜底 → 用名字首字母生成 SVG 头像
  *
+ * 注意：不再使用 crafatar 的 MC 皮肤头像，未上传自定义头像一律用首字母。
  * 已绑定的网站账号映射会在单次请求内缓存，避免重复查询。
  */
 class PlayerAvatarService
@@ -33,20 +33,14 @@ class PlayerAvatarService
     public static function url(?string $name, ?string $uuid = null): string
     {
         $name = trim((string) $name);
-        $uuid = trim((string) $uuid);
 
-        // 1. 绑定了网站账号？
+        // 1. 绑定了网站账号且上传了自定义头像 → 使用网站账号头像
         $bound = self::boundUser($name);
-        if ($bound) {
+        if ($bound && $bound->avatar) {
             return $bound->getAvatarUrl();
         }
 
-        // 2. 有 UUID → 用 crafatar 取 MC 皮肤头像
-        if ($uuid !== '') {
-            return 'https://crafatar.com/avatars/' . $uuid . '?size=80&default=MHF_Steve';
-        }
-
-        // 3. 兜底：名字首字母
+        // 2. 兜底：名字首字母
         return self::initialAvatar($name);
     }
 

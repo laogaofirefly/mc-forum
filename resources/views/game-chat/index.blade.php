@@ -5,29 +5,18 @@
 @section('content')
 <style>
     .chat-bubble {
-        max-width: 75%;
-        padding: 8px 12px;
-        border-radius: 12px;
+        max-width: 80%;
+        padding: 9px 13px;
+        border-radius: 14px;
         word-break: break-word;
-        line-height: 1.5;
+        line-height: 1.55;
         font-size: 14px;
-        position: relative;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
     .chat-bubble.others {
         background: #fff;
         color: #1e293b;
-        border: 1px solid #e2e8f0;
-        border-top-left-radius: 4px;
-    }
-    .chat-bubble.self {
-        background: #10b981;
-        color: #fff;
-        border-top-right-radius: 4px;
-    }
-    .chat-bubble.others {
-        background: #fff;
-        color: #1e293b;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #e8edf3;
         border-top-left-radius: 4px;
     }
     .chat-bubble.self {
@@ -36,14 +25,15 @@
         border-top-right-radius: 4px;
     }
     .chat-name {
-        font-size: 12px;
+        font-size: 11px;
         color: #94a3b8;
-        margin-bottom: 3px;
+        margin: 0 4px 4px;
+        font-weight: 500;
     }
     .chat-row-qq {
         display: flex;
         flex-direction: column;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
     }
     .chat-row-qq.self {
         align-items: flex-end;
@@ -51,9 +41,12 @@
     .chat-row-qq.self .chat-name {
         text-align: right;
     }
+    .chat-row-qq + .chat-row-qq {
+        margin-top: 2px;
+    }
 </style>
 
-<div class="space-y-4">
+<div class="space-y-3 sm:space-y-4">
     <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center">
@@ -80,8 +73,8 @@
         </div>
     </div>
 
-    <div class="card overflow-hidden flex flex-col" style="height: calc(100vh - 280px); min-height: 420px;">
-        <div id="chatBody" class="flex-1 overflow-y-auto p-3 sm:p-4 bg-slate-50">
+    <div class="card overflow-hidden flex flex-col" style="height: calc(100vh - 240px); min-height: 400px;">
+        <div id="chatBody" class="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-50/70">
             @if($messages->isEmpty())
                 <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
                     <div>
@@ -103,32 +96,32 @@
                 </div>
             @endforeach
         </div>
-    </div>
 
-    @auth
-        <div class="card p-2.5 sm:p-3">
-            <form id="sendForm" class="flex items-end gap-2">
-                <textarea
-                    id="sendInput"
-                    name="message"
-                    maxlength="200"
-                    rows="1"
-                    autocomplete="off"
-                    placeholder="发送消息到游戏内..."
-                    class="input flex-1 px-3 py-2 text-sm resize-none"
-                    style="max-height: 100px;"
-                ></textarea>
-                <button type="submit" id="sendBtn" class="btn-primary text-sm px-5 py-2.5 whitespace-nowrap">
-                    发送
-                </button>
-            </form>
-            <p id="sendHint" class="text-xs text-slate-500 mt-1.5 px-1">以 {{ auth()->user()->name }} 的名义发送给游戏内所有在线玩家</p>
-        </div>
-    @else
-        <div class="card p-4 text-center text-sm text-slate-500">
-            <a href="{{ route('login') }}" class="link-primary font-medium">登录</a> 后可向游戏内发送消息
-        </div>
-    @endauth
+        @auth
+            <div class="border-t border-slate-200 p-2.5 sm:p-3 bg-white">
+                <form id="sendForm" class="flex items-end gap-2">
+                    <textarea
+                        id="sendInput"
+                        name="message"
+                        maxlength="200"
+                        rows="1"
+                        autocomplete="off"
+                        placeholder="发送消息到游戏内..."
+                        class="input flex-1 px-3.5 py-2.5 text-sm resize-none"
+                        style="max-height: 100px;"
+                    ></textarea>
+                    <button type="submit" id="sendBtn" class="btn-primary text-sm px-5 py-2.5 whitespace-nowrap">
+                        发送
+                    </button>
+                </form>
+                <p id="sendHint" class="text-xs text-slate-500 mt-1.5 px-1">以 {{ auth()->user()->name }} 的名义发送给游戏内所有在线玩家</p>
+            </div>
+        @else
+            <div class="border-t border-slate-200 p-4 text-center text-sm text-slate-500 bg-white">
+                <a href="{{ route('login') }}" class="link-primary font-medium">登录</a> 后可向游戏内发送消息
+            </div>
+        @endauth
+    </div>
 
     @auth
         @if(auth()->user()->isAdmin())

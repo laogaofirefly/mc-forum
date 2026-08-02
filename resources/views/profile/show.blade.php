@@ -118,32 +118,6 @@
         </div>
     </div>
 
-    {{-- 最近回复 --}}
-    <div>
-        <h2 class="text-base font-bold text-slate-900 mb-3 flex items-center">
-            <span class="mr-2">💬</span>最近的回复
-        </h2>
-        <div class="space-y-3">
-            @foreach($replies as $reply)
-                <div class="card p-4">
-                    <div class="text-sm text-slate-500 mb-1.5">
-                        回复了帖子
-                        <a href="{{ route('threads.show', $reply->thread->slug) }}" class="text-primary-600 hover:text-primary-700 hover:underline font-medium">{{ $reply->thread->title }}</a>
-                        <span class="ml-2 text-xs">{{ $reply->created_at->diffForHumans() }}</span>
-                    </div>
-                    <p class="text-slate-700 truncate">{{ $reply->body }}</p>
-                </div>
-            @endforeach
-            @if($replies->isEmpty())
-                <div class="card p-6 text-center text-slate-400">
-                    <svg class="w-10 h-10 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <p class="text-sm">暂无回复</p>
-                </div>
-            @endif
-        </div>
-    </div>
 </div>
 
 @auth

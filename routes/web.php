@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GameChatController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplyController;
 use App\Http\Controllers\ServerStatusController;
@@ -52,6 +53,9 @@ Route::get('/game-chat', [GameChatController::class, 'index'])->name('game-chat'
 Route::get('/game-chat/fetch', [GameChatController::class, 'fetch'])->name('game-chat.fetch');
 Route::post('/game-chat/send', [GameChatController::class, 'send'])->name('game-chat.send')->middleware('auth');
 Route::post('/game-chat/demo', [GameChatController::class, 'demo'])->name('game-chat.demo')->middleware('auth');
+
+// MC 服务器成员名单
+Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 
 Route::get('/admin/monitor', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'index'])->name('admin.monitor')->middleware('auth');
 Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');

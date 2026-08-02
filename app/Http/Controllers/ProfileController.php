@@ -14,9 +14,8 @@ class ProfileController extends Controller
     public function show(User $user): View
     {
         $threads = $user->threads()->with('category')->latest()->take(5)->get();
-        $replies = $user->replies()->with('thread')->latest()->take(5)->get();
 
-        return view('profile.show', compact('user', 'threads', 'replies'));
+        return view('profile.show', compact('user', 'threads'));
     }
 
     public function edit(): View

@@ -25,12 +25,15 @@
                 <div>
                     <label for="body" class="block text-sm font-medium text-slate-700 mb-1">
                         内容 <span class="text-red-500">*</span>
+                        <span class="text-slate-500 font-normal ml-1">(支持 Markdown 和图片)</span>
                     </label>
-                    <textarea id="body" name="body" rows="12" required data-maxlength="10000"
-                        class="input w-full px-4 py-3 text-base leading-relaxed @error('body') input-error @enderror">{{ old('body', $thread->body) }}</textarea>
-                    @error('body')
-                        <p class="form-error">{{ $message }}</p>
-                    @enderror
+                    @include('partials.markdown-editor', [
+                        'name' => 'body',
+                        'value' => old('body', $thread->body),
+                        'rows' => 14,
+                        'placeholder' => '支持 Markdown 语法，可插入图片...',
+                        'maxlength' => 10000,
+                    ])
                 </div>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 gap-3">
                     <a href="{{ route('threads.show', $thread->slug) }}" class="btn-secondary text-center px-4 py-2">
@@ -44,4 +47,5 @@
         </form>
     </div>
 </div>
+<script src="/js/markdown-editor.js"></script>
 @endsection

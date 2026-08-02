@@ -32,7 +32,7 @@
 
                 <div id="previewArea" class="hidden">
                     <label class="block text-sm font-medium text-slate-700 mb-1">预览</label>
-                    <div id="previewContent" class="card bg-slate-50 p-4 text-slate-700 whitespace-pre-wrap break-words min-h-[200px] text-sm leading-relaxed">
+                    <div id="previewContent" class="card bg-slate-50 p-4 prose prose-slate prose-sm max-w-none min-h-[200px]">
                     </div>
                 </div>
 
@@ -40,18 +40,17 @@
                     <div class="flex items-center justify-between mb-1">
                         <label for="body" class="block text-sm font-medium text-slate-700">
                             内容 <span class="text-red-500">*</span>
-                            <span class="text-slate-500 font-normal ml-1">(支持换行)</span>
+                            <span class="text-slate-500 font-normal ml-1">(支持 Markdown 和图片)</span>
                         </label>
                         <button type="button" id="insertTipBtn" class="text-xs text-slate-500 hover:text-primary-600">💡 格式提示</button>
                     </div>
-                    <textarea id="body" name="body" rows="10" required data-maxlength="10000"
-                        class="input w-full px-4 py-3 text-base leading-relaxed @error('body') input-error @enderror"
-                        placeholder="分享你的想法、建筑、技术、问题...
-
-支持换行分段，内容清晰易读！">{{ old('body') }}</textarea>
-                    @error('body')
-                        <p class="form-error">{{ $message }}</p>
-                    @enderror
+                    @include('partials.markdown-editor', [
+                        'name' => 'body',
+                        'value' => old('body'),
+                        'rows' => 12,
+                        'placeholder' => "分享你的想法、建筑、技术、问题...\n\n支持 Markdown 语法，可插入图片！",
+                        'maxlength' => 10000,
+                    ])
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 gap-3">
@@ -76,8 +75,9 @@
             </div>
             <ul class="space-y-2 text-sm text-slate-700">
                 <li>📝 <b>标题</b>：简洁明了，突出主题（最多100字）</li>
-                <li>📄 <b>正文</b>：内容清晰，适当分段方便阅读</li>
-                <li>🖼️ <b>图片</b>：暂不支持图片上传，可用文字描述</li>
+                <li>📄 <b>正文</b>：支持 Markdown 语法，自动格式化</li>
+                <li>🖼️ <b>图片</b>：点击工具栏图片按钮上传，或直接粘贴/拖拽图片</li>
+                <li>⌨️ <b>快捷键</b>：Ctrl+B 加粗、Ctrl+I 斜体、Ctrl+K 链接</li>
                 <li>⚠️ <b>规则</b>：禁止发布违规、广告、恶意内容</li>
             </ul>
             <button type="button" id="closeTipBtn" class="btn-primary w-full py-2 mt-4">知道了</button>
@@ -85,26 +85,62 @@
     </div>
 </div>
 
+<script src="/js/markdown-editor.js"></script>
 <script>
-    // 预览功能
+    // 预览功能：实时调用后端接口渲染 Markdown
     const previewBtn = document.getElementById('previewBtn');
     const previewArea = document.getElementById('previewArea');
     const previewContent = document.getElementById('previewContent');
     const titleInput = document.getElementById('title');
     const bodyInput = document.getElementById('body');
     let previewOn = false;
+    let previewTimer = null;
 
     function updatePreview() {
         if (!previewOn) return;
-        const t = titleInput.value.trim() ? `<h3 class="text-lg font-bold text-primary-600 mb-3">${escapeHtml(titleInput.value)}</h3>` : '';
-        const b = escapeHtml(bodyInput.value);
-        previewContent.innerHTML = t + (b || '<span class="text-slate-400">（内容为空）</span>');
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(function() {
+            const body = bodyInput.value;
+            if (!body.trim()) {
+                previewContent.innerHTML = '<span class="text-slate-400">（内容为空）</span>';
+                return;
+            }
+            // 简单本地预览：换行 + 基础 markdown（避免频繁请求后端）
+            previewContent.innerHTML = renderMarkdownLocal(body);
+        }, 200);
     }
 
-    function escapeHtml(s) {
-        const div = document.createElement('div');
-        div.textContent = s;
-        return div.innerHTML.replace(/\n/g, '<br>');
+    // 极简本地 Markdown 预览（仅用于编辑时预览，正式展示由后端 league/commonmark 渲染）
+    function renderMarkdownLocal(text) {
+        let html = text;
+        // 转义 HTML
+        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // 图片 ![alt](url)
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" class="my-2 rounded-lg max-w-full" loading="lazy">');
+        // 链接 [text](url)
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary-600 hover:underline" target="_blank" rel="noopener">$1</a>');
+        // 标题
+        html = html.replace(/^### (.+)$/gm, '<h3 class="text-base font-bold mt-3 mb-1">$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-3 mb-1">$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mt-3 mb-1">$1</h1>');
+        // 引用
+        html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="border-l-4 border-primary-300 pl-3 text-slate-600 my-2">$1</blockquote>');
+        // 代码块
+        html = html.replace(/```[\s\S]*?```/g, function(m) {
+            return '<pre class="bg-slate-800 text-slate-100 p-3 rounded-lg my-2 overflow-x-auto text-xs"><code>' + m.slice(3, -3).replace(/^\w*\n/, '') + '</code></pre>';
+        });
+        // 行内代码
+        html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded text-sm">$1</code>');
+        // 粗体
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        // 斜体
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        // 列表
+        html = html.replace(/^- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>');
+        html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, function(m) { return '<ul class="my-1">' + m + '</ul>'; });
+        // 换行
+        html = html.replace(/\n/g, '<br>');
+        return html;
     }
 
     if (previewBtn) {

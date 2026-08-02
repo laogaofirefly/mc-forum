@@ -46,8 +46,13 @@
                     <span>{{ $thread->created_at->diffForHumans() }}</span>
                     <span>{{ $thread->views_count }} 浏览</span>
                 </div>
-                <div class="mt-4 sm:mt-6 text-slate-700 whitespace-pre-wrap break-words leading-relaxed text-sm sm:text-base">
-                    {{ $thread->body }}
+                <div class="mt-4 sm:mt-6 prose prose-slate prose-sm sm:prose-base max-w-none break-words
+                              prose-headings:font-bold prose-headings:text-slate-900
+                              prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline
+                              prose-img:rounded-lg prose-img:shadow-sm
+                              prose-code:text-pink-600 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                              prose-pre:bg-slate-800 prose-pre:text-slate-100">
+                    {!! \App\Services\MarkdownService::toHtml($thread->body) !!}
                 </div>
                 <div class="flex items-center mt-4 sm:mt-6 pt-4 border-t border-slate-200">
                     <span class="text-slate-500 flex items-center text-sm">
@@ -90,14 +95,15 @@
                 <form method="POST" action="{{ route('replies.store', $thread->slug) }}">
                     @csrf
                     <div class="space-y-3">
-                        <textarea name="body" rows="4" required data-maxlength="5000"
-                            class="input w-full px-4 py-3 text-base @error('body') input-error @enderror"
-                            placeholder="写下你的回复...">{{ old('body') }}</textarea>
-                        @error('body')
-                            <p class="form-error">{{ $message }}</p>
-                        @enderror
+                        @include('partials.markdown-editor', [
+                            'name' => 'body',
+                            'value' => old('body'),
+                            'rows' => 5,
+                            'placeholder' => '写下你的回复，支持 Markdown 和图片...',
+                            'maxlength' => 5000,
+                        ])
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-slate-500">支持换行，最多5000字</span>
+                            <span class="text-xs text-slate-500">支持 Markdown，最多5000字</span>
                             <button type="submit" class="btn-primary px-5 py-2.5 text-sm">
                                 发表回复
                             </button>
@@ -119,4 +125,5 @@
         </div>
     @endauth
 </div>
+<script src="/js/markdown-editor.js"></script>
 @endsection

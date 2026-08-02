@@ -158,6 +158,37 @@
         /* 链接 */
         .link-primary { color: #059669; }
         .link-primary:hover { color: #047857; text-decoration: underline; }
+
+        /* ====== Markdown 渲染样式（prose） ======
+           由于使用 CDN 版 Tailwind，没有 Typography 插件，这里手写 .prose 样式 */
+        .prose { color: #334155; line-height: 1.7; font-size: 0.95rem; word-wrap: break-word; }
+        .prose-base { font-size: 1rem; }
+        .prose-sm { font-size: 0.875rem; }
+        .prose.max-w-none { max-width: none; }
+        .prose > *:first-child { margin-top: 0; }
+        .prose > *:last-child { margin-bottom: 0; }
+        .prose h1 { font-size: 1.5em; font-weight: 700; color: #0f172a; margin: 0.8em 0 0.4em; line-height: 1.3; }
+        .prose h2 { font-size: 1.3em; font-weight: 700; color: #0f172a; margin: 0.8em 0 0.4em; line-height: 1.3; }
+        .prose h3 { font-size: 1.15em; font-weight: 700; color: #0f172a; margin: 0.7em 0 0.3em; line-height: 1.3; }
+        .prose h4 { font-size: 1em; font-weight: 700; color: #0f172a; margin: 0.6em 0 0.3em; }
+        .prose p { margin: 0.6em 0; }
+        .prose a { color: #059669; text-decoration: none; }
+        .prose a:hover { text-decoration: underline; color: #047857; }
+        .prose strong { font-weight: 700; color: #0f172a; }
+        .prose em { font-style: italic; }
+        .prose ul { margin: 0.6em 0; padding-left: 1.5em; list-style: disc; }
+        .prose ol { margin: 0.6em 0; padding-left: 1.5em; list-style: decimal; }
+        .prose li { margin: 0.25em 0; }
+        .prose blockquote { border-left: 3px solid #6ee7b7; padding: 0.2em 0 0.2em 1em; margin: 0.8em 0; color: #64748b; background: #f8fafc; border-radius: 0 6px 6px 0; }
+        .prose blockquote p { margin: 0.3em 0; }
+        .prose code { background: #f1f5f9; color: #db2777; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.875em; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; }
+        .prose pre { background: #1e293b; color: #f1f5f9; padding: 0.9em 1em; border-radius: 8px; margin: 0.8em 0; overflow-x: auto; font-size: 0.85em; line-height: 1.5; }
+        .prose pre code { background: transparent; color: inherit; padding: 0; border-radius: 0; font-size: inherit; }
+        .prose img { max-width: 100%; height: auto; border-radius: 8px; margin: 0.8em 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: block; }
+        .prose hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5em 0; }
+        .prose table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 0.9em; }
+        .prose th, .prose td { border: 1px solid #e2e8f0; padding: 0.5em 0.75em; text-align: left; }
+        .prose th { background: #f8fafc; font-weight: 600; color: #0f172a; }
     </style>
 </head>
 <body class="min-h-screen text-slate-800 antialiased">

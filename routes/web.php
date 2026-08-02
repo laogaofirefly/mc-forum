@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\GameChatController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\ProfileController;
@@ -48,6 +49,9 @@ Route::delete('/replies/{reply}', [ReplyController::class, 'destroy'])->name('re
 // 通知中心
 Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index')->middleware('auth');
 Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread')->middleware('auth');
+
+// 图片上传（发帖/回复插图）
+Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('upload-image')->middleware('auth');
 
 Route::get('/game-chat', [GameChatController::class, 'index'])->name('game-chat');
 Route::get('/game-chat/fetch', [GameChatController::class, 'fetch'])->name('game-chat.fetch');

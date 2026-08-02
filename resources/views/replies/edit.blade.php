@@ -13,12 +13,15 @@
                 <div>
                     <label for="body" class="block text-sm font-medium text-slate-700 mb-1">
                         回复内容 <span class="text-red-500">*</span>
+                        <span class="text-slate-500 font-normal ml-1">(支持 Markdown 和图片)</span>
                     </label>
-                    <textarea id="body" name="body" rows="6" required data-maxlength="5000"
-                        class="input w-full text-base leading-relaxed @error('body') input-error @enderror">{{ old('body', $reply->body) }}</textarea>
-                    @error('body')
-                        <p class="form-error">{{ $message }}</p>
-                    @enderror
+                    @include('partials.markdown-editor', [
+                        'name' => 'body',
+                        'value' => old('body', $reply->body),
+                        'rows' => 8,
+                        'placeholder' => '支持 Markdown 语法，可插入图片...',
+                        'maxlength' => 5000,
+                    ])
                 </div>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 gap-3">
                     <a href="{{ route('threads.show', $reply->thread->slug) }}" class="btn-secondary text-center">
@@ -32,4 +35,5 @@
         </form>
     </div>
 </div>
+<script src="/js/markdown-editor.js"></script>
 @endsection

@@ -35,8 +35,8 @@
                             <a href="{{ route('threads.show', $reply->thread->slug) }}#reply-{{ $reply->id }}"
                                class="text-slate-900 hover:text-primary-600 hover:underline font-medium">{{ $reply->thread->title }}</a>
                         </div>
-                        <div class="bg-slate-50 rounded-lg p-3 text-slate-700 text-sm leading-relaxed border border-slate-100">
-                            {{$reply->body}}
+                        <div class="bg-slate-50 rounded-lg p-3 prose prose-slate prose-sm max-w-none border border-slate-100">
+                            {!! \App\Services\MarkdownService::toHtml($reply->body) !!}
                         </div>
                         <div class="text-xs text-slate-400 mt-1.5">{{ $reply->created_at->diffForHumans() }}</div>
                     </div>

@@ -27,7 +27,14 @@
                     @endauth
                 </div>
             </div>
-            <div class="mt-2 text-slate-700 whitespace-pre-wrap break-words text-sm sm:text-base leading-relaxed">{{ $reply->body }}</div>
+            <div class="mt-2 prose prose-slate prose-sm max-w-none break-words
+                        prose-headings:font-bold prose-headings:text-slate-900
+                        prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline
+                        prose-img:rounded-lg prose-img:shadow-sm
+                        prose-code:text-pink-600 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                        prose-pre:bg-slate-800 prose-pre:text-slate-100">
+                {!! \App\Services\MarkdownService::toHtml($reply->body) !!}
+            </div>
         </div>
     </div>
 </div>

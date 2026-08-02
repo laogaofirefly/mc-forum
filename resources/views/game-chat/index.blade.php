@@ -4,27 +4,25 @@
 
 @section('content')
 <style>
-    /* 聊天容器：不依赖 Tailwind，确保一渲染就是滚动容器 */
+    /* 聊天容器：纯块级布局，不用 flex */
     #chatWrap {
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 200px);
-        min-height: 380px;
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
         overflow: hidden;
     }
+    /* chatBody 用固定高度，不用 flex:1，确保一定是滚动容器 */
     #chatBody {
-        flex: 1 1 0%;
-        min-height: 0;
+        height: calc(100vh - 320px);
+        min-height: 250px;
+        max-height: calc(100vh - 320px);
         overflow-y: auto;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         padding: 12px;
         background-color: #f8fafc;
     }
     #chatFooter {
-        flex-shrink: 0;
         border-top: 1px solid #e2e8f0;
         padding: 10px 12px;
         background: #fff;

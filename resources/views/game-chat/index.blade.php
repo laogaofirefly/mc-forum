@@ -45,11 +45,16 @@
                     </div>
                 </div>
             @endif
+@php $currentUserName = auth()->check() ? auth()->user()->name : ''; @endphp
             @foreach($messages as $m)
-                <div class="chat-row flex items-start px-2 py-1 rounded hover:bg-slate-100 transition" data-id="{{ $m->id }}">
-                    <span class="text-primary-600 font-medium flex-shrink-0 px-1">{{ $m->player_name }}</span>
-                    <span class="text-slate-400 flex-shrink-0 mr-1">:</span>
-                    <span class="text-slate-700 break-words flex-1 leading-relaxed">{{ $m->message }}</span>
+                @php $isMine = $currentUserName && $m->player_name === $currentUserName; @endphp
+                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1" data-id="{{ $m->id }}">
+                    <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'order-1' : '' }}">
+                        <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $m->timestamp?->format('H:i') ?? '--:--' }}</div>
+                        <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
+                            {{ $m->message }}
+                        </div>
+                    </div>
                 </div>
             @endforeach
         </div>
@@ -129,6 +134,7 @@
     const sendInput = document.getElementById('sendInput');
     const sendBtn = document.getElementById('sendBtn');
     const sendHint = document.getElementById('sendHint');
+    let currentUserName = '';
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
     let autoScroll = true;
@@ -186,6 +192,7 @@
             const res = await fetch('{{ route("game-chat.fetch") }}?after_id=' + lastId, { credentials: 'same-origin' });
             const data = await res.json();
             if (data && data.ok) {
+                if (data.current_user_name) currentUserName = data.current_user_name;
                 (data.messages || []).forEach(appendMessage);
                 if (data.last_id > lastId) lastId = data.last_id;
                 setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 实时刷新中', 'green');

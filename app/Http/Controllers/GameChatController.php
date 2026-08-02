@@ -27,6 +27,7 @@ class GameChatController extends Controller
 
         return response()->json([
             'ok' => true,
+            'current_user_name' => auth()->user()?->name ?? '',
             'count' => $messages->count(),
             'last_id' => $messages->last()?->id ?? $afterId,
             'time' => now()->toDateTimeString(),

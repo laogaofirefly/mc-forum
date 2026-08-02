@@ -152,6 +152,8 @@
         refreshServerStatusImp(!!force);
     };
 
+    // 页面加载后立即刷新一次（修复首次进入不刷新的 bug）
+    window.refreshServerStatus(false);
     setInterval(function() { window.refreshServerStatus(false); }, 30000);
 })();
 </script>

@@ -44,27 +44,6 @@
     .chat-row-qq + .chat-row-qq {
         margin-top: 2px;
     }
-    /* 全屏模式 */
-    #chatCard.fullscreen {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        z-index: 9999 !important;
-        border-radius: 0 !important;
-        border: none !important;
-        margin: 0 !important;
-    }
-    #chatCard.fullscreen #chatBody {
-        padding: 16px;
-    }
-    body.chat-fullscreen-active {
-        overflow: hidden;
-    }
 </style>
 
 <div class="space-y-3 sm:space-y-4">
@@ -85,7 +64,6 @@
                 <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
                 在线
             </span>
-            <button type="button" id="fullscreenBtn" class="btn-secondary no-disable text-xs" title="全屏 / 退出全屏">⛶ 全屏</button>
             @auth
                 @if(auth()->user()->isAdmin())
                     <button type="button" id="syncLogBtn" class="btn-secondary no-disable text-xs">📜 同步</button>
@@ -95,7 +73,7 @@
         </div>
     </div>
 
-    <div id="chatCard" class="card overflow-hidden flex flex-col" style="height: calc(100vh - 240px); min-height: 400px;">
+    <div class="card overflow-hidden flex flex-col" style="height: calc(100vh - 240px); min-height: 400px;">
         <div id="chatBody" class="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-50/70">
             @if($messages->isEmpty())
                 <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
@@ -185,8 +163,6 @@
     const sendInput = document.getElementById('sendInput');
     const sendBtn = document.getElementById('sendBtn');
     const sendHint = document.getElementById('sendHint');
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const chatCard = document.getElementById('chatCard');
     const currentUser = {{ auth()->check() ? json_encode(auth()->user()->name) : 'null' }};
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let autoScroll = true;
@@ -196,33 +172,8 @@
         autoScroll = bottom < 60;
     });
     function scrollToBottom(smooth) {
-        try { chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); } catch(e) {}
+        chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     }
-
-    // 全屏切换
-    function toggleFullscreen() {
-        const isFs = chatCard.classList.toggle('fullscreen');
-        document.body.classList.toggle('chat-fullscreen-active', isFs);
-        if (fullscreenBtn) {
-            fullscreenBtn.textContent = isFs ? '⛶ 退出' : '⛶ 全屏';
-            fullscreenBtn.title = isFs ? '退出全屏' : '全屏';
-        }
-        // 切换后延迟滚动到底部，等布局变化完成
-        setTimeout(function() { scrollToBottom(false); }, 100);
-    }
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFullscreen();
-        });
-    }
-    // ESC 退出全屏
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && chatCard.classList.contains('fullscreen')) {
-            toggleFullscreen();
-        }
-    });
 
     function setStatus(text, color) {
         const colorMap = {
@@ -261,7 +212,6 @@
         if (autoScroll) scrollToBottom(false);
     }
 
-    let firstFetch = true;
     async function fetchMessages() {
         try {
             setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1 animate-pulse"></span> 刷新中', 'yellow');
@@ -271,12 +221,6 @@
                 (data.messages || []).forEach(appendMessage);
                 if (data.last_id > lastId) lastId = data.last_id;
                 setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 在线', 'green');
-                // 首次加载完成后滚动到底部（修复进入页面时未自动定位最新消息）
-                if (firstFetch) {
-                    firstFetch = false;
-                    scrollToBottom(false);
-                    setTimeout(function() { scrollToBottom(false); }, 200);
-                }
             } else {
                 setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1"></span> 数据异常', 'yellow');
             }
@@ -472,12 +416,9 @@
 
     // 初始滚动到底部
     scrollToBottom(false);
-    setTimeout(function() { scrollToBottom(false); }, 300);
-    // 页面加载后立即拉取一次新消息（修复首次进入不刷新的 bug）
-    fetchMessages();
-    // 启动定时刷新（2 秒一次，接近实时）
-    setInterval(fetchMessages, 2000);
-    // 单独定时同步 MC 日志（5 秒一次，让游戏内新消息尽快入库）
+    // 启动定时刷新
+    setInterval(fetchMessages, 5000);
+    // 单独定时同步 MC 日志
     setInterval(function() {
         fetch('{{ route("chat-sync") }}', {
             method: 'POST',
@@ -485,7 +426,7 @@
             credentials: 'same-origin',
             body: '{}',
         }).catch(function(){});
-    }, 5000);
+    }, 10000);
 })();
 </script>
 @endsection

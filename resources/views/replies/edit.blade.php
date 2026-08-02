@@ -27,7 +27,7 @@
                     <a href="{{ route('threads.show', $reply->thread->slug) }}" class="btn-secondary text-center">
                         ← 返回帖子
                     </a>
-                    <button type="submit" class="btn-primary text-base">
+                    <button type="submit" class="btn-primary text-sm">
                         保存修改
                     </button>
                 </div>

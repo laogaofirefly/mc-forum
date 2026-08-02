@@ -57,7 +57,7 @@
                     <a href="{{ url()->previous() ?: route('home') }}" class="btn-secondary text-center px-4 py-2">
                         ← 返回
                     </a>
-                    <button type="submit" class="btn-primary px-6 py-3 text-base">
+                    <button type="submit" class="btn-primary px-6 py-3 text-sm">
                         📝 发布帖子
                     </button>
                 </div>

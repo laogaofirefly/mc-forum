@@ -39,7 +39,7 @@
                     <a href="{{ route('threads.show', $thread->slug) }}" class="btn-secondary text-center px-4 py-2">
                         ← 返回帖子
                     </a>
-                    <button type="submit" class="btn-primary px-6 py-3 text-base">
+                    <button type="submit" class="btn-primary px-6 py-3 text-sm">
                         保存修改
                     </button>
                 </div>

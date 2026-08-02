@@ -56,7 +56,7 @@
                     </label>
                 </div>
                 <div class="pt-2">
-                    <button type="submit" class="btn-primary w-full rounded-xl py-3 font-semibold text-base">
+                    <button type="submit" class="btn-primary w-full rounded-xl py-3 font-semibold text-sm">
                         登录
                     </button>
                 </div>

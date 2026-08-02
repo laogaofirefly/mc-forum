@@ -8,25 +8,16 @@ use App\Models\Thread;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ServerMonitorController extends Controller
 {
-    public function __construct()
-    {
-        // 强制管理员权限
-        $this->middleware(function ($request, $next) {
-            if (!Auth::check() || !Auth::user()->isAdmin()) {
-                abort(403, '仅管理员可访问');
-            }
-            return $next($request);
-        });
-    }
-
     public function index(Request $request): View
     {
+        if (! $request->user() || ! $request->user()->isAdmin()) {
+            abort(403, '仅管理员可访问');
+        }
         // 基础统计（始终可用）
         $stats = [
             'total_users' => User::count(),
@@ -99,6 +90,9 @@ class ServerMonitorController extends Controller
 
     public function metrics(Request $request): JsonResponse
     {
+        if (! $request->user() || ! $request->user()->isAdmin()) {
+            return response()->json(['ok' => false, 'message' => '仅管理员可访问'], 403);
+        }
         $data = [
             'ok' => true,
             'time' => now()->toDateTimeString(),

@@ -67,7 +67,7 @@ class PlayerAvatarService
 
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">'
             . '<rect width="80" height="80" fill="' . $color . '"/>'
-            . '<text x="40" y="40" dy=".35em" text-anchor="middle" dominant-baseline="middle"'
+            . '<text x="40" y="40" dy=".35em" text-anchor="middle"'
             . ' font-family="Inter,system-ui,sans-serif" font-size="38" font-weight="700" fill="#ffffff">'
             . htmlspecialchars($letter, ENT_XML1 | ENT_QUOTES, 'UTF-8')
             . '</text></svg>';

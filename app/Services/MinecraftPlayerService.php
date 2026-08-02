@@ -9,10 +9,13 @@ namespace App\Services;
  * 以及 whitelist.json（白名单玩家），合并后返回所有成员名单。
  *
  * usercache.json 格式：
- *   [{"name":"Notch","uuid":"xxx","expiresOn":"2024-01-01 00:00:00 +0000"}, ...]
+ *   [{"name":"Notch","uuid":"069a79f4-444e-9472-6a5b-efca90e38aaf5","expiresOn":"..."}, ...]
  *
  * whitelist.json 格式：
- *   [{"uuid":"xxx","name":"Notch"}, ...]
+ *   [{"uuid":"069a79f444e947266a5befca90e38aaf5","name":"Notch"}, ...]
+ *
+ * 注意：两个文件里的 UUID 格式可能不一致（一个带横线、一个不带），
+ *      合并前必须先规范化（去掉横线 + 转小写），否则同一玩家会被当成两个人。
  */
 class MinecraftPlayerService
 {
@@ -40,12 +43,16 @@ class MinecraftPlayerService
             ];
         }
 
-        $players = $this->loadFromUsercache($basePath);
-
-        // 如果同时存在白名单，合并白名单（防止 usercache 过期被清理）
+        // 读取两个文件，分别得到 规范化uuid => 玩家 的映射
+        $usercache = $this->loadFromUsercache($basePath);
         $whitelist = $this->loadFromWhitelist($basePath);
-        if (! empty($whitelist)) {
-            $players = $this->mergePlayers($players, $whitelist);
+
+        // 合并：以规范化 UUID 为键去重，usercache 优先（它有过期时间等更完整的信息）
+        $players = $usercache;
+        foreach ($whitelist as $uuid => $player) {
+            if (! isset($players[$uuid])) {
+                $players[$uuid] = $player;
+            }
         }
 
         if (empty($players)) {
@@ -56,6 +63,17 @@ class MinecraftPlayerService
                 'total' => 0,
             ];
         }
+
+        // 再按名字（小写）做一次去重，防止同一玩家因 UUID 不同而重复
+        // （比如离线模式同一名字可能对应不同 UUID，或 usercache 里有历史残留）
+        $byName = [];
+        foreach ($players as $player) {
+            $key = strtolower($player['name']);
+            if (! isset($byName[$key])) {
+                $byName[$key] = $player;
+            }
+        }
+        $players = array_values($byName);
 
         // 按玩家名排序
         usort($players, function ($a, $b) {
@@ -72,6 +90,8 @@ class MinecraftPlayerService
 
     /**
      * 从 usercache.json 读取玩家
+     *
+     * @return array<string, array>  规范化uuid => 玩家
      */
     private function loadFromUsercache(string $basePath): array
     {
@@ -101,9 +121,10 @@ class MinecraftPlayerService
             if (empty($name) || empty($uuid)) {
                 continue;
             }
-            $players[$uuid] = [
+            $normalizedUuid = $this->normalizeUuid((string) $uuid);
+            $players[$normalizedUuid] = [
                 'name' => (string) $name,
-                'uuid' => (string) $uuid,
+                'uuid' => $normalizedUuid,
                 'expires_on' => $entry['expiresOn'] ?? null,
             ];
         }
@@ -113,6 +134,8 @@ class MinecraftPlayerService
 
     /**
      * 从 whitelist.json 读取玩家
+     *
+     * @return array<string, array>  规范化uuid => 玩家
      */
     private function loadFromWhitelist(string $basePath): array
     {
@@ -142,9 +165,10 @@ class MinecraftPlayerService
             if (empty($name) || empty($uuid)) {
                 continue;
             }
-            $players[$uuid] = [
+            $normalizedUuid = $this->normalizeUuid((string) $uuid);
+            $players[$normalizedUuid] = [
                 'name' => (string) $name,
-                'uuid' => (string) $uuid,
+                'uuid' => $normalizedUuid,
                 'expires_on' => null,
             ];
         }
@@ -153,24 +177,14 @@ class MinecraftPlayerService
     }
 
     /**
-     * 合并两个玩家列表（以 uuid 为键去重）
+     * 规范化 UUID：去掉横线并转小写
+     *
+     * 例如：
+     *   "069a79f4-444e-9472-6a5b-efca90e38aaf5" → "069a79f444e947266a5befca90e38aaf5"
+     *   "069A79F444E947266A5BEFCA90E38AAF5"      → "069a79f444e947266a5befca90e38aaf5"
      */
-    private function mergePlayers(array $a, array $b): array
+    private function normalizeUuid(string $uuid): string
     {
-        foreach ($b as $uuid => $player) {
-            if (! isset($a[$uuid])) {
-                $a[$uuid] = $player;
-            }
-        }
-        return $a;
-    }
-
-    /**
-     * 获取玩家头像 URL（使用 crafitar 服务，根据 UUID）
-     */
-    public function getAvatarUrl(string $uuid): string
-    {
-        // 去掉 UUID 中的横线，crafatar 两种格式都支持，这里统一用带横线格式
-        return 'https://crafatar.com/avatars/' . $uuid . '?size=80&default=MHF_Steve';
+        return strtolower(str_replace('-', '', $uuid));
     }
 }

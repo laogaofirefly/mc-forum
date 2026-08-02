@@ -24,17 +24,16 @@
         color: #fff;
         border-top-right-radius: 4px;
     }
-    .chat-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 6px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .chat-bubble.others {
+        background: #fff;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        border-top-left-radius: 4px;
+    }
+    .chat-bubble.self {
+        background: #10b981;
         color: #fff;
-        font-size: 13px;
-        font-weight: 700;
+        border-top-right-radius: 4px;
     }
     .chat-name {
         font-size: 12px;
@@ -43,31 +42,14 @@
     }
     .chat-row-qq {
         display: flex;
-        align-items: flex-start;
-        gap: 8px;
+        flex-direction: column;
         margin-bottom: 14px;
     }
     .chat-row-qq.self {
-        flex-direction: row-reverse;
+        align-items: flex-end;
     }
     .chat-row-qq.self .chat-name {
         text-align: right;
-    }
-    .chat-time-sep {
-        text-align: center;
-        font-size: 11px;
-        color: #94a3b8;
-        margin: 12px 0;
-        position: relative;
-    }
-    .chat-time-sep::before, .chat-time-sep::after {
-        content: '';
-        display: inline-block;
-        width: 40px;
-        height: 1px;
-        background: #e2e8f0;
-        vertical-align: middle;
-        margin: 0 8px;
     }
 </style>
 
@@ -114,17 +96,10 @@
             @foreach($messages as $m)
                 @php
                     $isSelf = auth()->check() && $m->player_name === auth()->user()->name;
-                    $avatarColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
-                    $colorIndex = ord(strtoupper(substr($m->player_name, 0, 1))) % count($avatarColors);
                 @endphp
                 <div class="chat-row-qq {{ $isSelf ? 'self' : '' }}" data-id="{{ $m->id }}">
-                    <div class="chat-avatar {{ $isSelf ? 'bg-primary-500' : $avatarColors[$colorIndex] }}">
-                        {{ strtoupper(substr($m->player_name, 0, 1)) }}
-                    </div>
-                    <div class="{{ $isSelf ? 'items-end' : 'items-start' }} flex flex-col min-w-0 max-w-[80%]">
-                        <div class="chat-name">{{ $m->player_name }}</div>
-                        <div class="chat-bubble {{ $isSelf ? 'self' : 'others' }}">{{ $m->message }}</div>
-                    </div>
+                    <div class="chat-name">{{ $m->player_name }}</div>
+                    <div class="chat-bubble {{ $isSelf ? 'self' : 'others' }}">{{ $m->message }}</div>
                 </div>
             @endforeach
         </div>
@@ -196,7 +171,6 @@
     const sendBtn = document.getElementById('sendBtn');
     const sendHint = document.getElementById('sendHint');
     const currentUser = {{ auth()->check() ? json_encode(auth()->user()->name) : 'null' }};
-    const avatarColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let autoScroll = true;
 
@@ -220,12 +194,6 @@
 
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    function colorForName(name) {
-        if (!name) return avatarColors[0];
-        const code = String(name).toUpperCase().charCodeAt(0);
-        return avatarColors[code % avatarColors.length];
-    }
-
     function escapeHtml(s) {
         const d = document.createElement('div');
         d.textContent = s == null ? '' : String(s);
@@ -242,17 +210,11 @@
         row.className = 'chat-row-qq' + (isSelf ? ' self' : '');
         row.dataset.id = m.id;
 
-        const avatarClass = isSelf ? 'bg-primary-500' : colorForName(m.player_name);
-        const firstLetter = (m.player_name || '?').toUpperCase().charAt(0);
         const bubbleClass = isSelf ? 'self' : 'others';
-        const alignClass = isSelf ? 'items-end' : 'items-start';
 
         row.innerHTML =
-            '<div class="chat-avatar ' + avatarClass + '">' + escapeHtml(firstLetter) + '</div>' +
-            '<div class="flex flex-col min-w-0 max-w-[80%] ' + alignClass + '">' +
-                '<div class="chat-name">' + escapeHtml(m.player_name) + '</div>' +
-                '<div class="chat-bubble ' + bubbleClass + '">' + escapeHtml(m.message) + '</div>' +
-            '</div>';
+            '<div class="chat-name">' + escapeHtml(m.player_name) + '</div>' +
+            '<div class="chat-bubble ' + bubbleClass + '">' + escapeHtml(m.message) + '</div>';
         chatBody.appendChild(row);
         if (autoScroll) scrollToBottom(false);
     }

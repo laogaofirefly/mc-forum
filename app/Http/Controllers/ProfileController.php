@@ -40,6 +40,37 @@ class ProfileController extends Controller
         return redirect()->route('profile.show', $user)->with('success', '个人资料已更新。');
     }
 
+    public function avatar(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+        ], [
+            'avatar.required' => '请选择要上传的图片',
+            'avatar.image'    => '上传的文件必须是图片',
+            'avatar.mimes'    => '仅支持 JPG/PNG/WEBP/GIF 格式',
+            'avatar.max'      => '图片大小不能超过 2MB',
+        ]);
+
+        $user = Auth::user();
+
+        // 删除旧头像（仅删除本地自定义上传的）
+        if ($user->avatar && str_starts_with($user->avatar, '/avatars/')) {
+            $oldPath = public_path(ltrim($user->avatar, '/'));
+            if (is_file($oldPath)) @unlink($oldPath);
+        }
+
+        $file = $request->file('avatar');
+        $ext  = $file->getClientOriginalExtension();
+        $name = 'avatar_' . $user->id . '_' . time() . '.' . $ext;
+        // 直接存到 public/avatars，无需软链接即可访问
+        $file->move(public_path('avatars'), $name);
+
+        $user->avatar = '/avatars/' . $name;
+        $user->save();
+
+        return redirect()->route('profile.show', $user)->with('success', '头像更新成功！');
+    }
+
     public function mcBind(): View
     {
         $user = Auth::user();

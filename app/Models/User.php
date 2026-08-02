@@ -59,6 +59,10 @@ class User extends Authenticatable
     public function getAvatarUrl(): string
     {
         if ($this->avatar) {
+            // 本地自定义头像加时间戳，上传后立即看到更新
+            if (str_starts_with($this->avatar, '/avatars/')) {
+                return $this->avatar . '?v=' . ($this->updated_at?->timestamp ?? time());
+            }
             return $this->avatar;
         }
 

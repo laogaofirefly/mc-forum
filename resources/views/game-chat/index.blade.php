@@ -3,53 +3,6 @@
 @section('title', '游戏内聊天')
 
 @section('content')
-<style>
-    .chat-row-self {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 10px;
-    }
-    .chat-row-other {
-        display: flex;
-        justify-content: flex-start;
-        margin-bottom: 10px;
-    }
-    .chat-col {
-        display: flex;
-        flex-direction: column;
-        max-width: 80%;
-    }
-    .chat-row-self .chat-col { align-items: flex-end; }
-    .chat-row-other .chat-col { align-items: flex-start; }
-    .chat-name {
-        font-size: 11px;
-        color: #94a3b8;
-        margin: 0 4px 3px;
-        font-weight: 500;
-    }
-    .chat-bubble {
-        padding: 8px 14px;
-        border-radius: 16px;
-        line-height: 1.55;
-        font-size: 14px;
-        word-break: break-word;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-    }
-    .chat-row-self .chat-bubble {
-        background: #10b981;
-        color: #fff;
-        border-top-right-radius: 4px;
-    }
-    .chat-row-other .chat-bubble {
-        background: #fff;
-        color: #1e293b;
-        border: 1px solid #e8edf3;
-        border-top-left-radius: 4px;
-    }
-    .send-btn-round {
-        border-radius: 24px;
-    }
-</style>
 <div class="space-y-4 sm:space-y-5">
     <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
@@ -77,7 +30,7 @@
     </div>
 
     <div class="card overflow-hidden">
-        <div id="chatBody" class="h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1 bg-slate-50/50" style="height:480px;overflow-y:auto;overflow-x:hidden;">
+        <div id="chatBody" class="h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50" style="height:480px;overflow-y:auto;overflow-x:hidden;">
             @if($messages->isEmpty())
                 <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
                     <div>
@@ -90,14 +43,10 @@
                 </div>
             @endif
             @foreach($messages as $m)
-                @php
-                    $isSelf = auth()->check() && $m->player_name === auth()->user()->name;
-                @endphp
-                <div class="chat-row-{{ $isSelf ? 'self' : 'other' }}" data-id="{{ $m->id }}">
-                    <div class="chat-col">
-                        <div class="chat-name">{{ $m->player_name }}</div>
-                        <div class="chat-bubble">{{ $m->message }}</div>
-                    </div>
+                <div class="chat-row flex items-start px-2 py-1 rounded hover:bg-slate-100 transition" data-id="{{ $m->id }}">
+                    <span class="text-primary-600 font-medium flex-shrink-0 px-1">{{ $m->player_name }}</span>
+                    <span class="text-slate-400 flex-shrink-0 mr-1">:</span>
+                    <span class="text-slate-700 break-words flex-1 leading-relaxed">{{ $m->message }}</span>
                 </div>
             @endforeach
         </div>
@@ -126,8 +75,7 @@
                 <button
                     type="submit"
                     id="sendBtn"
-                    class="btn-primary text-sm whitespace-nowrap send-btn-round no-disable"
-                    style="border-radius:24px;"
+                    class="btn-primary text-sm whitespace-nowrap"
                 >
                     发送到游戏
                 </button>
@@ -178,7 +126,6 @@
     const sendInput = document.getElementById('sendInput');
     const sendBtn = document.getElementById('sendBtn');
     const sendHint = document.getElementById('sendHint');
-    const currentUser = {{ auth()->check() ? json_encode(auth()->user()->name) : 'null' }};
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
     let autoScroll = true;
@@ -206,23 +153,21 @@
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     function appendMessage(m) {
-        if (emptyTip) emptyTip.style.display = 'none';
+        if (emptyTip) emptyTip.remove();
         // 用 ID 去重，避免同一条消息被重复添加
-        if (m.id && chatBody.querySelector('[data-id="' + m.id + '"]')) {
+        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
             return;
         }
-        const isSelf = currentUser && m.player_name === currentUser;
         const row = document.createElement('div');
-        row.className = isSelf ? 'chat-row-self' : 'chat-row-other';
-        if (m.id) row.dataset.id = m.id;
+        row.className = 'chat-row flex items-start px-2 py-1 rounded hover:bg-slate-100 transition';
+        row.dataset.id = m.id;
         row.innerHTML =
-            '<div class="chat-col">' +
-                '<div class="chat-name">' + escapeHtml(m.player_name) + '</div>' +
-                '<div class="chat-bubble">' + escapeHtml(m.message) + '</div>' +
-            '</div>';
+            '<span class="text-primary-600 font-medium flex-shrink-0 px-1">' + escapeHtml(m.player_name) + '</span>' +
+            '<span class="text-slate-400 flex-shrink-0 mr-1">:</span>' +
+            '<span class="text-slate-700 break-words flex-1 leading-relaxed">' + escapeHtml(m.message) + '</span>';
         chatBody.appendChild(row);
         totalCount++;
-        if (msgCountEl) msgCountEl.textContent = totalCount;
+        msgCountEl.textContent = totalCount;
         if (autoScroll) scrollToBottom(false);
     }
 

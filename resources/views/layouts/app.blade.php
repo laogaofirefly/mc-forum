@@ -456,6 +456,40 @@
         }
         updateNotifyDot();
         setInterval(updateNotifyDot, 30000);  // 30秒检查一次
+
+        window.toggleLike = function(btn) {
+            var type = btn.getAttribute('data-like-type');
+            var id = btn.getAttribute('data-like-id');
+            var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            fetch('{{ route("likes.toggle") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ likeable_type: type, likeable_id: id })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (!d.ok) return;
+                var svg = btn.querySelector('svg');
+                var span = btn.querySelector('.like-count');
+                if (d.liked) {
+                    btn.classList.remove('text-slate-400', 'hover:text-red-400', 'hover:bg-red-50');
+                    btn.classList.add('text-red-500', 'bg-red-50', 'hover:bg-red-100');
+                    if (svg) svg.setAttribute('fill', 'currentColor');
+                } else {
+                    btn.classList.remove('text-red-500', 'bg-red-50', 'hover:bg-red-100');
+                    btn.classList.add('text-slate-400', 'hover:text-red-400', 'hover:bg-red-50');
+                    if (svg) svg.setAttribute('fill', 'none');
+                }
+                if (span) span.textContent = d.count;
+            })
+            .catch(function() {});
+        };
         @endauth
     </script>
 </body>

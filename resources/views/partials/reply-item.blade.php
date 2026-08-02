@@ -12,6 +12,17 @@
                 </div>
                 <div class="flex items-center space-x-1">
                     @auth
+                        <button
+                            class="like-btn text-xs flex items-center space-x-1 px-2 py-1 rounded-full transition-colors {{ $reply->isLikedBy(auth()->user()) ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-slate-400 hover:text-red-400 hover:bg-red-50' }}"
+                            data-like-type="reply"
+                            data-like-id="{{ $reply->id }}"
+                            onclick="toggleLike(this)"
+                        >
+                            <svg class="w-4 h-4" fill="{{ $reply->isLikedBy(auth()->user()) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            <span class="like-count">{{ $reply->likesCount() }}</span>
+                        </button>
                         @if(auth()->id() === $reply->user_id || auth()->user()->isAdmin())
                             <a href="{{ route('replies.edit', $reply) }}" class="text-slate-400 hover:text-primary-600 transition text-sm px-2 py-1 rounded hover:bg-slate-50">
                                 编辑
@@ -24,6 +35,13 @@
                                 </button>
                             </form>
                         @endif
+                    @else
+                        <span class="text-xs flex items-center space-x-1 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            <span>{{ $reply->likesCount() }}</span>
+                        </span>
                     @endauth
                 </div>
             </div>

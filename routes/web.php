@@ -611,3 +611,21 @@ Route::get('/chat-log-preview', function () {
         'rows' => $rows,
     ]);
 })->name('chat-log-preview')->middleware('auth');
+// ========== 点赞（Like）路由 ==========
+Route::post('/likes/toggle', [\App\Http\Controllers\LikeController::class, 'toggle'])->name('likes.toggle')->middleware('auth');
+
+// ========== @提及用户名自动补全（AJAX） ==========
+Route::get('/users/search-mention', function (\Illuminate\Http\Request $request) {
+    if (! auth()->check()) {
+        return response()->json([]);
+    }
+    $q = trim($request->input('q', ''));
+    if (mb_strlen($q) < 1) {
+        return response()->json([]);
+    }
+    $users = \App\Models\User::where('name', 'like', $q . '%')
+        ->where('is_blocked', false)
+        ->limit(10)
+        ->get(['id', 'name', 'avatar']);
+    return response()->json($users);
+})->name('users.search')->middleware('auth');

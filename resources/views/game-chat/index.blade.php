@@ -73,8 +73,8 @@
         </div>
     </div>
 
-    <div class="card overflow-hidden flex flex-col" style="height: calc(100vh - 240px); min-height: 400px;">
-        <div id="chatBody" class="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-50/70">
+    <div class="card overflow-hidden flex flex-col" style="height: calc(100vh - 240px); min-height: 400px; display: flex; flex-direction: column; overflow: hidden;">
+        <div id="chatBody" style="flex: 1 1 0%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; background-color: rgba(248,250,252,0.7);">
             @if($messages->isEmpty())
                 <div id="emptyTip" class="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
                     <div>
@@ -172,7 +172,8 @@
         autoScroll = bottom < 60;
     });
     function scrollToBottom(smooth) {
-        chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+        // 直接设置 scrollTop，兼容性最好，不依赖 scrollTo API
+        chatBody.scrollTop = chatBody.scrollHeight;
     }
 
     function setStatus(text, color) {
@@ -415,8 +416,13 @@
         }
     }
 
-    // 初始滚动到底部
+    // 初始滚动到底部（多次尝试，应对 Tailwind CDN 异步加载导致的高度变化）
     scrollToBottom(false);
+    [100, 300, 600, 1000].forEach(function(d) { setTimeout(scrollToBottom, d); });
+    window.addEventListener('load', function() {
+        scrollToBottom(false);
+        setTimeout(scrollToBottom, 200);
+    });
     // 启动定时刷新
     setInterval(fetchMessages, 5000);
     // 单独定时同步 MC 日志

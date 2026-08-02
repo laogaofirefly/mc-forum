@@ -60,14 +60,12 @@ class GameChatController extends Controller
         if (! Auth::check()) {
             return response()->json(['ok' => false, 'message' => '请先登录'], 401);
         }
-
         $request->validate([
             'message' => 'required|string|min:1|max:200',
         ], [
             'message.required' => '消息内容不能为空',
             'message.max' => '消息最多 200 字',
         ]);
-
         $message = trim($request->input('message'));
         $user = Auth::user();
         $playerName = $user->name;
@@ -76,7 +74,6 @@ class GameChatController extends Controller
         $rconPassword = config('services.minecraft.rcon.password', '');
         $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
         $rconPort = (int) config('services.minecraft.rcon.port', 25575);
-
         if (empty($rconPassword)) {
             return response()->json([
                 'ok' => false,
@@ -92,19 +89,30 @@ class GameChatController extends Controller
             'timestamp' => now(),
         ]);
 
-        // 通过 RCON 发送 say 命令到游戏
-        // 格式：say [网站] 玩家名：消息
-        // [网站] 标记用于日志同步服务识别并跳过，避免重复入库
+        // 通过 RCON 发送 tellraw 命令，伪装成普通玩家聊天
+        // 格式：<玩家名> 消息内容
+        // 使用 tellraw 而非 say：
+        // 1. say 会显示 [Server] 前缀，暴露消息来自网站
+        // 2. say 会写日志导致日志同步服务可能重复入库
+        // 3. tellraw 纯客户端显示，不写日志，视觉上完全等同玩家游戏内聊天
         try {
             $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
             $rcon->connect();
 
-            // 用 [网站] 前缀标记，日志同步服务会跳过含此标记的消息
-            $command = sprintf('say [网站] %s：%s', $playerName, $message);
+            // 构造 tellraw JSON，模拟 MC 默认聊天格式
+            // 游戏内显示为：<玩家名> 消息 —— 和普通玩家说话一模一样
+            $raw = json_encode([
+                ['text' => '<', 'color' => 'gray'],
+                ['text' => $playerName, 'color' => 'gold'],
+                ['text' => '> ', 'color' => 'gray'],
+                ['text' => $message, 'color' => 'white'],
+            ], JSON_UNESCAPED_UNICODE);
+
+            $command = 'tellraw @a ' . escapeshellarg($raw);
             $rcon->sendCommand($command);
             $rcon->disconnect();
         } catch (\Throwable $e) {
-            // RCON 失败不影响网页端显示，返回警告但标记为成功
+            // RCON 失败不影响网页端显示
             return response()->json([
                 'ok' => true,
                 'message' => '消息已保存，但发送到游戏失败：' . $e->getMessage(),

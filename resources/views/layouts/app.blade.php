@@ -48,6 +48,13 @@
             transition: all 0.15s ease;
             min-height: 44px;
             font-weight: 600;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            vertical-align: middle;
+            text-align: center;
         }
         .btn-primary:hover { background-color: #059669; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
         .btn-primary:active { transform: translateY(0); }
@@ -59,6 +66,13 @@
             transition: all 0.15s ease;
             min-height: 44px;
             font-weight: 500;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            vertical-align: middle;
+            text-align: center;
         }
         .btn-secondary:hover { background-color: #f8fafc; border-color: #cbd5e1; }
 
@@ -68,8 +82,18 @@
             transition: all 0.15s ease;
             min-height: 44px;
             font-weight: 600;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            vertical-align: middle;
+            text-align: center;
         }
         .btn-danger:hover { background-color: #dc2626; }
+
+        /* 全宽按钮：把 inline-flex 变成 block 撑满 */
+        .btn-primary.w-full, .btn-secondary.w-full, .btn-danger.w-full { display: flex; width: 100%; }
 
         /* 卡片 */
         .card {

@@ -27,7 +27,8 @@
         
         {{-- 聊天背景图区域 --}}
         <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-100">
-            <div class="w-40 h-24 rounded-lg bg-cover bg-center shadow-inner ring-1 ring-slate-200 overflow-hidden flex-shrink-0" style="{{ auth()->user()->chat_bg ? 'background-image: url('' . e(auth()->user()->getChatBgUrl()) . '')' : 'background: linear-gradient(135deg, #e2e8f0, #cbd5e1)' }}"></div>
+            @php $chatBgUrl = auth()->user()->getChatBgUrl(); @endphp
+            <div class="w-40 h-24 rounded-lg bg-cover bg-center shadow-inner ring-1 ring-slate-200 overflow-hidden flex-shrink-0" style="@if($chatBgUrl)background-image: url('{{ $chatBgUrl }}')@else background: linear-gradient(135deg, #e2e8f0, #cbd5e1) @endif"></div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-slate-700 mb-1">🎨 游戏聊天背景图</p>
                 <p class="text-xs text-slate-500 mb-2">支持 JPG/PNG/WEBP，最大 5MB。不设置则使用默认背景。</p>

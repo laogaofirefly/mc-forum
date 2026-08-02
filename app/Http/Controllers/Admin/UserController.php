@@ -14,31 +14,21 @@ class UserController extends Controller
 {
     public function __construct()
     {
-        // 所有方法都要管理员权限
-        $this->middleware(function (Request $request, $next) {
-            if (! $request->user() || ! $request->user()->isAdmin()) {
-                abort(403, '仅管理员可访问');
-            }
-            return $next($request);
-        });
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403, '仅管理员可访问');
     }
 
-    /**
-     * 用户列表（带搜索 + 统计）
-     */
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('q', ''));
-        $filter = (string) $request->input('filter', 'all'); // all | blocked | admin | mc_bound
-
+        $filter = (string) $request->input('filter', 'all');
         $query = User::query()
             ->withCount(['threads', 'replies']);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhere('mc_username', 'like', '%' . $search . '%');
+                    ->orWhere('email', 'like', '%' . $search . '%')
+                    ->orWhere('mc_username', 'like', '%' . $search . '%');
             });
         }
 
@@ -53,13 +43,11 @@ class UserController extends Controller
                 $query->whereNotNull('mc_uuid');
                 break;
             default:
-                // all 不加条件
                 break;
         }
 
         $users = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
 
-        // 顶部统计
         $stats = [
             'total' => User::count(),
             'blocked' => User::where('is_blocked', true)->count(),
@@ -71,12 +59,8 @@ class UserController extends Controller
         return view('admin.users.index', compact('users', 'search', 'filter', 'stats'));
     }
 
-    /**
-     * 封禁用户
-     */
     public function block(Request $request, User $user): RedirectResponse
     {
-        // 不能封禁自己和其他管理员
         if ($user->id === $request->user()->id) {
             return back()->with('error', '不能封禁自己');
         }
@@ -99,9 +83,6 @@ class UserController extends Controller
         return back()->with('success', "已封禁用户 {$user->name}");
     }
 
-    /**
-     * 解封用户
-     */
     public function unblock(User $user): RedirectResponse
     {
         $user->update([
@@ -113,9 +94,6 @@ class UserController extends Controller
         return back()->with('success', "已解封用户 {$user->name}");
     }
 
-    /**
-     * 用户详情（活动统计）
-     */
     public function show(User $user): View
     {
         $user->loadCount(['threads', 'replies', 'likes']);

@@ -57,22 +57,46 @@
                 @foreach($players as $player)
                     <div class="card p-4 text-center card-hover {{ $player['online'] ? 'ring-2 ring-green-200' : '' }}">
                         <div class="relative inline-block">
-                            <img src="{{ $player['avatar'] }}" alt="{{ $player['name'] }}"
-                                class="w-16 h-16 rounded-full mx-auto bg-slate-100 object-cover ring-2 ring-slate-100"
-                                loading="lazy">
+                            @if($player['bound'])
+                                <a href="{{ route('profile.show', $player['bound_user_id']) }}" title="查看网站主页：{{ $player['bound_user_name'] }}">
+                                    <img src="{{ $player['avatar'] }}" alt="{{ $player['name'] }}"
+                                        class="w-16 h-16 rounded-full mx-auto bg-slate-100 object-cover ring-2 ring-primary-200"
+                                        loading="lazy">
+                                </a>
+                            @else
+                                <img src="{{ $player['avatar'] }}" alt="{{ $player['name'] }}"
+                                    class="w-16 h-16 rounded-full mx-auto bg-slate-100 object-cover ring-2 ring-slate-100"
+                                    loading="lazy">
+                            @endif
                             @if($player['online'])
                                 <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" title="在线"></span>
                             @endif
                         </div>
                         <div class="mt-2 font-medium text-slate-900 text-sm truncate" title="{{ $player['name'] }}">
-                            {{ $player['name'] }}
-                        </div>
-                        <div class="mt-0.5 text-xs {{ $player['online'] ? 'text-green-600' : 'text-slate-400' }}">
-                            @if($player['online'])
-                                在线中
+                            @if($player['bound'])
+                                <a href="{{ route('profile.show', $player['bound_user_id']) }}" class="hover:text-primary-600 hover:underline">
+                                    {{ $player['name'] }}
+                                </a>
                             @else
-                                离线
+                                {{ $player['name'] }}
                             @endif
+                        </div>
+                        <div class="mt-0.5 flex items-center justify-center gap-1 flex-wrap">
+                            @if($player['bound'])
+                                <span class="badge bg-primary-50 text-primary-600 text-[10px] px-1.5 py-0.5" title="已绑定网站账号：{{ $player['bound_user_name'] }}">
+                                    <svg class="w-2.5 h-2.5 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    已绑定
+                                </span>
+                            @endif
+                            <span class="text-xs {{ $player['online'] ? 'text-green-600' : 'text-slate-400' }}">
+                                @if($player['online'])
+                                    在线
+                                @else
+                                    离线
+                                @endif
+                            </span>
                         </div>
                     </div>
                 @endforeach

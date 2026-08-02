@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServerStatus;
+use App\Models\User;
 use App\Services\MinecraftPlayerService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -26,14 +27,31 @@ class PlayerController extends Controller
             }
         }
 
+        // 查询所有已绑定 MC 用户名的网站账号，建立 小写mc_username => User 的映射
+        // 这样成员列表里匹配到的玩家就可以直接显示网站头像
+        $boundUsers = User::whereNotNull('mc_username')
+            ->where('mc_username', '!=', '')
+            ->get(['id', 'name', 'mc_username', 'avatar', 'mc_uuid', 'updated_at']);
+        $boundMap = [];
+        foreach ($boundUsers as $u) {
+            $boundMap[strtolower((string) $u->mc_username)] = $u;
+        }
+
         // 标记每个玩家是否在线，并补带头像 URL
         $players = [];
         foreach ($result['players'] as $player) {
+            // 优先使用绑定的网站账号头像
+            $boundUser = $boundMap[strtolower($player['name'])] ?? null;
+            $isBound = $boundUser !== null;
+
             $players[] = [
                 'name' => $player['name'],
                 'uuid' => $player['uuid'],
-                'avatar' => $playerService->getAvatarUrl($player['uuid']),
+                'avatar' => $isBound ? $boundUser->getAvatarUrl() : $playerService->getAvatarUrl($player['uuid']),
                 'online' => isset($onlineNames[$player['name']]),
+                'bound' => $isBound,
+                'bound_user_id' => $isBound ? $boundUser->id : null,
+                'bound_user_name' => $isBound ? $boundUser->name : null,
             ];
         }
 

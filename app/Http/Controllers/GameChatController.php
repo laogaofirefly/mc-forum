@@ -45,6 +45,15 @@ class GameChatController extends Controller
 
     /**
      * 从网站向游戏发消息（通过 RCON 调用 say 命令）
+     *
+     * 使用 say 命令而非 tellraw，因为：
+     * 1. say 命令的消息会写入服务器日志，日志同步服务可以正常拉取
+     * 2. say 命令在游戏内所有玩家都能看到
+     * 3. tellraw 不写日志，会导致网页端看不到自己发的消息
+     *
+     * say 命令格式：say [网站] 玩家名：消息内容
+     * 游戏内显示：[Server] [网站] 玩家名：消息内容
+     * 日志同步服务会跳过含 [网站] 的消息，避免重复入库
      */
     public function send(Request $request): JsonResponse
     {
@@ -75,39 +84,39 @@ class GameChatController extends Controller
             ], 500);
         }
 
-        // 通过 RCON 发送 tellraw 命令，伪装成玩家聊天格式 <玩家> 消息
-        // tellraw 格式：tellraw @a {"text":"<玩家名> 消息内容"}
-        // 这样游戏内显示为：<牢高> 你好呀
-        try {
-            $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 2);
-            $rcon->connect();
-
-            // 转义 JSON 特殊字符：双引号、反斜杠、换行
-            $safeName = addslashes($playerName);
-            $safeMessage = addslashes($message);
-
-            // tellraw JSON：用 text 字段拼装，<玩家名> 前缀加上实际消息
-            $tellrawText = sprintf('<%s> %s', $safeName, $safeMessage);
-            $tellrawJson = sprintf('{"text":"%s"}', $tellrawText);
-
-            $command = 'tellraw @a ' . $tellrawJson;
-            $rcon->sendCommand($command);
-            $rcon->disconnect();
-        } catch (\Throwable $e) {
-            return response()->json([
-                'ok' => false,
-                'message' => '发送到游戏失败：' . $e->getMessage(),
-            ], 500);
-        }
-
-        // 同时把这条消息存进数据库（让网页聊天页也能看到自己发的）
-        // channel 标记为 web，与游戏内 global 区分
+        // 先把消息存进数据库（即使 RCON 失败，网页端也能看到）
         $saved = GameChatMessage::create([
             'player_name' => $playerName,
             'message' => $message,
             'channel' => 'web',
             'timestamp' => now(),
         ]);
+
+        // 通过 RCON 发送 say 命令到游戏
+        // 格式：say [网站] 玩家名：消息
+        // [网站] 标记用于日志同步服务识别并跳过，避免重复入库
+        try {
+            $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
+            $rcon->connect();
+
+            // 用 [网站] 前缀标记，日志同步服务会跳过含此标记的消息
+            $command = sprintf('say [网站] %s：%s', $playerName, $message);
+            $rcon->sendCommand($command);
+            $rcon->disconnect();
+        } catch (\Throwable $e) {
+            // RCON 失败不影响网页端显示，返回警告但标记为成功
+            return response()->json([
+                'ok' => true,
+                'message' => '消息已保存，但发送到游戏失败：' . $e->getMessage(),
+                'record' => [
+                    'id' => $saved->id,
+                    'player_name' => $saved->player_name,
+                    'message' => $saved->message,
+                    'timestamp' => $saved->timestamp->format('H:i:s'),
+                ],
+                'rcon_error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'ok' => true,

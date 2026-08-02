@@ -52,7 +52,7 @@
         </div>
         <div class="border-t border-slate-200 px-3 py-2 flex items-center justify-between bg-white">
             <div class="text-xs text-slate-500">
-                共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · 每 <span class="text-primary-600">5 秒</span> 自动刷新
+                共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · <span class="text-primary-600">实时刷新</span>
             </div>
             <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
                 ↓ 滚动到底部
@@ -388,9 +388,9 @@
             setTimeout(function() { scrollToBottom(false); }, 800);
         });
     }
-    // 启动定时刷新（只拉数据，不读日志，速度快）
-    refreshTimer = setInterval(fetchMessages, 5000);
-    // 单独定时同步 MC 日志（10 秒一次，与拉数据分开，避免阻塞发送）
+    // 启动定时刷新（只拉数据，不读日志，速度快）- 2秒实时刷新
+    refreshTimer = setInterval(fetchMessages, 2000);
+    // 单独定时同步 MC 日志（5 秒一次，与拉数据分开，避免阻塞发送）
     setInterval(function() {
         fetch('{{ route("chat-sync") }}', {
             method: 'POST',
@@ -398,7 +398,7 @@
             credentials: 'same-origin',
             body: '{}',
         }).catch(function(){});
-    }, 10000);
+    }, 5000);
 })();
 </script>
 @endsection

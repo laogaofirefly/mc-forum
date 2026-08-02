@@ -2,6 +2,16 @@
 <html lang="zh-CN" class="">
 <head>
     <meta charset="UTF-8">
+    <!-- 阻止夜间模式闪烁：必须在任何内容渲染前执行 -->
+    <script>
+        (function() {
+            var stored = localStorage.getItem('mc-forum-dark');
+            if (stored === 'true' || (stored === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#10b981" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#1e293b" media="(prefers-color-scheme: dark)">
@@ -430,15 +440,8 @@
                 }
             }
 
-            // 初始化：优先 localStorage，其次系统偏好
-            var stored = localStorage.getItem('mc-forum-dark');
-            if (stored !== null) {
-                setDark(stored === 'true');
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                setDark(true);
-            } else {
-                setDark(false);
-            }
+            // 初始化：从阻塞脚本设置的状态读取（避免闪烁）
+            setDark(html.classList.contains('dark'));
 
             if (toggle) {
                 toggle.addEventListener('click', function() {

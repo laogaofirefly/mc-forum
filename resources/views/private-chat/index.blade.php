@@ -45,7 +45,7 @@
                             @endforeach
                             <div class="px-3 py-1.5 text-xs text-slate-400 font-medium border-t border-slate-100 mt-1 pt-2">其他用户</div>
                         @endif
-                        <div id="contactList">
+                        <div id="contactUserList">
                             @foreach($users as $u)
                                 <button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="{{ $u->id }}" data-name="{{ $u->name }}" data-avatar="{{ $u->getAvatarUrl() }}">
                                     <img src="{{ $u->getAvatarUrl() }}" alt="{{ $u->name }}" class="w-7 h-7 rounded-full">
@@ -365,12 +365,14 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     }
 
     function bindContactItems() {
+        // 使用事件委托，避免 innerHTML 替换后事件丢失
         document.querySelectorAll('.contact-item').forEach(function(item) {
+            if (item.dataset.bound === '1') return;
+            item.dataset.bound = '1';
             item.addEventListener('click', function() {
                 var id = this.dataset.id;
-                var name = this.dataset.name;
-                var avatar = this.dataset.avatar;
-                // 跳转到新对话
+                // 跳转到新对话，先关闭下拉
+                contactDropdown.classList.add('hidden');
                 window.location.href = '{{ route("private-chat") }}?with=' + id;
             });
         });

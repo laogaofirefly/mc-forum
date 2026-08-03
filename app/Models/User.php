@@ -24,6 +24,8 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    protected $appends = ['avatar_url'];
+
     protected function casts(): array
     {
         return [
@@ -80,6 +82,14 @@ class User extends Authenticatable
 
         // 未上传自定义头像，无论是否绑定 MC 账号，都用名字首字母
         return PlayerAvatarService::initialAvatar($this->name ?: 'U');
+    }
+
+    /**
+     * Laravel accessor: makes avatar_url available in JSON serialization
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        return $this->getAvatarUrl();
     }
 
     /**

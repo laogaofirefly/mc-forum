@@ -8,6 +8,7 @@ use App\Services\PlayerAvatarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class PrivateChatController extends Controller
@@ -18,12 +19,12 @@ class PrivateChatController extends Controller
         $messages = collect();
         $chatUser = null;
         $withId = $request->integer('with');
+        $tableExists = Schema::hasTable('private_messages');
 
-        if ($withId && $withId !== $userId) {
+        if ($withId && $withId !== $userId && $tableExists) {
             $chatUser = User::where('id', $withId)->where('is_blocked', false)->first();
             if ($chatUser) {
                 $messages = PrivateMessage::getConversation($userId, $chatUser->id, 100);
-                // 标记对方发来的消息为已读
                 PrivateMessage::where('sender_id', $chatUser->id)
                     ->where('receiver_id', $userId)
                     ->whereNull('read_at')
@@ -31,7 +32,7 @@ class PrivateChatController extends Controller
             }
         }
 
-        $contacts = PrivateMessage::getRecentContacts($userId);
+        $contacts = $tableExists ? PrivateMessage::getRecentContacts($userId) : collect();
         $users = User::where('id', '!=', $userId)
             ->where('is_blocked', false)
             ->orderBy('name')
@@ -47,6 +48,10 @@ class PrivateChatController extends Controller
 
     public function fetch(Request $request): JsonResponse
     {
+        if (!Schema::hasTable('private_messages')) {
+            return response()->json(['ok' => false, 'message' => '私聊功能未初始化，请运行 php artisan migrate --force'], 500);
+        }
+
         $userId = Auth::id();
         $withId = $request->integer('with_id');
         $afterId = $request->integer('after_id', 0);
@@ -93,6 +98,10 @@ class PrivateChatController extends Controller
     {
         if (!Auth::check()) {
             return response()->json(['ok' => false, 'message' => '请先登录'], 401);
+        }
+
+        if (!Schema::hasTable('private_messages')) {
+            return response()->json(['ok' => false, 'message' => '私聊功能未初始化，请运行 php artisan migrate --force'], 500);
         }
 
         $request->validate([
@@ -142,6 +151,10 @@ class PrivateChatController extends Controller
 
     public function contacts(Request $request): JsonResponse
     {
+        if (!Schema::hasTable('private_messages')) {
+            return response()->json(['ok' => true, 'contacts' => []]);
+        }
+
         $userId = Auth::id();
         $contacts = PrivateMessage::getRecentContacts($userId);
 

@@ -87,7 +87,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                         <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 order-1 object-cover">
                         @endif
                     @else
-                        <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? '' : 'ml-9 sm:ml-10' }}">
+                        <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'mr-9 sm:mr-10' : 'ml-9 sm:ml-10' }}">
                             {!! $bubbleHtml !!}
                         </div>
                     @endif
@@ -266,7 +266,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                 '</div>' +
                 (isMine && avatarImg ? '<div class="w-2 flex-shrink-0"></div>' + avatarImg.replace('flex-shrink-0', 'flex-shrink-0 order-1') : '');
         } else {
-            html = '<div class="max-w-[75%] sm:max-w-[65%]' + (isMine ? '' : ' ml-9 sm:ml-10') + '">' + bubble + '</div>';
+            html = '<div class="max-w-[75%] sm:max-w-[65%]' + (isMine ? ' mr-9 sm:mr-10' : ' ml-9 sm:ml-10') + '">' + bubble + '</div>';
         }
         row.innerHTML = html;
         chatBody.appendChild(row);

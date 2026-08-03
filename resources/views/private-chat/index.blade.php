@@ -317,7 +317,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         }
     }
 
-    // === 用户选择 ===
+    // === 用户选择（事件委托，无需逐个绑定） ===
     if (contactBtn) {
         contactBtn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -327,27 +327,34 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
             }
         });
 
-        document.addEventListener('click', function() {
-            contactDropdown.classList.add('hidden');
-        });
-
-        contactDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
+        document.addEventListener('click', function(e) {
+            // 点击下拉外部时关闭
+            if (!contactDropdown.contains(e.target) && e.target !== contactBtn) {
+                contactDropdown.classList.add('hidden');
+            }
         });
     }
 
-    // 搜索用户
-    var defaultContactsHtml = '';
-    if (contactListEl) defaultContactsHtml = contactListEl.innerHTML;
+    // 委托：所有 .contact-item 点击统一处理（包括搜索后动态生成）
+    contactDropdown.addEventListener('click', function(e) {
+        var item = e.target.closest('.contact-item');
+        if (!item) return;
+        e.preventDefault();
+        var id = item.dataset.id;
+        contactDropdown.classList.add('hidden');
+        window.location.href = '{{ route("private-chat") }}?with=' + id;
+    });
 
+    // 搜索用户
     if (contactSearch) {
         var searchTimer = null;
+        var defaultListHtml = contactListEl ? contactListEl.innerHTML : '';
+
         contactSearch.addEventListener('input', function() {
             var q = this.value.trim();
             clearTimeout(searchTimer);
             if (q.length < 1) {
-                contactListEl.innerHTML = defaultContactsHtml;
-                bindContactItems();
+                contactListEl.innerHTML = defaultListHtml;
                 return;
             }
             searchTimer = setTimeout(function() {
@@ -356,29 +363,16 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                     .then(function(d) {
                         if (!d.ok) return;
                         contactListEl.innerHTML = (d.users || []).map(function(u) {
-                            return '<button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="' + u.id + '" data-name="' + escapeHtml(u.name) + '" data-avatar="' + escapeHtml(u.avatar_url) + '"><img src="' + escapeHtml(u.avatar_url) + '" alt="' + escapeHtml(u.name) + '" class="w-7 h-7 rounded-full"><span class="text-slate-700">' + escapeHtml(u.name) + '</span></button>';
+                            var name = escapeHtml(u.name);
+                            var avatar = escapeHtml(u.avatar_url || '');
+                            return '<button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="' + u.id + '" data-name="' + name + '">' +
+                                '<img src="' + avatar + '" alt="' + name + '" class="w-7 h-7 rounded-full" onerror="this.style.display=\'none\'">' +
+                                '<span class="text-slate-700">' + name + '</span></button>';
                         }).join('') || '<div class="px-3 py-2 text-sm text-slate-400">未找到用户</div>';
-                        bindContactItems();
                     });
             }, 200);
         });
     }
-
-    function bindContactItems() {
-        // 使用事件委托，避免 innerHTML 替换后事件丢失
-        document.querySelectorAll('.contact-item').forEach(function(item) {
-            if (item.dataset.bound === '1') return;
-            item.dataset.bound = '1';
-            item.addEventListener('click', function() {
-                var id = this.dataset.id;
-                // 跳转到新对话，先关闭下拉
-                contactDropdown.classList.add('hidden');
-                window.location.href = '{{ route("private-chat") }}?with=' + id;
-            });
-        });
-    }
-
-    bindContactItems();
 
     // === 发消息 ===
     if (sendForm) {

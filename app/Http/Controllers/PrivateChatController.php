@@ -37,11 +37,7 @@ class PrivateChatController extends Controller
             ->where('is_blocked', false)
             ->orderBy('name')
             ->limit(20)
-            ->get()
-            ->map(function ($user) {
-                $user->avatar_url = $user->getAvatarUrl();
-                return $user;
-            });
+            ->get();
 
         return view('private-chat.index', compact('messages', 'chatUser', 'contacts', 'users'));
     }
@@ -182,10 +178,7 @@ class PrivateChatController extends Controller
             ->orderBy('name')
             ->limit(20)
             ->get()
-            ->map(function ($user) {
-                $user->avatar_url = $user->getAvatarUrl();
-                return $user;
-            });
+            ->makeHidden(['email', 'password', 'remember_token', 'is_admin', 'mc_uuid', 'updated_at', 'created_at']);
 
         return response()->json([
             'ok' => true,

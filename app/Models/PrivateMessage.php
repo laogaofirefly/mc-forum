@@ -68,10 +68,6 @@ class PrivateMessage extends Model
             ->where('is_blocked', false)
             ->orderBy('name')
             ->limit($limit)
-            ->get()
-            ->map(function ($user) {
-                $user->avatar_url = $user->getAvatarUrl();
-                return $user;
-            });
+            ->get();
     }
 }

@@ -1,8 +1,24 @@
 @echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
-REM MC 论坛一键更新脚本 (Windows)
-REM 用法：双击运行或在项目根目录命令行执行 update.bat
+REM ============================================
+REM  MC 论坛一键更新（桌面版）
+REM  把此文件放到桌面，双击即可更新
+REM  如果项目路径不同，修改下面 PROJECT_DIR 即可
+REM ============================================
+
+set "PROJECT_DIR=C:\Users\Administrator\Desktop\mc-forum"
+
+if not exist "%PROJECT_DIR%" (
+    echo 错误：项目目录不存在
+    echo %PROJECT_DIR%
+    echo.
+    echo 请右键编辑此文件，修改 PROJECT_DIR 为实际项目路径
+    pause
+    exit /b 1
+)
+
+cd /d "%PROJECT_DIR%"
 
 echo ========================================
 echo   MC 论坛一键更新
@@ -12,7 +28,7 @@ echo.
 
 echo [1/6] 拉取最新代码...
 
-REM 先检查是否有本地未提交的修改
+REM 先暂存本地未提交的修改
 git diff --quiet
 if %errorlevel% neq 0 (
     echo   检测到本地有未提交的修改，先暂存...
@@ -26,7 +42,6 @@ if %errorlevel% neq 0 (
     echo   已暂存
 )
 
-REM 拉取远程代码
 git pull 2>&1
 if %errorlevel% neq 0 (
     echo.
@@ -35,21 +50,15 @@ if %errorlevel% neq 0 (
     echo     2. GitHub Token 过期（去 GitHub Settings 重新生成）
     echo     3. 本地有冲突需要手动解决
     echo.
-    if "!STASHED!"=="1" (
-        echo   正在恢复之前暂存的修改...
-        git stash pop
-    )
+    if "!STASHED!"=="1" ( git stash pop )
     pause
     exit /b 1
 )
 
-REM 恢复之前暂存的修改
 if "!STASHED!"=="1" (
     echo   恢复暂存的修改...
     git stash pop
-    if %errorlevel% neq 0 (
-        echo   警告：恢复暂存时出现冲突，请手动处理
-    )
+    if %errorlevel% neq 0 ( echo   警告：恢复暂存时出现冲突，请手动处理 )
 )
 echo.
 

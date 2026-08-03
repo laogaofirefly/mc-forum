@@ -49,6 +49,7 @@
 $currentUserName = auth()->check() ? auth()->user()->name : '';
 $today = now()->format('Y-m-d');
 $lastDate = '';
+$lastPlayerName = '';
 @endphp
             @foreach($messages as $m)
 @php
@@ -60,24 +61,35 @@ $lastDate = '';
                     if ($showDate && $msgDate) {
                         $dateDisplay = $msgDate === $today ? '今天' : $m->timestamp->format('m-d');
                     }
+                    $samePlayer = $lastPlayerName === $m->player_name;
+                    $showName = !$samePlayer;
+                    $lastPlayerName = $m->player_name;
                 @endphp
                 @if($showDate && $msgDate)
                 <div class="flex justify-center my-2">
                     <span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $dateDisplay }}</span>
                 </div>
                 @endif
-                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1 items-start" data-id="{{ $m->id }}">
-                    @if(!$isMine)
-                    <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
-                    @endif
-                    <div class="max-w-[75%] sm:max-w-[65%]">
-                        <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>
-                        <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
-                            {{ $m->message }}
+                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 {{ $showName ? 'py-1' : 'py-0.5' }} items-start" data-id="{{ $m->id }}">
+                    @if($showName)
+                        @if(!$isMine)
+                        <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
+                        @endif
+                        <div class="max-w-[75%] sm:max-w-[65%]">
+                            <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>
+                            <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
+                                {{ $m->message }}
+                            </div>
                         </div>
-                    </div>
-                    @if($isMine)
-                    <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 order-1 object-cover">
+                        @if($isMine)
+                        <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 order-1 object-cover">
+                        @endif
+                    @else
+                        <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? '' : 'ml-9 sm:ml-10' }}">
+                            <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
+                                {{ $m->message }}
+                            </div>
+                        </div>
                     @endif
                 </div>
             @endforeach
@@ -186,6 +198,7 @@ $lastDate = '';
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     var lastMsgDate = '';
+    var lastPlayerName = '';
     var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
 
     // 将 'YYYY-MM-DD' 转为显示用的日期标签：今天 → '今天'，其他 → 'MM-DD'
@@ -226,20 +239,31 @@ $lastDate = '';
         if (msgDate && msgDate !== lastMsgDate) {
             addDateLabel(formatDateLabel(msgDate));
             lastMsgDate = msgDate;
+            lastPlayerName = '';
         }
         const isMine = currentUserName && m.player_name === currentUserName;
+        const samePlayer = m.player_name === lastPlayerName;
+        const showName = !samePlayer;
+        lastPlayerName = m.player_name;
         const avatarUrl = m.avatar_url || '';
         const avatarHtml = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 object-cover">' : '';
         const row = document.createElement('div');
-        row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 py-1';
+        row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
         row.dataset.id = m.id;
-        row.innerHTML =
-            (isMine ? '' : avatarHtml + '<div class="w-2 flex-shrink-0"></div>') +
-            '<div class="max-w-[75%] sm:max-w-[65%]">' +
-                '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
-                '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
-            '</div>' +
-            (isMine && avatarHtml ? '<div class="w-2 flex-shrink-0"></div>' + avatarHtml.replace('flex-shrink-0', 'flex-shrink-0 order-1') : '');
+        if (showName) {
+            row.innerHTML =
+                (isMine ? '' : avatarHtml + '<div class="w-2 flex-shrink-0"></div>') +
+                '<div class="max-w-[75%] sm:max-w-[65%]">' +
+                    '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
+                    '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
+                '</div>' +
+                (isMine && avatarHtml ? '<div class="w-2 flex-shrink-0"></div>' + avatarHtml.replace('flex-shrink-0', 'flex-shrink-0 order-1') : '');
+        } else {
+            row.innerHTML =
+                '<div class="max-w-[75%] sm:max-w-[65%]' + (isMine ? '' : ' ml-9 sm:ml-10') + '">' +
+                    '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
+                '</div>';
+        }
         chatBody.appendChild(row);
         totalCount++;
         msgCountEl.textContent = totalCount;

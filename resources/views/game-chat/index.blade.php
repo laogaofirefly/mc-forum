@@ -12,7 +12,10 @@
             <p class="text-slate-500 text-xs sm:text-sm mt-1">实时查看 MC 服务器玩家聊天记录</p>
         </div>
         <div class="flex items-center gap-2">
-            <span id="chatStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-50 text-primary-700 border-primary-200">
+            <button type="button" id="fullscreenBtn" class="no-disable text-xs sm:text-sm px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition" title="全屏聊天">
+                ⛶ 全屏
+            </button>
+            <span id="chatStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-100 text-primary-700 border-primary-200">
                 <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
                 实时刷新中
             </span>
@@ -29,7 +32,7 @@
         </div>
     </div>
 
-    <div class="card overflow-hidden">
+    <div id="chatCard" class="card overflow-hidden flex flex-col">
         @php
     $chatBgUrl = auth()->check() ? auth()->user()->getChatBgUrl() : '';
 @endphp
@@ -115,19 +118,19 @@ $today = now()->format('Y-m-d');
             @endforeach
  @php unset($avatarCache); @endphp
         </div>
-        <div class="border-t border-slate-200 px-3 py-2 flex items-center justify-between bg-white">
-            <div class="text-xs text-slate-500">
-                共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · <span class="text-primary-600">实时刷新</span>
-            </div>
-            <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
-                ↓ 滚动到底部
-            </button>
         </div>
-    </div>
-
-    @auth
-        <div class="card p-3 sm:p-4">
-            <form id="sendForm" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
+        <div id="chatFooter" class="border-t border-slate-200 bg-white">
+            <div class="flex items-center justify-between px-3 py-2">
+                <div class="text-xs text-slate-500">
+                    共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · <span class="text-primary-600">实时刷新</span>
+                </div>
+                <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
+                    ↓ 滚动到底部
+                </button>
+            </div>
+            @auth
+            <div id="sendBox" class="border-t border-slate-200 px-3 py-2 hidden">
+                <form id="sendForm" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
                 <textarea
                     id="sendInput"
                     name="message"
@@ -146,7 +149,22 @@ $today = now()->format('Y-m-d');
                 </button>
             </form>
             <p id="sendHint" class="text-xs text-slate-500 mt-2">提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。</p>
+            </div>
+            @endauth
         </div>
+    </div>
+
+    @auth
+    <div id="sendBoxOuter" class="card p-3 sm:p-4">
+        <form id="sendFormOuter" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
+            <textarea id="sendInputOuter" name="message" maxlength="200" rows="1" autocomplete="off"
+                placeholder="向游戏内发送消息（以你的用户名牢高 [网站] 显示）..."
+                class="input flex-1 px-3 py-2 text-sm resize-none"
+            ></textarea>
+            <button type="submit" id="sendBtnOuter" class="btn-primary text-sm whitespace-nowrap">发送到游戏</button>
+        </form>
+        <p id="sendHintOuter" class="text-xs text-slate-500 mt-2">提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。</p>
+    </div>
     @endauth
 
     @auth
@@ -187,10 +205,22 @@ $today = now()->format('Y-m-d');
     const scrollBtn = document.getElementById('scrollBottomBtn');
     const demoBtn = document.getElementById('demoMsgBtn');
     const syncBtn = document.getElementById('syncLogBtn');
-    const sendForm = document.getElementById('sendForm');
-    const sendInput = document.getElementById('sendInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const sendHint = document.getElementById('sendHint');
+    // 发送框双份 DOM（全屏内 + 外部），统一通过 getter 获取当前激活的
+    const sendFormEl = document.getElementById('sendForm');
+    const sendInputEl = document.getElementById('sendInput');
+    const sendBtnEl = document.getElementById('sendBtn');
+    const sendHintEl = document.getElementById('sendHint');
+    const sendFormOuter = document.getElementById('sendFormOuter');
+    const sendInputOuter = document.getElementById('sendInputOuter');
+    const sendBtnOuter = document.getElementById('sendBtnOuter');
+    const sendHintOuter = document.getElementById('sendHintOuter');
+    const sendBox = document.getElementById('sendBox');
+    const sendBoxOuter = document.getElementById('sendBoxOuter');
+    let isFullscreen = false;
+    function activeSendForm() { return isFullscreen ? sendFormEl : sendFormOuter; }
+    function activeSendInput() { return isFullscreen ? sendInputEl : sendInputOuter; }
+    function activeSendBtn() { return isFullscreen ? sendBtnEl : sendBtnOuter; }
+    function activeSendHint() { return isFullscreen ? sendHintEl : sendHintOuter; }
     let currentUserName = '';
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
@@ -400,67 +430,127 @@ $today = now()->format('Y-m-d');
     }
 
     // === 发消息到游戏 ===
-    if (sendForm) {
-        let sending = false;
-        sendForm.addEventListener('submit', async function(e) {
+    // === 发消息到游戏（统一绑定两份表单） ===
+    let sending = false;
+    function bindSendForm(formEl) {
+        if (!formEl) return;
+        formEl.addEventListener('submit', async function(e) {
             e.preventDefault();
-            // 防止重复发送（按钮已禁用或正在发送中）
             if (sending) return;
-            const msg = sendInput.value.trim();
+            var input = activeSendInput();
+            var btn = activeSendBtn();
+            var hint = activeSendHint();
+            var msg = input.value.trim();
             if (!msg) return;
-
             sending = true;
-            sendBtn.disabled = true;
-            sendBtn.textContent = '发送中...';
-            sendHint.textContent = '正在发送到游戏内玩家...';
-            sendHint.className = 'text-xs text-amber-600 mt-2';
-
+            btn.disabled = true;
+            btn.textContent = '发送中...';
+            hint.textContent = '正在发送到游戏内玩家...';
+            hint.className = 'text-xs text-amber-600 mt-2';
             try {
                 const formData = new FormData();
                 formData.append('message', msg);
-                const res = await fetch('{{ route("game-chat.send") }}', {
+                const res = await fetch('{{ route('game-chat.send') }}', {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
                     credentials: 'same-origin',
                     body: formData,
                 });
                 const data = await res.json();
-
                 if (data && data.ok) {
-                    // 把自己发的消息直接加到列表（appendMessage 内部有 ID 去重）
                     if (data.record) appendMessage(data.record);
-                    sendInput.value = '';
-                    sendHint.textContent = '✓ 已发送到游戏';
-                    sendHint.className = 'text-xs text-primary-600 mt-2';
-                    // 强制滚到底部
+                    input.value = '';
+                    hint.textContent = '✓ 已发送到游戏';
+                    hint.className = 'text-xs text-primary-600 mt-2';
                     autoScroll = true;
                     scrollToBottom(false);
                     setTimeout(function() { scrollToBottom(false); }, 50);
                     setTimeout(function() { scrollToBottom(false); }, 200);
                     setTimeout(function() { scrollToBottom(false); }, 500);
                     setTimeout(() => {
-                        sendHint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
-                        sendHint.className = 'text-xs text-slate-500 mt-2';
+                        hint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
+                        hint.className = 'text-xs text-slate-500 mt-2';
                     }, 3000);
                 } else {
-                    let errMsg = (data && data.message) ? data.message : '发送失败';
-                    if (data && data.errors && data.errors.message) {
-                        errMsg = data.errors.message[0];
-                    }
-                    sendHint.textContent = '✗ ' + errMsg;
-                    sendHint.className = 'text-xs text-red-600 mt-2';
+                    var errMsg = (data && data.message) ? data.message : '发送失败';
+                    if (data && data.errors && data.errors.message) errMsg = data.errors.message[0];
+                    hint.textContent = '✗ ' + errMsg;
+                    hint.className = 'text-xs text-red-600 mt-2';
                 }
             } catch(e) {
-                sendHint.textContent = '✗ 网络错误：' + e.message;
-                sendHint.className = 'text-xs text-red-600 mt-2';
+                hint.textContent = '✗ 网络错误：' + e.message;
+                hint.className = 'text-xs text-red-600 mt-2';
             } finally {
                 sending = false;
-                sendBtn.disabled = false;
-                sendBtn.textContent = '发送到游戏';
-                // 不 disable sendInput，直接 focus
-                try { sendInput.focus(); } catch(e) {}
+                btn.disabled = false;
+                btn.textContent = '发送到游戏';
+                try { input.focus(); } catch(e) {}
             }
         });
+    }
+    bindSendForm(sendFormEl);
+    bindSendForm(sendFormOuter);
+
+    // === 全屏切换 ===
+    var fullscreenBtn = document.getElementById('fullscreenBtn');
+    var chatCard = document.getElementById('chatCard');
+    if (fullscreenBtn && chatCard) {
+        fullscreenBtn.addEventListener('click', function() {
+            isFullscreen = !isFullscreen;
+            if (isFullscreen) {
+                enterFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        });
+    }
+    function enterFullscreen() {
+        // 保存原始样式以便恢复
+        chatCard._origClass = chatCard.className;
+        chatCard._origStyle = chatCard.style.cssText;
+        chatBody._origClass = chatBody.className;
+        chatBody._origStyle = chatBody.style.cssText;
+        // 全屏卡片
+        chatCard.className = 'fixed inset-0 z-50 flex flex-col bg-white shadow-2xl';
+        // chatBody 自动撑满
+        chatBody.className = 'flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50';
+        chatBody.style.cssText = 'overflow-y:auto;overflow-x:hidden;' + (chatBody.style.backgroundImage ? 'background-image:' + chatBody.style.backgroundImage + ';background-size:cover;background-position:center;background-blend-mode:overlay;' : '');
+        // 显示全屏内发送框，隐藏外部
+        if (sendBox) sendBox.classList.remove('hidden');
+        if (sendBoxOuter) sendBoxOuter.style.display = 'none';
+        // 同步输入框内容
+        if (sendInputEl && sendInputOuter) sendInputEl.value = sendInputOuter.value;
+        fullscreenBtn.innerHTML = '✕ 退出全屏';
+        fullscreenBtn.title = '退出全屏';
+        // 滚动到底部
+        chatBody.scrollTop = chatBody.scrollHeight;
+        // 防止 body 滚动
+        document.body.style.overflow = 'hidden';
+    }
+    function exitFullscreen() {
+        // 恢复
+        chatCard.className = chatCard._origClass || 'card overflow-hidden flex flex-col';
+        chatCard.style.cssText = '';
+        chatBody.className = chatBody._origClass || 'h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50';
+        chatBody.style.cssText = chatBody._origStyle || '';
+        // 隐藏全屏内发送框，显示外部
+        if (sendBox) sendBox.classList.add('hidden');
+        if (sendBoxOuter) sendBoxOuter.style.display = '';
+        // 同步输入框内容
+        if (sendInputOuter && sendInputEl) sendInputOuter.value = sendInputEl.value;
+        fullscreenBtn.innerHTML = '⛶ 全屏';
+        fullscreenBtn.title = '全屏聊天';
+        document.body.style.overflow = '';
+        // 滚动到底部
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+    // ESC 退出全屏
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isFullscreen) {
+            exitFullscreen();
+            isFullscreen = false;
+        }
+    }););
     }
 
     // === 日志预览面板 ===

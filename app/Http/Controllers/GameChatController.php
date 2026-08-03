@@ -32,10 +32,13 @@ class GameChatController extends Controller
             'last_id' => $messages->last()?->id ?? $afterId,
             'time' => now()->toDateTimeString(),
             'messages' => $messages->map(function ($m) {
+                $user = \App\Models\User::where('name', $m->player_name)->first();
+                $avatarUrl = $user ? $user->getAvatarUrl() : \App\Services\PlayerAvatarService::initialAvatar($m->player_name);
                 return [
                     'id' => $m->id,
                     'player_name' => $m->player_name,
                     'player_uuid' => $m->player_uuid,
+                    'avatar_url' => $avatarUrl,
                     'message' => $m->message,
                     'channel' => $m->channel,
                     'timestamp' => $m->timestamp?->format('H:i:s') ?? now()->format('H:i:s'),
@@ -117,11 +120,12 @@ class GameChatController extends Controller
             return response()->json([
                 'ok' => true,
                 'message' => '消息已保存，但发送到游戏失败：' . $e->getMessage(),
-                'record' => [
+                    'record' => [
                     'id' => $saved->id,
                     'player_name' => $saved->player_name,
                     'message' => $saved->message,
                     'timestamp' => $saved->timestamp->format('H:i:s'),
+                    'avatar_url' => $user->getAvatarUrl(),
                 ],
                 'rcon_error' => $e->getMessage(),
             ]);
@@ -135,6 +139,7 @@ class GameChatController extends Controller
                 'player_name' => $saved->player_name,
                 'message' => $saved->message,
                 'timestamp' => $saved->timestamp->format('H:i:s'),
+                'avatar_url' => $user->getAvatarUrl(),
             ],
         ]);
     }

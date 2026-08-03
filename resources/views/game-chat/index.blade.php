@@ -57,7 +57,9 @@ function getPlayerAvatar($name, &$cache) {
 }
 $lastPlayer = '';
 $lastTime = null;
+$lastDate = '';
 $timeGap = 300;
+$today = now()->format('Y-m-d');
 @endphp
             @foreach($messages as $idx => $m)
                 @php
@@ -67,10 +69,21 @@ $timeGap = 300;
                     $showLabel = ($lastTime > 0 && ($msgTs - $lastTime) > $timeGap);
                     $lastPlayer = $m->player_name;
                     $lastTime = $msgTs;
+                    // 时间标签文本
+                    if ($m->timestamp) {
+                        $msgDate = $m->timestamp->format('Y-m-d');
+                        if ($msgDate === $today) {
+                            $labelText = $m->timestamp->format('H:i');
+                        } else {
+                            $labelText = $m->timestamp->format('m-d H:i');
+                        }
+                    } else {
+                        $labelText = '--:--';
+                    }
                 @endphp
                 @if($idx === 0 || $showLabel)
                 <div class="time-label flex justify-center my-2">
-                    <span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $m->timestamp?->format('H:i') ?? '--:--' }}</span>
+                    <span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $labelText }}</span>
                 </div>
                 @endif
                 <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} items-end gap-2 px-2 py-0.5" data-id="{{ $m->id }}" data-player="{{ $m->player_name }}">
@@ -207,7 +220,9 @@ $timeGap = 300;
 
     // ===== QQ 群聊风格 JS =====
     var lastPlayer = '';
-    var lastMsgTime = 0;
+    var lastMsgTime = 0;        // 秒级时间戳（跨天判断用）
+    var lastMsgDate = '';       // 'Y-m-d' 字符串
+    var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     var timeGap = 300;
     function hashColor(name) {
         var hash = 0;
@@ -218,18 +233,33 @@ $timeGap = 300;
         var h = Math.abs(hash) % 360;
         return 'hsl(' + h + ', 28%, 42%)';
     }
-    function parseTimeSeconds(timeStr) {
-        if (!timeStr || timeStr === '--:--') return 0;
-        var parts = timeStr.split(':');
-        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + (parts[2] ? parseInt(parts[2]) : 0);
+    // 解析 'Y-m-d H:i:s' 格式的时间字符串，返回 { sec: 秒时间戳, date: 'Y-m-d' } 或 null
+    function parseTimestamp(timeStr) {
+        if (!timeStr) return null;
+        var m = timeStr.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+        if (!m) return null;
+        var date = m[1];
+        var h = parseInt(m[2]), min = parseInt(m[3]), s = m[4] ? parseInt(m[4]) : 0;
+        var sec = h * 3600 + min * 60 + s;
+        return { timestamp: new Date(date + 'T' + String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':' + String(s).padStart(2,'0')).getTime() / 1000 | 0, date: date, sec: sec };
     }
-    function addTimeLabel(timeStr) {
+    // 格式化时间标签文本：当天只显示 HH:mm；跨天显示 mm-dd HH:mm
+    function formatTimeLabel(parsed) {
+        if (!parsed) return '--:--';
+        var h = String(Math.floor(parsed.sec / 3600)).padStart(2,'0');
+        var m = String(Math.floor((parsed.sec % 3600) / 60)).padStart(2,'0');
+        var timePart = h + ':' + m;
+        if (parsed.date === todayStr) return timePart;
+        var parts = parsed.date.split('-');
+        return parts[1] + '-' + parts[2] + ' ' + timePart;
+    }
+    function addTimeLabel(text) {
         var label = document.createElement('div');
         label.className = 'time-label flex justify-center my-2';
-        label.innerHTML = '<span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">' + escapeHtml(timeStr) + '</span>';
+        label.innerHTML = '<span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">' + escapeHtml(text) + '</span>';
         return label;
     }
-    // 页面加载后从 DOM 同步状态
+    // 页面加载后从 DOM 同步状态，并滚动到底部
     (function syncState() {
         var rows = chatBody.querySelectorAll('.chat-row');
         if (rows.length > 0) {
@@ -238,21 +268,32 @@ $timeGap = 300;
         }
         var labels = chatBody.querySelectorAll('.time-label span');
         if (labels.length > 0) {
-            lastMsgTime = parseTimeSeconds(labels[labels.length - 1].textContent || '');
+            var txt = labels[labels.length - 1].textContent || '';
+            var parsed = parseTimestamp(txt);
+            if (parsed) { lastMsgTime = parsed.timestamp; lastMsgDate = parsed.date; }
         }
+        // 滚动到最新消息
+        chatBody.scrollTop = chatBody.scrollHeight;
     })();
     function appendMessage(m) {
         if (emptyTip) emptyTip.remove();
         if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) return;
         var isMine = currentUserName && m.player_name === currentUserName;
-        var timeStr = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.substring(0, 5) : m.timestamp) : '--:--';
-        var curSec = parseTimeSeconds(typeof m.timestamp === 'string' ? m.timestamp : '');
+        var parsed = parseTimestamp(typeof m.timestamp === 'string' ? m.timestamp : '');
+        var curSec = parsed ? parsed.timestamp : 0;
         var samePlayer = (m.player_name === lastPlayer && m.player_name !== '');
-        if (lastMsgTime > 0 && curSec > 0 && (curSec - lastMsgTime) > timeGap) {
-            chatBody.appendChild(addTimeLabel(timeStr));
+        // 跨天或超过 timeGap 插入时间标签
+        var needLabel = false;
+        if (lastMsgTime > 0 && curSec > 0) {
+            if ((lastMsgDate && parsed && lastMsgDate !== parsed.date) || (curSec - lastMsgTime) > timeGap) {
+                needLabel = true;
+            }
+        }
+        if (needLabel) {
+            chatBody.appendChild(addTimeLabel(formatTimeLabel(parsed)));
             lastPlayer = '';
         }
-        if (curSec > 0) lastMsgTime = curSec;
+        if (curSec > 0) { lastMsgTime = curSec; lastMsgDate = parsed ? parsed.date : ''; }
         lastPlayer = m.player_name;
         var row = document.createElement('div');
         row.className = 'chat-row flex items-end gap-2 px-2 py-0.5 ' + (isMine ? 'justify-end' : 'justify-start');

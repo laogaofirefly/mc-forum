@@ -41,7 +41,7 @@ class GameChatController extends Controller
                     'avatar_url' => $avatarUrl,
                     'message' => $m->message,
                     'channel' => $m->channel,
-                    'timestamp' => $m->timestamp?->format('H:i:s') ?? now()->format('H:i:s'),
+                    'timestamp' => $m->timestamp?->format('Y-m-d H:i:s') ?? now()->format('Y-m-d H:i:s'),
                 ];
             }),
         ]);
@@ -124,7 +124,7 @@ class GameChatController extends Controller
                     'id' => $saved->id,
                     'player_name' => $saved->player_name,
                     'message' => $saved->message,
-                    'timestamp' => $saved->timestamp->format('H:i:s'),
+                    'timestamp' => $saved->timestamp->format('Y-m-d H:i:s'),
                     'avatar_url' => $user->getAvatarUrl(),
                 ],
                 'rcon_error' => $e->getMessage(),
@@ -138,7 +138,7 @@ class GameChatController extends Controller
                 'id' => $saved->id,
                 'player_name' => $saved->player_name,
                 'message' => $saved->message,
-                'timestamp' => $saved->timestamp->format('H:i:s'),
+                'timestamp' => $saved->timestamp->format('Y-m-d H:i:s'),
                 'avatar_url' => $user->getAvatarUrl(),
             ],
         ]);
@@ -175,7 +175,7 @@ class GameChatController extends Controller
                 'id' => $created->id,
                 'player_name' => $created->player_name,
                 'message' => $created->message,
-                'timestamp' => $created->timestamp->format('H:i:s'),
+                'timestamp' => $created->timestamp->format('Y-m-d H:i:s'),
             ],
         ]);
     }

@@ -302,6 +302,7 @@
                     <a href="{{ route('threads.index') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">全部帖子</a>
                     <a href="{{ route('players.index') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">服务器成员</a>
                     <a href="{{ route('game-chat') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">游戏聊天</a>
+                    <a href="{{ route('private-chat') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">私聊</a>
                     @auth
                         <a href="{{ route('threads.create') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">发帖</a>
                         @if(auth()->user()->isAdmin())
@@ -359,6 +360,7 @@
                 <a href="{{ route('threads.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">📋 全部帖子</a>
                 <a href="{{ route('players.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">👥 服务器成员</a>
                 <a href="{{ route('game-chat') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">💬 游戏聊天</a>
+                <a href="{{ route('private-chat') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">✉️ 私聊</a>
                 @auth
                     <a href="{{ route('notifications.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🔔 消息通知 <span id="mobileNotifyCount" class="hidden ml-1 inline-block px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">0</span></a>
                     <a href="{{ route('threads.create') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">✏️ 发帖</a>

@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\PrivateChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplyController;
 use App\Http\Controllers\ServerStatusController;
@@ -59,6 +60,15 @@ Route::get('/game-chat', [GameChatController::class, 'index'])->name('game-chat'
 Route::get('/game-chat/fetch', [GameChatController::class, 'fetch'])->name('game-chat.fetch');
 Route::post('/game-chat/send', [GameChatController::class, 'send'])->name('game-chat.send')->middleware('auth');
 Route::post('/game-chat/demo', [GameChatController::class, 'demo'])->name('game-chat.demo')->middleware('auth');
+
+// 用户私聊
+Route::middleware('auth')->group(function () {
+    Route::get('/private-chat', [PrivateChatController::class, 'index'])->name('private-chat');
+    Route::get('/private-chat/fetch', [PrivateChatController::class, 'fetch'])->name('private-chat.fetch');
+    Route::post('/private-chat/send', [PrivateChatController::class, 'send'])->name('private-chat.send');
+    Route::get('/private-chat/contacts', [PrivateChatController::class, 'contacts'])->name('private-chat.contacts');
+    Route::get('/private-chat/search-users', [PrivateChatController::class, 'searchUsers'])->name('private-chat.search-users');
+});
 
 // MC 服务器成员名单
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');

@@ -26,30 +26,56 @@ if %errorlevel% neq 0 (
     echo   已暂存
 )
 
-REM 拉取远程代码
-git pull 2>&1
+REM 拉取，同时显示错误信息
+set "GIT_ERR="
+for /f "delims=" %%i in ('git pull 2^>^&1') do (
+    echo   %%i
+    set "GIT_ERR=!GIT_ERR! %%i"
+)
 if %errorlevel% neq 0 (
     echo.
-    echo   拉取失败！可能原因：
-    echo     1. 网络不通，无法连接 GitHub
-    echo     2. GitHub Token 过期（去 GitHub Settings 重新生成）
-    echo     3. 本地有冲突需要手动解决
+    echo   ========================================
+    echo   拉取失败！错误信息见上方输出
+    echo   ========================================
     echo.
-    if "!STASHED!"=="1" (
-        echo   正在恢复之前暂存的修改...
-        git stash pop
+    echo !GIT_ERR! | findstr /i "Authentication Invalid remote rejected fatal could not" >nul
+    if !errorlevel! equ 0 (
+        echo   很可能是 GitHub Token 过期了。
+        echo.
+        echo   解决方法：
+        echo     1. 浏览器打开 https://github.com/settings/tokens
+        echo     2. 点击 Generate new token ^(classic^)
+        echo     3. 勾选 repo 权限，生成后复制新 Token
+        echo     4. 粘贴到下方输入框中
+        echo.
+        set /p "NEW_TOKEN=请输入新的 GitHub Token: "
+        if not "!NEW_TOKEN!"=="" (
+            echo   正在更新远程地址...
+            git remote set-url origin https://!NEW_TOKEN!@github.com/laogaofirefly/mc-forum.git
+            echo   已更新，重新尝试拉取...
+            git pull
+            if !errorlevel! neq 0 (
+                echo   仍然失败，请检查 Token 是否正确
+                if "!STASHED!"=="1" ( git stash pop )
+                pause
+                exit /b 1
+            )
+        ) else (
+            if "!STASHED!"=="1" ( git stash pop )
+            pause
+            exit /b 1
+        )
+    ) else (
+        if "!STASHED!"=="1" ( git stash pop )
+        pause
+        exit /b 1
     )
-    pause
-    exit /b 1
 )
 
-REM 恢复之前暂存的修改
 if "!STASHED!"=="1" (
     echo   恢复暂存的修改...
     git stash pop
-    if %errorlevel% neq 0 (
-        echo   警告：恢复暂存时出现冲突，请手动处理
-    )
+    if %errorlevel% neq 0 ( echo   警告：恢复暂存时出现冲突，请手动处理 )
 )
 echo.
 

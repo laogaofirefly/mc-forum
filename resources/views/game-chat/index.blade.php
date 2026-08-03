@@ -45,12 +45,30 @@
                     </div>
                 </div>
             @endif
-@php $currentUserName = auth()->check() ? auth()->user()->name : ''; @endphp
+@php
+$currentUserName = auth()->check() ? auth()->user()->name : '';
+$today = now()->format('Y-m-d');
+$lastDate = '';
+@endphp
             @foreach($messages as $m)
-                @php $isMine = $currentUserName && $m->player_name === $currentUserName; @endphp
+                @php
+                    $isMine = $currentUserName && $m->player_name === $currentUserName;
+                    $msgDate = $m->timestamp ? $m->timestamp->format('Y-m-d') : '';
+                    $showDate = $msgDate && $msgDate !== $lastDate;
+                    $lastDate = $msgDate ?: $lastDate;
+                    $timeDisplay = $m->timestamp ? $m->timestamp->format('H:i') : '--:--';
+                    if ($showDate && $msgDate) {
+                        $dateDisplay = $msgDate === $today ? '今天' : $msgDate;
+                    }
+                @endphp
+                @if($showDate && $msgDate)
+                <div class="flex justify-center my-2">
+                    <span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $dateDisplay }}</span>
+                </div>
+                @endif
                 <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1" data-id="{{ $m->id }}">
                     <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'order-1' : '' }}">
-                        <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $m->timestamp?->format('H:i') ?? '--:--' }}</div>
+                        <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>
                         <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
                             {{ $m->message }}
                         </div>
@@ -161,14 +179,41 @@
 
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    var lastMsgDate = '';
+    var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+
+    function addDateLabel(dateStr) {
+        var label = document.createElement('div');
+        label.className = 'flex justify-center my-2';
+        label.innerHTML = '<span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">' + escapeHtml(dateStr) + '</span>';
+        chatBody.appendChild(label);
+    }
+
     function appendMessage(m) {
         if (emptyTip) emptyTip.remove();
         // 用 ID 去重，避免同一条消息被重复添加
         if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
             return;
         }
+        // 解析消息日期和时间
+        var timestamp = m.timestamp;
+        var timeStr = '--:--';
+        var msgDate = '';
+        if (timestamp) {
+            if (typeof timestamp === 'string' && timestamp.length >= 16) {
+                msgDate = timestamp.substring(0, 10);
+                timeStr = timestamp.substring(11, 16);
+            } else if (typeof timestamp === 'string' && timestamp.length >= 5) {
+                timeStr = timestamp.substring(0, 5);
+            }
+        }
+        // 跨天则插入日期标签
+        if (msgDate && msgDate !== lastMsgDate) {
+            var label = msgDate === todayStr ? '今天' : msgDate;
+            addDateLabel(label);
+            lastMsgDate = msgDate;
+        }
         const isMine = currentUserName && m.player_name === currentUserName;
-        const timeStr = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.substring(0, 5) : m.timestamp) : '--:--';
         const row = document.createElement('div');
         row.className = 'chat-row flex ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 py-1';
         row.dataset.id = m.id;

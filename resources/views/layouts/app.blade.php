@@ -77,6 +77,7 @@
             padding-bottom: env(safe-area-inset-bottom);
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+        button, a, [role="button"] { touch-action: manipulation; }
         /* 按钮 */
         .btn-primary {
             background-color: #10b981;
@@ -345,6 +346,15 @@
         </div>
         <div class="mobile-nav md:hidden border-t border-slate-100 bg-white dark:bg-slate-800 dark:border-slate-700" id="mobileNav">
             <div class="px-3 py-3 space-y-1">
+                {{-- 夜间模式切换 --}}
+                <button type="button" id="mobileDarkToggle" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700" aria-label="切换夜间模式">
+                    <span class="flex items-center gap-2">
+                        <span id="mobileDarkIcon">🌙</span> 夜间模式
+                    </span>
+                    <span class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-slate-300 dark:bg-primary-500" id="mobileDarkSwitch">
+                        <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1 dark:translate-x-6"></span>
+                    </span>
+                </button>
                 <a href="{{ route('home') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🏠 首页</a>
                 <a href="{{ route('threads.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">📋 全部帖子</a>
                 <a href="{{ route('players.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">👥 服务器成员</a>
@@ -423,36 +433,45 @@
     <script>
         // ========== 暗色模式 ==========
         (function() {
-            var toggle = document.getElementById('darkModeToggle');
+            var html = document.documentElement;
+            var desktopToggle = document.getElementById('darkModeToggle');
             var darkIcon = document.getElementById('darkIcon');
             var lightIcon = document.getElementById('lightIcon');
-            var html = document.documentElement;
+            var mobileToggle = document.getElementById('mobileDarkToggle');
+            var mobileDarkIcon = document.getElementById('mobileDarkIcon');
+            var mobileSwitch = document.getElementById('mobileDarkSwitch');
 
             function setDark(isDark) {
                 if (isDark) {
                     html.classList.add('dark');
-                    darkIcon.classList.add('hidden');
-                    lightIcon.classList.remove('hidden');
+                    if (darkIcon) darkIcon.classList.add('hidden');
+                    if (lightIcon) lightIcon.classList.remove('hidden');
+                    if (mobileDarkIcon) mobileDarkIcon.textContent = '☀️';
+                    if (mobileSwitch) { mobileSwitch.classList.add('dark:bg-primary-500'); mobileSwitch.classList.remove('bg-slate-300'); }
                 } else {
                     html.classList.remove('dark');
-                    lightIcon.classList.add('hidden');
-                    darkIcon.classList.remove('hidden');
+                    if (lightIcon) lightIcon.classList.add('hidden');
+                    if (darkIcon) darkIcon.classList.remove('hidden');
+                    if (mobileDarkIcon) mobileDarkIcon.textContent = '🌙';
+                    if (mobileSwitch) { mobileSwitch.classList.remove('dark:bg-primary-500'); mobileSwitch.classList.add('bg-slate-300'); }
                 }
             }
 
-            // 初始化：从阻塞脚本设置的状态读取（避免闪烁）
+            function toggleDark() {
+                var isDark = !html.classList.contains('dark');
+                setDark(isDark);
+                localStorage.setItem('mc-forum-dark', isDark);
+                var metaLight = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
+                var metaDark = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+                if (metaLight) metaLight.content = isDark ? '#1e293b' : '#10b981';
+                if (metaDark) metaDark.content = isDark ? '#1e293b' : '#10b981';
+            }
+
+            // 初始化：从阻塞脚本设置的状态读取
             setDark(html.classList.contains('dark'));
 
-            if (toggle) {
-                toggle.addEventListener('click', function() {
-                    var isDark = !html.classList.contains('dark');
-                    setDark(isDark);
-                    localStorage.setItem('mc-forum-dark', isDark);
-                    // 切换 meta theme-color
-                    document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]').content = isDark ? '#1e293b' : '#10b981';
-                    document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]').content = isDark ? '#1e293b' : '#10b981';
-                });
-            }
+            if (desktopToggle) desktopToggle.addEventListener('click', toggleDark);
+            if (mobileToggle) mobileToggle.addEventListener('click', toggleDark);
 
             // 监听系统主题变化
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
@@ -468,18 +487,43 @@
             var mobileNav = document.getElementById('mobileNav');
             var menuIcon = document.getElementById('menuIcon');
             var closeIcon = document.getElementById('closeIcon');
+            var backdrop = null;
+
+            function openMenu() {
+                mobileNav.classList.add('active');
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+                // 添加遮罩层
+                if (!backdrop) {
+                    backdrop = document.createElement('div');
+                    backdrop.className = 'fixed inset-0 bg-black/30 z-40 md:hidden';
+                    backdrop.style.top = '64px';
+                    backdrop.addEventListener('click', closeMenu);
+                    backdrop.addEventListener('touchstart', function(e) { e.preventDefault(); closeMenu(); });
+                }
+                document.body.appendChild(backdrop);
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMenu() {
+                mobileNav.classList.remove('active');
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+                if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+                document.body.style.overflow = '';
+            }
+
             if (mobileMenuBtn) {
                 mobileMenuBtn.addEventListener('click', function() {
-                    mobileNav.classList.toggle('active');
-                    menuIcon.classList.toggle('hidden');
-                    closeIcon.classList.toggle('hidden');
+                    if (mobileNav.classList.contains('active')) {
+                        closeMenu();
+                    } else {
+                        openMenu();
+                    }
                 });
-                mobileNav.querySelectorAll('a').forEach(function(link) {
-                    link.addEventListener('click', function() {
-                        mobileNav.classList.remove('active');
-                        menuIcon.classList.remove('hidden');
-                        closeIcon.classList.add('hidden');
-                    });
+                // 导航链接点击关闭菜单（暗色模式切换按钮除外）
+                mobileNav.querySelectorAll('a, form button[type="submit"]').forEach(function(el) {
+                    el.addEventListener('click', function() { closeMenu(); });
                 });
             }
         })();

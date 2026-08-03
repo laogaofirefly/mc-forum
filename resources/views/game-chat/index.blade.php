@@ -58,7 +58,7 @@ $lastDate = '';
                     $lastDate = $msgDate ?: $lastDate;
                     $timeDisplay = $m->timestamp ? $m->timestamp->format('H:i') : '--:--';
                     if ($showDate && $msgDate) {
-                        $dateDisplay = $msgDate === $today ? '今天' : $msgDate;
+                        $dateDisplay = $msgDate === $today ? '今天' : $m->timestamp->format('m-d');
                     }
                 @endphp
                 @if($showDate && $msgDate)
@@ -182,6 +182,13 @@ $lastDate = '';
     var lastMsgDate = '';
     var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
 
+    // 将 'YYYY-MM-DD' 转为显示用的日期标签：今天 → '今天'，其他 → 'MM-DD'
+    function formatDateLabel(dateStr) {
+        if (!dateStr || dateStr.length < 10) return dateStr || '';
+        if (dateStr === todayStr) return '今天';
+        return dateStr.substring(5, 10); // 'MM-DD'
+    }
+
     function addDateLabel(dateStr) {
         var label = document.createElement('div');
         label.className = 'flex justify-center my-2';
@@ -189,28 +196,29 @@ $lastDate = '';
         chatBody.appendChild(label);
     }
 
+    // 从时间戳字符串解析出日期和时:分
+    function parseTimestamp(ts) {
+        if (!ts || typeof ts !== 'string') return { date: '', time: '--:--' };
+        if (ts.length >= 16) {
+            return { date: ts.substring(0, 10), time: ts.substring(11, 16) };
+        }
+        if (ts.length >= 5) {
+            return { date: '', time: ts.substring(0, 5) };
+        }
+        return { date: '', time: '--:--' };
+    }
+
     function appendMessage(m) {
         if (emptyTip) emptyTip.remove();
-        // 用 ID 去重，避免同一条消息被重复添加
-        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
-            return;
-        }
-        // 解析消息日期和时间
-        var timestamp = m.timestamp;
-        var timeStr = '--:--';
-        var msgDate = '';
-        if (timestamp) {
-            if (typeof timestamp === 'string' && timestamp.length >= 16) {
-                msgDate = timestamp.substring(0, 10);
-                timeStr = timestamp.substring(11, 16);
-            } else if (typeof timestamp === 'string' && timestamp.length >= 5) {
-                timeStr = timestamp.substring(0, 5);
-            }
-        }
-        // 跨天则插入日期标签
+        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) return;
+
+        var parsed = parseTimestamp(m.timestamp);
+        var timeStr = parsed.time;
+        var msgDate = parsed.date;
+
+        // 跨天插入日期标签
         if (msgDate && msgDate !== lastMsgDate) {
-            var label = msgDate === todayStr ? '今天' : msgDate;
-            addDateLabel(label);
+            addDateLabel(formatDateLabel(msgDate));
             lastMsgDate = msgDate;
         }
         const isMine = currentUserName && m.player_name === currentUserName;

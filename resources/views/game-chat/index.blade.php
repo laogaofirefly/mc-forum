@@ -50,6 +50,8 @@ $currentUserName = auth()->check() ? auth()->user()->name : '';
 $today = now()->format('Y-m-d');
 $lastDate = '';
 $lastPlayerName = '';
+$bubbleMine = 'bg-blue-500 text-white rounded-br-md';
+$bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
 @endphp
             @foreach($messages as $m)
 @php
@@ -64,6 +66,8 @@ $lastPlayerName = '';
                     $samePlayer = $lastPlayerName === $m->player_name;
                     $showName = !$samePlayer;
                     $lastPlayerName = $m->player_name;
+                    $bubbleClass = $isMine ? $bubbleMine : $bubbleOther;
+                    $bubbleHtml = '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' . $bubbleClass . '">' . e($m->message) . '</div>';
                 @endphp
                 @if($showDate && $msgDate)
                 <div class="flex justify-center my-2">
@@ -77,18 +81,14 @@ $lastPlayerName = '';
                         @endif
                         <div class="max-w-[75%] sm:max-w-[65%]">
                             <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>
-                            <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
-                                {{ $m->message }}
-                            </div>
+                            {!! $bubbleHtml !!}
                         </div>
                         @if($isMine)
                         <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 order-1 object-cover">
                         @endif
                     @else
                         <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? '' : 'ml-9 sm:ml-10' }}">
-                            <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
-                                {{ $m->message }}
-                            </div>
+                            {!! $bubbleHtml !!}
                         </div>
                     @endif
                 </div>
@@ -200,6 +200,13 @@ $lastPlayerName = '';
     var lastMsgDate = '';
     var lastPlayerName = '';
     var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    const BUBBLE_MINE = 'bg-blue-500 text-white rounded-br-md';
+    const BUBBLE_OTHER = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
+    const AVATAR_CLASS = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 object-cover';
+
+    function makeBubble(msg, isMine) {
+        return '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? BUBBLE_MINE : BUBBLE_OTHER) + '">' + escapeHtml(msg) + '</div>';
+    }
 
     // 将 'YYYY-MM-DD' 转为显示用的日期标签：今天 → '今天'，其他 → 'MM-DD'
     function formatDateLabel(dateStr) {
@@ -235,7 +242,6 @@ $lastPlayerName = '';
         var timeStr = parsed.time;
         var msgDate = parsed.date;
 
-        // 跨天插入日期标签
         if (msgDate && msgDate !== lastMsgDate) {
             addDateLabel(formatDateLabel(msgDate));
             lastMsgDate = msgDate;
@@ -245,25 +251,24 @@ $lastPlayerName = '';
         const samePlayer = m.player_name === lastPlayerName;
         const showName = !samePlayer;
         lastPlayerName = m.player_name;
+        const bubble = makeBubble(m.message, isMine);
         const avatarUrl = m.avatar_url || '';
-        const avatarHtml = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 object-cover">' : '';
+        const avatarImg = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" class="' + AVATAR_CLASS + '">' : '';
         const row = document.createElement('div');
         row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
         row.dataset.id = m.id;
+        var html = '';
         if (showName) {
-            row.innerHTML =
-                (isMine ? '' : avatarHtml + '<div class="w-2 flex-shrink-0"></div>') +
+            html = (isMine ? '' : avatarImg + '<div class="w-2 flex-shrink-0"></div>') +
                 '<div class="max-w-[75%] sm:max-w-[65%]">' +
                     '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
-                    '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
+                    bubble +
                 '</div>' +
-                (isMine && avatarHtml ? '<div class="w-2 flex-shrink-0"></div>' + avatarHtml.replace('flex-shrink-0', 'flex-shrink-0 order-1') : '');
+                (isMine && avatarImg ? '<div class="w-2 flex-shrink-0"></div>' + avatarImg.replace('flex-shrink-0', 'flex-shrink-0 order-1') : '');
         } else {
-            row.innerHTML =
-                '<div class="max-w-[75%] sm:max-w-[65%]' + (isMine ? '' : ' ml-9 sm:ml-10') + '">' +
-                    '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
-                '</div>';
+            html = '<div class="max-w-[75%] sm:max-w-[65%]' + (isMine ? '' : ' ml-9 sm:ml-10') + '">' + bubble + '</div>';
         }
+        row.innerHTML = html;
         chatBody.appendChild(row);
         totalCount++;
         msgCountEl.textContent = totalCount;
@@ -349,9 +354,14 @@ $lastPlayerName = '';
     // === 发消息到游戏 ===
     if (sendForm) {
         let sending = false;
+        function setHint(text, color) {
+            sendHint.textContent = text;
+            sendHint.className = 'text-xs mt-2 ' + ({
+                green: 'text-primary-600', yellow: 'text-amber-600', red: 'text-red-600'
+            })[color] || 'text-slate-500';
+        }
         sendForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            // 防止重复发送（按钮已禁用或正在发送中）
             if (sending) return;
             const msg = sendInput.value.trim();
             if (!msg) return;
@@ -359,8 +369,7 @@ $lastPlayerName = '';
             sending = true;
             sendBtn.disabled = true;
             sendBtn.textContent = '发送中...';
-            sendHint.textContent = '正在发送到游戏内玩家...';
-            sendHint.className = 'text-xs text-amber-600 mt-2';
+            setHint('正在发送到游戏内玩家...', 'yellow');
 
             try {
                 const formData = new FormData();
@@ -374,37 +383,25 @@ $lastPlayerName = '';
                 const data = await res.json();
 
                 if (data && data.ok) {
-                    // 把自己发的消息直接加到列表（appendMessage 内部有 ID 去重）
                     if (data.record) appendMessage(data.record);
                     sendInput.value = '';
-                    sendHint.textContent = '✓ 已发送到游戏';
-                    sendHint.className = 'text-xs text-primary-600 mt-2';
-                    // 强制滚到底部
+                    setHint('✓ 已发送到游戏', 'green');
                     autoScroll = true;
                     scrollToBottom(false);
-                    setTimeout(function() { scrollToBottom(false); }, 50);
                     setTimeout(function() { scrollToBottom(false); }, 200);
                     setTimeout(function() { scrollToBottom(false); }, 500);
-                    setTimeout(() => {
-                        sendHint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
-                        sendHint.className = 'text-xs text-slate-500 mt-2';
-                    }, 3000);
+                    setTimeout(function() { setHint('提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。'); }, 3000);
                 } else {
-                    let errMsg = (data && data.message) ? data.message : '发送失败';
-                    if (data && data.errors && data.errors.message) {
-                        errMsg = data.errors.message[0];
-                    }
-                    sendHint.textContent = '✗ ' + errMsg;
-                    sendHint.className = 'text-xs text-red-600 mt-2';
+                    var errMsg = (data && data.message) ? data.message : '发送失败';
+                    if (data && data.errors && data.errors.message) errMsg = data.errors.message[0];
+                    setHint('✗ ' + errMsg, 'red');
                 }
             } catch(e) {
-                sendHint.textContent = '✗ 网络错误：' + e.message;
-                sendHint.className = 'text-xs text-red-600 mt-2';
+                setHint('✗ 网络错误：' + e.message, 'red');
             } finally {
                 sending = false;
                 sendBtn.disabled = false;
                 sendBtn.textContent = '发送到游戏';
-                // 不 disable sendInput，直接 focus
                 try { sendInput.focus(); } catch(e) {}
             }
         });
@@ -471,23 +468,10 @@ $lastPlayerName = '';
         }
     }
 
-    // 初始滚动到底部（多次延迟确保生效）
-    scrollToBottom(false);
-    setTimeout(function() { scrollToBottom(false); }, 50);
-    setTimeout(function() { scrollToBottom(false); }, 100);
-    setTimeout(function() { scrollToBottom(false); }, 200);
-    setTimeout(function() { scrollToBottom(false); }, 500);
-    setTimeout(function() { scrollToBottom(false); }, 1000);
-    setTimeout(function() { scrollToBottom(false); }, 1500);
-    if (document.readyState === 'complete') {
-        scrollToBottom(false);
-    } else {
-        window.addEventListener('load', function() {
-            scrollToBottom(false);
-            setTimeout(function() { scrollToBottom(false); }, 300);
-            setTimeout(function() { scrollToBottom(false); }, 800);
-        });
-    }
+    // 初始滚动到底部（多次延迟确保图片加载后也正确）
+    [50, 100, 200, 500, 1000, 1500].forEach(function(d) { setTimeout(function() { scrollToBottom(false); }, d); });
+    function onLoadScroll() { scrollToBottom(false); [300, 800].forEach(function(d) { setTimeout(function() { scrollToBottom(false); }, d); }); }
+    if (document.readyState === 'complete') { onLoadScroll(); } else { window.addEventListener('load', onLoadScroll); }
     // 启动定时刷新（只拉数据，不读日志，速度快）- 2秒实时刷新
     refreshTimer = setInterval(fetchMessages, 2000);
     // 单独定时同步 MC 日志（5 秒一次，与拉数据分开，避免阻塞发送）

@@ -77,7 +77,7 @@ $lastDate = '';
                         </div>
                     </div>
                     @if($isMine)
-                    <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 object-cover">
+                    <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 mt-4 object-cover">
                     @endif
                 </div>
             @endforeach
@@ -239,7 +239,7 @@ $lastDate = '';
                 '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
                 '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
             '</div>' +
-            (isMine && avatarHtml ? '<div class="w-2 flex-shrink-0 order-1"></div>' + avatarHtml : '');
+            (isMine && avatarHtml ? '<div class="w-2 flex-shrink-0 order-1"></div>' + avatarHtml.replace('flex-shrink-0', 'flex-shrink-0 mt-4') : '');
         chatBody.appendChild(row);
         totalCount++;
         msgCountEl.textContent = totalCount;

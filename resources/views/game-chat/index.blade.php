@@ -12,10 +12,7 @@
             <p class="text-slate-500 text-xs sm:text-sm mt-1">实时查看 MC 服务器玩家聊天记录</p>
         </div>
         <div class="flex items-center gap-2">
-            <button type="button" id="fullscreenBtn" class="no-disable text-xs sm:text-sm px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition" title="全屏聊天">
-                ⛶ 全屏
-            </button>
-            <span id="chatStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-100 text-primary-700 border-primary-200">
+            <span id="chatStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-50 text-primary-700 border-primary-200">
                 <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
                 实时刷新中
             </span>
@@ -32,7 +29,7 @@
         </div>
     </div>
 
-    <div id="chatCard" class="card overflow-hidden flex flex-col">
+    <div class="card overflow-hidden">
         @php
     $chatBgUrl = auth()->check() ? auth()->user()->getChatBgUrl() : '';
 @endphp
@@ -60,9 +57,7 @@ function getPlayerAvatar($name, &$cache) {
 }
 $lastPlayer = '';
 $lastTime = null;
-$lastDate = '';
 $timeGap = 300;
-$today = now()->format('Y-m-d');
 @endphp
             @foreach($messages as $idx => $m)
                 @php
@@ -72,21 +67,10 @@ $today = now()->format('Y-m-d');
                     $showLabel = ($lastTime > 0 && ($msgTs - $lastTime) > $timeGap);
                     $lastPlayer = $m->player_name;
                     $lastTime = $msgTs;
-                    // 时间标签文本
-                    if ($m->timestamp) {
-                        $msgDate = $m->timestamp->format('Y-m-d');
-                        if ($msgDate === $today) {
-                            $labelText = $m->timestamp->format('H:i');
-                        } else {
-                            $labelText = $m->timestamp->format('m-d H:i');
-                        }
-                    } else {
-                        $labelText = '--:--';
-                    }
                 @endphp
                 @if($idx === 0 || $showLabel)
                 <div class="time-label flex justify-center my-2">
-                    <span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $labelText }}</span>
+                    <span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $m->timestamp?->format('H:i') ?? '--:--' }}</span>
                 </div>
                 @endif
                 <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} items-end gap-2 px-2 py-0.5" data-id="{{ $m->id }}" data-player="{{ $m->player_name }}">
@@ -118,18 +102,19 @@ $today = now()->format('Y-m-d');
             @endforeach
  @php unset($avatarCache); @endphp
         </div>
-        <div id="chatFooter" class="border-t border-slate-200 bg-white">
-            <div class="flex items-center justify-between px-3 py-2">
-                <div class="text-xs text-slate-500">
-                    共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · <span class="text-primary-600">实时刷新</span>
-                </div>
-                <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
-                    ↓ 滚动到底部
-                </button>
+        <div class="border-t border-slate-200 px-3 py-2 flex items-center justify-between bg-white">
+            <div class="text-xs text-slate-500">
+                共 <span id="msgCount" class="text-slate-700 font-medium">{{ $messages->count() }}</span> 条 · <span class="text-primary-600">实时刷新</span>
             </div>
-            @auth
-            <div id="sendBox" class="border-t border-slate-200 px-3 py-2 hidden">
-                <form id="sendForm" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
+            <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
+                ↓ 滚动到底部
+            </button>
+        </div>
+    </div>
+
+    @auth
+        <div class="card p-3 sm:p-4">
+            <form id="sendForm" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
                 <textarea
                     id="sendInput"
                     name="message"
@@ -148,22 +133,7 @@ $today = now()->format('Y-m-d');
                 </button>
             </form>
             <p id="sendHint" class="text-xs text-slate-500 mt-2">提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。</p>
-            </div>
-            @endauth
         </div>
-    </div>
-
-    @auth
-    <div id="sendBoxOuter" class="card p-3 sm:p-4">
-        <form id="sendFormOuter" class="flex flex-col sm:flex-row gap-2" data-no-autodisable>
-            <textarea id="sendInputOuter" name="message" maxlength="200" rows="1" autocomplete="off"
-                placeholder="向游戏内发送消息（以你的用户名牢高 [网站] 显示）..."
-                class="input flex-1 px-3 py-2 text-sm resize-none"
-            ></textarea>
-            <button type="submit" id="sendBtnOuter" class="btn-primary text-sm whitespace-nowrap">发送到游戏</button>
-        </form>
-        <p id="sendHintOuter" class="text-xs text-slate-500 mt-2">提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。</p>
-    </div>
     @endauth
 
     @auth
@@ -204,23 +174,10 @@ $today = now()->format('Y-m-d');
     const scrollBtn = document.getElementById('scrollBottomBtn');
     const demoBtn = document.getElementById('demoMsgBtn');
     const syncBtn = document.getElementById('syncLogBtn');
-    // 发送框双份 DOM（全屏内 + 外部），统一通过 getter 获取当前激活的
-    const sendFormEl = document.getElementById('sendForm');
-    const sendInputEl = document.getElementById('sendInput');
-    const sendBtnEl = document.getElementById('sendBtn');
-    const sendHintEl = document.getElementById('sendHint');
-    const sendFormOuter = document.getElementById('sendFormOuter');
-    const sendInputOuter = document.getElementById('sendInputOuter');
-    const sendBtnOuter = document.getElementById('sendBtnOuter');
-    const sendHintOuter = document.getElementById('sendHintOuter');
-    const sendBox = document.getElementById('sendBox');
-    const sendBoxOuter = document.getElementById('sendBoxOuter');
-    let isFullscreen = false;
-
-    function activeSendForm() { return isFullscreen ? sendFormEl : sendFormOuter; }
-    function activeSendInput() { return isFullscreen ? sendInputEl : sendInputOuter; }
-    function activeSendBtn() { return isFullscreen ? sendBtnEl : sendBtnOuter; }
-    function activeSendHint() { return isFullscreen ? sendHintEl : sendHintOuter; }
+    const sendForm = document.getElementById('sendForm');
+    const sendInput = document.getElementById('sendInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendHint = document.getElementById('sendHint');
     let currentUserName = '';
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
@@ -250,9 +207,7 @@ $today = now()->format('Y-m-d');
 
     // ===== QQ 群聊风格 JS =====
     var lastPlayer = '';
-    var lastMsgTime = 0;        // 秒级时间戳（跨天判断用）
-    var lastMsgDate = '';       // 'Y-m-d' 字符串
-    var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    var lastMsgTime = 0;
     var timeGap = 300;
     function hashColor(name) {
         var hash = 0;
@@ -263,33 +218,18 @@ $today = now()->format('Y-m-d');
         var h = Math.abs(hash) % 360;
         return 'hsl(' + h + ', 28%, 42%)';
     }
-    // 解析 'Y-m-d H:i:s' 格式的时间字符串，返回 { sec: 秒时间戳, date: 'Y-m-d' } 或 null
-    function parseTimestamp(timeStr) {
-        if (!timeStr) return null;
-        var m = timeStr.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
-        if (!m) return null;
-        var date = m[1];
-        var h = parseInt(m[2]), min = parseInt(m[3]), s = m[4] ? parseInt(m[4]) : 0;
-        var sec = h * 3600 + min * 60 + s;
-        return { timestamp: new Date(date + 'T' + String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':' + String(s).padStart(2,'0')).getTime() / 1000 | 0, date: date, sec: sec };
+    function parseTimeSeconds(timeStr) {
+        if (!timeStr || timeStr === '--:--') return 0;
+        var parts = timeStr.split(':');
+        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + (parts[2] ? parseInt(parts[2]) : 0);
     }
-    // 格式化时间标签文本：当天只显示 HH:mm；跨天显示 mm-dd HH:mm
-    function formatTimeLabel(parsed) {
-        if (!parsed) return '--:--';
-        var h = String(Math.floor(parsed.sec / 3600)).padStart(2,'0');
-        var m = String(Math.floor((parsed.sec % 3600) / 60)).padStart(2,'0');
-        var timePart = h + ':' + m;
-        if (parsed.date === todayStr) return timePart;
-        var parts = parsed.date.split('-');
-        return parts[1] + '-' + parts[2] + ' ' + timePart;
-    }
-    function addTimeLabel(text) {
+    function addTimeLabel(timeStr) {
         var label = document.createElement('div');
         label.className = 'time-label flex justify-center my-2';
-        label.innerHTML = '<span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">' + escapeHtml(text) + '</span>';
+        label.innerHTML = '<span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">' + escapeHtml(timeStr) + '</span>';
         return label;
     }
-    // 页面加载后从 DOM 同步状态，并滚动到底部
+    // 页面加载后从 DOM 同步状态
     (function syncState() {
         var rows = chatBody.querySelectorAll('.chat-row');
         if (rows.length > 0) {
@@ -298,32 +238,21 @@ $today = now()->format('Y-m-d');
         }
         var labels = chatBody.querySelectorAll('.time-label span');
         if (labels.length > 0) {
-            var txt = labels[labels.length - 1].textContent || '';
-            var parsed = parseTimestamp(txt);
-            if (parsed) { lastMsgTime = parsed.timestamp; lastMsgDate = parsed.date; }
+            lastMsgTime = parseTimeSeconds(labels[labels.length - 1].textContent || '');
         }
-        // 滚动到最新消息
-        chatBody.scrollTop = chatBody.scrollHeight;
     })();
     function appendMessage(m) {
         if (emptyTip) emptyTip.remove();
         if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) return;
         var isMine = currentUserName && m.player_name === currentUserName;
-        var parsed = parseTimestamp(typeof m.timestamp === 'string' ? m.timestamp : '');
-        var curSec = parsed ? parsed.timestamp : 0;
+        var timeStr = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.substring(0, 5) : m.timestamp) : '--:--';
+        var curSec = parseTimeSeconds(typeof m.timestamp === 'string' ? m.timestamp : '');
         var samePlayer = (m.player_name === lastPlayer && m.player_name !== '');
-        // 跨天或超过 timeGap 插入时间标签
-        var needLabel = false;
-        if (lastMsgTime > 0 && curSec > 0) {
-            if ((lastMsgDate && parsed && lastMsgDate !== parsed.date) || (curSec - lastMsgTime) > timeGap) {
-                needLabel = true;
-            }
-        }
-        if (needLabel) {
-            chatBody.appendChild(addTimeLabel(formatTimeLabel(parsed)));
+        if (lastMsgTime > 0 && curSec > 0 && (curSec - lastMsgTime) > timeGap) {
+            chatBody.appendChild(addTimeLabel(timeStr));
             lastPlayer = '';
         }
-        if (curSec > 0) { lastMsgTime = curSec; lastMsgDate = parsed ? parsed.date : ''; }
+        if (curSec > 0) lastMsgTime = curSec;
         lastPlayer = m.player_name;
         var row = document.createElement('div');
         row.className = 'chat-row flex items-end gap-2 px-2 py-0.5 ' + (isMine ? 'justify-end' : 'justify-start');
@@ -429,127 +358,68 @@ $today = now()->format('Y-m-d');
         });
     }
 
-    // === 发消息到游戏（统一绑定两份表单） ===
-    let sending = false;
-    function bindSendForm(formEl) {
-        if (!formEl) return;
-        formEl.addEventListener('submit', async function(e) {
+    // === 发消息到游戏 ===
+    if (sendForm) {
+        let sending = false;
+        sendForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            // 防止重复发送（按钮已禁用或正在发送中）
             if (sending) return;
-            var input = activeSendInput();
-            var btn = activeSendBtn();
-            var hint = activeSendHint();
-            var msg = input.value.trim();
+            const msg = sendInput.value.trim();
             if (!msg) return;
+
             sending = true;
-            btn.disabled = true;
-            btn.textContent = '发送中...';
-            hint.textContent = '正在发送到游戏内玩家...';
-            hint.className = 'text-xs text-amber-600 mt-2';
+            sendBtn.disabled = true;
+            sendBtn.textContent = '发送中...';
+            sendHint.textContent = '正在发送到游戏内玩家...';
+            sendHint.className = 'text-xs text-amber-600 mt-2';
+
             try {
                 const formData = new FormData();
                 formData.append('message', msg);
-                const res = await fetch('{{ route('game-chat.send') }}', {
+                const res = await fetch('{{ route("game-chat.send") }}', {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
                     credentials: 'same-origin',
                     body: formData,
                 });
                 const data = await res.json();
+
                 if (data && data.ok) {
+                    // 把自己发的消息直接加到列表（appendMessage 内部有 ID 去重）
                     if (data.record) appendMessage(data.record);
-                    input.value = '';
-                    hint.textContent = '✓ 已发送到游戏';
-                    hint.className = 'text-xs text-primary-600 mt-2';
+                    sendInput.value = '';
+                    sendHint.textContent = '✓ 已发送到游戏';
+                    sendHint.className = 'text-xs text-primary-600 mt-2';
+                    // 强制滚到底部
                     autoScroll = true;
                     scrollToBottom(false);
                     setTimeout(function() { scrollToBottom(false); }, 50);
                     setTimeout(function() { scrollToBottom(false); }, 200);
                     setTimeout(function() { scrollToBottom(false); }, 500);
                     setTimeout(() => {
-                        hint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
-                        hint.className = 'text-xs text-slate-500 mt-2';
+                        sendHint.textContent = '提示：消息会以你的用户名义直接发送到游戏内所有在线玩家。';
+                        sendHint.className = 'text-xs text-slate-500 mt-2';
                     }, 3000);
                 } else {
-                    var errMsg = (data && data.message) ? data.message : '发送失败';
-                    if (data && data.errors && data.errors.message) errMsg = data.errors.message[0];
-                    hint.textContent = '✗ ' + errMsg;
-                    hint.className = 'text-xs text-red-600 mt-2';
+                    let errMsg = (data && data.message) ? data.message : '发送失败';
+                    if (data && data.errors && data.errors.message) {
+                        errMsg = data.errors.message[0];
+                    }
+                    sendHint.textContent = '✗ ' + errMsg;
+                    sendHint.className = 'text-xs text-red-600 mt-2';
                 }
             } catch(e) {
-                hint.textContent = '✗ 网络错误：' + e.message;
-                hint.className = 'text-xs text-red-600 mt-2';
+                sendHint.textContent = '✗ 网络错误：' + e.message;
+                sendHint.className = 'text-xs text-red-600 mt-2';
             } finally {
                 sending = false;
-                btn.disabled = false;
-                btn.textContent = '发送到游戏';
-                try { input.focus(); } catch(e) {}
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送到游戏';
+                // 不 disable sendInput，直接 focus
+                try { sendInput.focus(); } catch(e) {}
             }
         });
-    }
-    bindSendForm(sendFormEl);
-    bindSendForm(sendFormOuter);
-
-    // === 全屏切换 ===
-    var fullscreenBtn = document.getElementById('fullscreenBtn');
-    var chatCard = document.getElementById('chatCard');
-    if (fullscreenBtn && chatCard) {
-        fullscreenBtn.addEventListener('click', function() {
-            isFullscreen = !isFullscreen;
-            if (isFullscreen) {
-                enterFullscreen();
-            } else {
-                exitFullscreen();
-            }
-        });
-    }
-    function enterFullscreen() {
-        // 保存原始样式以便恢复
-        chatCard._origClass = chatCard.className;
-        chatCard._origStyle = chatCard.style.cssText;
-        chatBody._origClass = chatBody.className;
-        chatBody._origStyle = chatBody.style.cssText;
-        // 全屏卡片
-        chatCard.className = 'fixed inset-0 z-50 flex flex-col bg-white shadow-2xl';
-        // chatBody 自动撑满
-        chatBody.className = 'flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50';
-        chatBody.style.cssText = 'overflow-y:auto;overflow-x:hidden;' + (chatBody.style.backgroundImage ? 'background-image:' + chatBody.style.backgroundImage + ';background-size:cover;background-position:center;background-blend-mode:overlay;' : '');
-        // 显示全屏内发送框，隐藏外部
-        if (sendBox) sendBox.classList.remove('hidden');
-        if (sendBoxOuter) sendBoxOuter.style.display = 'none';
-        // 同步输入框内容
-        if (sendInputEl && sendInputOuter) sendInputEl.value = sendInputOuter.value;
-        fullscreenBtn.innerHTML = '✕ 退出全屏';
-        fullscreenBtn.title = '退出全屏';
-        // 滚动到底部
-        chatBody.scrollTop = chatBody.scrollHeight;
-        // 防止 body 滚动
-        document.body.style.overflow = 'hidden';
-    }
-    function exitFullscreen() {
-        // 恢复
-        chatCard.className = chatCard._origClass || 'card overflow-hidden flex flex-col';
-        chatCard.style.cssText = '';
-        chatBody.className = chatBody._origClass || 'h-[480px] sm:h-[560px] overflow-y-auto p-3 sm:p-4 space-y-1.5 bg-slate-50/50';
-        chatBody.style.cssText = chatBody._origStyle || '';
-        // 隐藏全屏内发送框，显示外部
-        if (sendBox) sendBox.classList.add('hidden');
-        if (sendBoxOuter) sendBoxOuter.style.display = '';
-        // 同步输入框内容
-        if (sendInputOuter && sendInputEl) sendInputOuter.value = sendInputEl.value;
-        fullscreenBtn.innerHTML = '⛶ 全屏';
-        fullscreenBtn.title = '全屏聊天';
-        document.body.style.overflow = '';
-        // 滚动到底部
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }
-    // ESC 退出全屏
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isFullscreen) {
-            exitFullscreen();
-            isFullscreen = false;
-        }
-    }););
     }
 
     // === 日志预览面板 ===

@@ -118,7 +118,6 @@ $today = now()->format('Y-m-d');
             @endforeach
  @php unset($avatarCache); @endphp
         </div>
-        </div>
         <div id="chatFooter" class="border-t border-slate-200 bg-white">
             <div class="flex items-center justify-between px-3 py-2">
                 <div class="text-xs text-slate-500">
@@ -217,6 +216,7 @@ $today = now()->format('Y-m-d');
     const sendBox = document.getElementById('sendBox');
     const sendBoxOuter = document.getElementById('sendBoxOuter');
     let isFullscreen = false;
+
     function activeSendForm() { return isFullscreen ? sendFormEl : sendFormOuter; }
     function activeSendInput() { return isFullscreen ? sendInputEl : sendInputOuter; }
     function activeSendBtn() { return isFullscreen ? sendBtnEl : sendBtnOuter; }
@@ -429,7 +429,6 @@ $today = now()->format('Y-m-d');
         });
     }
 
-    // === 发消息到游戏 ===
     // === 发消息到游戏（统一绑定两份表单） ===
     let sending = false;
     function bindSendForm(formEl) {

@@ -51,7 +51,7 @@ $today = now()->format('Y-m-d');
 $lastDate = '';
 @endphp
             @foreach($messages as $m)
-                @php
+@php
                     $isMine = $currentUserName && $m->player_name === $currentUserName;
                     $msgDate = $m->timestamp ? $m->timestamp->format('Y-m-d') : '';
                     $showDate = $msgDate && $msgDate !== $lastDate;
@@ -68,7 +68,7 @@ $lastDate = '';
                 @endif
                 <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1 items-start" data-id="{{ $m->id }}">
                     @if(!$isMine)
-                    <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name ?? $m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
+                    <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
                     @endif
                     <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'order-1' : '' }}">
                         <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>

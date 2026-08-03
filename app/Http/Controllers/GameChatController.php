@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GameChatMessage;
 use App\Services\MinecraftRconService;
+use App\Services\PlayerAvatarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,13 +33,11 @@ class GameChatController extends Controller
             'last_id' => $messages->last()?->id ?? $afterId,
             'time' => now()->toDateTimeString(),
             'messages' => $messages->map(function ($m) {
-                $user = \App\Models\User::where('name', $m->player_name)->first();
-                $avatarUrl = $user ? $user->getAvatarUrl() : \App\Services\PlayerAvatarService::initialAvatar($m->player_name);
                 return [
                     'id' => $m->id,
                     'player_name' => $m->player_name,
                     'player_uuid' => $m->player_uuid,
-                    'avatar_url' => $avatarUrl,
+                    'avatar_url' => PlayerAvatarService::url($m->player_name, $m->player_uuid),
                     'message' => $m->message,
                     'channel' => $m->channel,
                     'timestamp' => $m->timestamp?->format('Y-m-d H:i:s') ?? now()->format('Y-m-d H:i:s'),
@@ -48,16 +47,7 @@ class GameChatController extends Controller
     }
 
     /**
-     * 从网站向游戏发消息（通过 RCON 调用 say 命令）
-     *
-     * 使用 say 命令而非 tellraw，因为：
-     * 1. say 命令的消息会写入服务器日志，日志同步服务可以正常拉取
-     * 2. say 命令在游戏内所有玩家都能看到
-     * 3. tellraw 不写日志，会导致网页端看不到自己发的消息
-     *
-     * say 命令格式：say [网站] 玩家名：消息内容
-     * 游戏内显示：[Server] [网站] 玩家名：消息内容
-     * 日志同步服务会跳过含 [网站] 的消息，避免重复入库
+     * 从网站向游戏发消息（通过 RCON 调用 tellraw 命令，伪装成普通玩家聊天）
      */
     public function send(Request $request): JsonResponse
     {
@@ -94,17 +84,10 @@ class GameChatController extends Controller
         ]);
 
         // 通过 RCON 发送 tellraw 命令，伪装成普通玩家聊天
-        // 格式：<玩家名> 消息内容
-        // 使用 tellraw 而非 say：
-        // 1. say 会显示 [Server] 前缀，暴露消息来自网站
-        // 2. say 会写日志导致日志同步服务可能重复入库
-        // 3. tellraw 纯客户端显示，不写日志，视觉上完全等同玩家游戏内聊天
         try {
             $rcon = new MinecraftRconService($rconHost, $rconPort, $rconPassword, 3);
             $rcon->connect();
 
-            // 构造 tellraw JSON，模拟 MC 默认聊天格式
-            // 游戏内显示为：<玩家名> 消息 —— 和普通玩家说话一模一样
             $raw = json_encode([
                 ['text' => '<', 'color' => 'gray'],
                 ['text' => $playerName, 'color' => 'gold'],
@@ -120,12 +103,12 @@ class GameChatController extends Controller
             return response()->json([
                 'ok' => true,
                 'message' => '消息已保存，但发送到游戏失败：' . $e->getMessage(),
-                    'record' => [
+                'record' => [
                     'id' => $saved->id,
                     'player_name' => $saved->player_name,
+                    'avatar_url' => $user->getAvatarUrl(),
                     'message' => $saved->message,
                     'timestamp' => $saved->timestamp->format('Y-m-d H:i:s'),
-                    'avatar_url' => $user->getAvatarUrl(),
                 ],
                 'rcon_error' => $e->getMessage(),
             ]);
@@ -137,9 +120,9 @@ class GameChatController extends Controller
             'record' => [
                 'id' => $saved->id,
                 'player_name' => $saved->player_name,
+                'avatar_url' => $user->getAvatarUrl(),
                 'message' => $saved->message,
                 'timestamp' => $saved->timestamp->format('Y-m-d H:i:s'),
-                'avatar_url' => $user->getAvatarUrl(),
             ],
         ]);
     }
@@ -174,6 +157,7 @@ class GameChatController extends Controller
             'message' => [
                 'id' => $created->id,
                 'player_name' => $created->player_name,
+                'avatar_url' => PlayerAvatarService::url($created->player_name),
                 'message' => $created->message,
                 'timestamp' => $created->timestamp->format('Y-m-d H:i:s'),
             ],

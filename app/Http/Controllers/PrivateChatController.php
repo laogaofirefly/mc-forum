@@ -33,8 +33,10 @@ class PrivateChatController extends Controller
         }
 
         $contacts = $tableExists ? PrivateMessage::getRecentContacts($userId) : collect();
+        $contactIds = $contacts->pluck('id')->toArray();
         $users = User::where('id', '!=', $userId)
             ->where('is_blocked', false)
+            ->when(!empty($contactIds), fn($q) => $q->whereNotIn('id', $contactIds))
             ->orderBy('name')
             ->limit(20)
             ->get();
@@ -152,7 +154,8 @@ class PrivateChatController extends Controller
         }
 
         $userId = Auth::id();
-        $contacts = PrivateMessage::getRecentContacts($userId);
+        $contacts = PrivateMessage::getRecentContacts($userId)
+            ->makeHidden(['email', 'password', 'remember_token', 'is_admin', 'mc_uuid', 'updated_at', 'created_at']);
 
         return response()->json([
             'ok' => true,

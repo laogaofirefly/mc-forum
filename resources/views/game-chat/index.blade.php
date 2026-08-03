@@ -66,13 +66,19 @@ $lastDate = '';
                     <span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $dateDisplay }}</span>
                 </div>
                 @endif
-                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1" data-id="{{ $m->id }}">
+                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1 items-start" data-id="{{ $m->id }}">
+                    @if(!$isMine)
+                    <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name ?? $m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
+                    @endif
                     <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'order-1' : '' }}">
                         <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>
                         <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
                             {{ $m->message }}
                         </div>
                     </div>
+                    @if($isMine)
+                    <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 object-cover">
+                    @endif
                 </div>
             @endforeach
         </div>
@@ -222,14 +228,18 @@ $lastDate = '';
             lastMsgDate = msgDate;
         }
         const isMine = currentUserName && m.player_name === currentUserName;
+        const avatarUrl = m.avatar_url || '';
+        const avatarHtml = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 object-cover">' : '';
         const row = document.createElement('div');
-        row.className = 'chat-row flex ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 py-1';
+        row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 py-1';
         row.dataset.id = m.id;
         row.innerHTML =
+            (isMine ? '' : avatarHtml + '<div class="w-2 flex-shrink-0"></div>') +
             '<div class="max-w-[75%] sm:max-w-[65%] ' + (isMine ? 'order-1' : '') + '">' +
                 '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
                 '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
-            '</div>';
+            '</div>' +
+            (isMine && avatarHtml ? '<div class="w-2 flex-shrink-0 order-1"></div>' + avatarHtml : '');
         chatBody.appendChild(row);
         totalCount++;
         msgCountEl.textContent = totalCount;

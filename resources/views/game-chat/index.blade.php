@@ -45,62 +45,18 @@
                     </div>
                 </div>
             @endif
- @php
-$currentUserName = auth()->check() ? auth()->user()->name : '';
-$avatarCache = [];
-function hashColor($name) { $h = abs(crc32($name)) % 360; return "hsl({$h}, 55%, 45%)"; }
-function getPlayerAvatar($name, &$cache) {
-    if (isset($cache[$name])) return $cache[$name];
-    $user = \App\Models\User::where('name', $name)->first();
-    $cache[$name] = $user ? $user->getAvatarUrl() : \App\Services\PlayerAvatarService::initialAvatar($name);
-    return $cache[$name];
-}
-$lastPlayer = '';
-$lastTime = null;
-$timeGap = 300;
-@endphp
-            @foreach($messages as $idx => $m)
-                @php
-                    $isMine = $currentUserName && $m->player_name === $currentUserName;
-                    $samePlayer = ($m->player_name === $lastPlayer);
-                    $msgTs = $m->timestamp ? $m->timestamp->timestamp : 0;
-                    $showLabel = ($lastTime > 0 && ($msgTs - $lastTime) > $timeGap);
-                    $lastPlayer = $m->player_name;
-                    $lastTime = $msgTs;
-                @endphp
-                @if($idx === 0 || $showLabel)
-                <div class="time-label flex justify-center my-2">
-                    <span class="text-[11px] text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">{{ $m->timestamp?->format('H:i') ?? '--:--' }}</span>
-                </div>
-                @endif
-                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} items-end gap-2 px-2 py-0.5" data-id="{{ $m->id }}" data-player="{{ $m->player_name }}">
-                    @if(!$isMine)
-                        @if(!$samePlayer)
-                            <div class="flex-shrink-0 w-9 h-9 rounded-full overflow-hidden border border-white/20 shadow-sm">
-                                <img src="{{ getPlayerAvatar($m->player_name, $avatarCache) }}" alt="{{ $m->player_name }}" class="w-full h-full object-cover" onerror="this.style.display='none';this.parentNode.querySelector('.avatar-fallback').style.display='flex';">
-                                <div class="avatar-fallback w-full h-full bg-slate-400 items-center justify-center text-white text-xs font-bold" style="display:none">{{ mb_substr($m->player_name, 0, 1) }}</div>
-                            </div>
-                        @else
-                            <div class="w-9 flex-shrink-0"></div>
-                        @endif
-                        <div class="max-w-[72%] sm:max-w-[62%]">
-                            @if(!$samePlayer)
-                                <div class="text-[11px] mb-0.5 font-medium" style="color: {{ hashColor($m->player_name) }}">{{ $m->player_name }}</div>
-                            @endif
-                            <div class="px-3 py-2 rounded-xl text-sm leading-relaxed break-words bg-white rounded-tl-sm shadow-sm text-slate-700 border border-slate-100">
-                                {{ $m->message }}
-                            </div>
+@php $currentUserName = auth()->check() ? auth()->user()->name : ''; @endphp
+            @foreach($messages as $m)
+                @php $isMine = $currentUserName && $m->player_name === $currentUserName; @endphp
+                <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 py-1" data-id="{{ $m->id }}">
+                    <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'order-1' : '' }}">
+                        <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $m->timestamp?->format('H:i') ?? '--:--' }}</div>
+                        <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words {{ $isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md' }}">
+                            {{ $m->message }}
                         </div>
-                    @else
-                        <div class="max-w-[72%] sm:max-w-[62%]">
-                            <div class="px-3 py-2 rounded-xl text-sm leading-relaxed break-words bg-blue-500 text-white rounded-tr-sm shadow-sm">
-                                {{ $m->message }}
-                            </div>
-                        </div>
-                    @endif
+                    </div>
                 </div>
             @endforeach
- @php unset($avatarCache); @endphp
         </div>
         <div class="border-t border-slate-200 px-3 py-2 flex items-center justify-between bg-white">
             <div class="text-xs text-slate-500">
@@ -205,85 +161,30 @@ $timeGap = 300;
 
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // ===== QQ 群聊风格 JS =====
-    var lastPlayer = '';
-    var lastMsgTime = 0;
-    var timeGap = 300;
-    function hashColor(name) {
-        var hash = 0;
-        for (var i = 0; i < name.length; i++) {
-            hash = ((hash << 5) - hash) + name.charCodeAt(i);
-            hash |= 0;
-        }
-        var h = Math.abs(hash) % 360;
-        return 'hsl(' + h + ', 28%, 42%)';
-    }
-    function parseTimeSeconds(timeStr) {
-        if (!timeStr || timeStr === '--:--') return 0;
-        var parts = timeStr.split(':');
-        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + (parts[2] ? parseInt(parts[2]) : 0);
-    }
-    function addTimeLabel(timeStr) {
-        var label = document.createElement('div');
-        label.className = 'time-label flex justify-center my-2';
-        label.innerHTML = '<span class="text-xs text-slate-400 bg-slate-100/80 px-3 py-0.5 rounded-full">' + escapeHtml(timeStr) + '</span>';
-        return label;
-    }
-    // 页面加载后从 DOM 同步状态
-    (function syncState() {
-        var rows = chatBody.querySelectorAll('.chat-row');
-        if (rows.length > 0) {
-            var last = rows[rows.length - 1];
-            lastPlayer = last.dataset.player || '';
-        }
-        var labels = chatBody.querySelectorAll('.time-label span');
-        if (labels.length > 0) {
-            lastMsgTime = parseTimeSeconds(labels[labels.length - 1].textContent || '');
-        }
-    })();
     function appendMessage(m) {
         if (emptyTip) emptyTip.remove();
-        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) return;
-        var isMine = currentUserName && m.player_name === currentUserName;
-        var timeStr = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.substring(0, 5) : m.timestamp) : '--:--';
-        var curSec = parseTimeSeconds(typeof m.timestamp === 'string' ? m.timestamp : '');
-        var samePlayer = (m.player_name === lastPlayer && m.player_name !== '');
-        if (lastMsgTime > 0 && curSec > 0 && (curSec - lastMsgTime) > timeGap) {
-            chatBody.appendChild(addTimeLabel(timeStr));
-            lastPlayer = '';
+        // 用 ID 去重，避免同一条消息被重复添加
+        if (m.id && chatBody.querySelector('.chat-row[data-id="' + m.id + '"]')) {
+            return;
         }
-        if (curSec > 0) lastMsgTime = curSec;
-        lastPlayer = m.player_name;
-        var row = document.createElement('div');
-        row.className = 'chat-row flex items-end gap-2 px-2 py-0.5 ' + (isMine ? 'justify-end' : 'justify-start');
+        const isMine = currentUserName && m.player_name === currentUserName;
+        const timeStr = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.substring(0, 5) : m.timestamp) : '--:--';
+        const row = document.createElement('div');
+        row.className = 'chat-row flex ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 py-1';
         row.dataset.id = m.id;
-        row.dataset.player = m.player_name;
-        if (isMine) {
-            row.innerHTML =
-                '<div class="max-w-[72%] sm:max-w-[62%]">' +
-                '<div class="px-3 py-2 rounded-xl text-sm leading-relaxed break-words bg-blue-500 text-white rounded-tr-sm shadow-sm">' + escapeHtml(m.message) + '</div>' +
-                '</div>';
-        } else {
-            var avatar = samePlayer ? '<div class="w-9 flex-shrink-0"></div>' :
-                ('<div class="flex-shrink-0 w-9 h-9 rounded-full overflow-hidden border border-white/20 shadow-sm">' +
-                 '<img src="' + escapeHtml(m.avatar_url || '') + '" alt="" class="w-full h-full object-cover" onerror="this.style.display=\\'none\\';this.parentNode.querySelector(\\'.avatar-fallback\\').style.display=\\'flex\\';">' +
-                 '<div class="avatar-fallback w-full h-full bg-slate-400 items-center justify-center text-white text-xs font-bold" style="display:none">' + escapeHtml((m.player_name || '?').charAt(0)) + '</div>' +
-                 '</div>');
-            var nameHtml = samePlayer ? '' : '<div class="text-xs mb-0.5 font-medium" style="color:' + hashColor(m.player_name) + '">' + escapeHtml(m.player_name) + '</div>';
-            row.innerHTML =
-                avatar +
-                '<div class="max-w-[72%] sm:max-w-[62%]">' +
-                nameHtml +
-                '<div class="px-3 py-2 rounded-xl text-sm leading-relaxed break-words bg-white rounded-tl-sm shadow-sm text-slate-700 border border-slate-100">' + escapeHtml(m.message) + '</div>' +
-                '</div>';
-        }
+        row.innerHTML =
+            '<div class="max-w-[75%] sm:max-w-[65%] ' + (isMine ? 'order-1' : '') + '">' +
+                '<div class="text-xs text-slate-400 mb-0.5 ' + (isMine ? 'text-right' : 'text-left') + '">' + escapeHtml(m.player_name) + ' · ' + escapeHtml(timeStr) + '</div>' +
+                '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' + (isMine ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white shadow-sm text-slate-700 rounded-bl-md') + '">' + escapeHtml(m.message) + '</div>' +
+            '</div>';
         chatBody.appendChild(row);
         totalCount++;
         msgCountEl.textContent = totalCount;
         if (autoScroll) scrollToBottom(false);
     }
+
     function escapeHtml(s) {
-        var d = document.createElement('div');
+        const d = document.createElement('div');
         d.textContent = s == null ? '' : String(s);
         return d.innerHTML;
     }

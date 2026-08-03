@@ -35,7 +35,7 @@ class PrivateChatController extends Controller
         $users = User::where('id', '!=', $userId)
             ->where('is_blocked', false)
             ->orderBy('name')
-            ->limit(50)
+            ->limit(20)
             ->get()
             ->map(function ($user) {
                 $user->avatar_url = $user->getAvatarUrl();

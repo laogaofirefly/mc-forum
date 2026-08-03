@@ -45,7 +45,7 @@
                             @endforeach
                             <div class="px-3 py-1.5 text-xs text-slate-400 font-medium border-t border-slate-100 mt-1 pt-2">其他用户</div>
                         @endif
-                        <div id="contactListUsers">
+                        <div id="contactList">
                             @foreach($users as $u)
                                 <button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="{{ $u->id }}" data-name="{{ $u->name }}" data-avatar="{{ $u->getAvatarUrl() }}">
                                     <img src="{{ $u->getAvatarUrl() }}" alt="{{ $u->name }}" class="w-7 h-7 rounded-full">
@@ -185,7 +185,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     const contactBtn = document.getElementById('contactSelectorBtn');
     const contactDropdown = document.getElementById('contactDropdown');
     const contactSearch = document.getElementById('contactSearchInput');
-    const contactListUsers = document.getElementById('contactListUsers');
+    const contactListEl = document.getElementById('contactList');
 
     let chatUserId = {{ $chatUser ? $chatUser->id : 0 }};
     let chatUserName = '{{ $chatUser ? $chatUser->name : '' }}';
@@ -337,24 +337,30 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     }
 
     // 搜索用户
+    var defaultContactsHtml = '';
+    if (contactListEl) defaultContactsHtml = contactListEl.innerHTML;
+
     if (contactSearch) {
+        var searchTimer = null;
         contactSearch.addEventListener('input', function() {
             var q = this.value.trim();
+            clearTimeout(searchTimer);
             if (q.length < 1) {
-                // 恢复默认列表
-                contactListUsers.innerHTML = '{!! $users->map(function($u) { return '<button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="'.$u->id.'" data-name="'.e($u->name).'" data-avatar="'.e($u->getAvatarUrl()).'"><img src="'.e($u->getAvatarUrl()).'" alt="'.e($u->name).'" class="w-7 h-7 rounded-full"><span class="text-slate-700">'.e($u->name).'</span></button>'; })->implode('') !!}';
+                contactListEl.innerHTML = defaultContactsHtml;
                 bindContactItems();
                 return;
             }
-            fetch('{{ route("private-chat.search-users") }}?q=' + encodeURIComponent(q))
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (!d.ok) return;
-                    contactListUsers.innerHTML = (d.users || []).map(function(u) {
-                        return '<button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="' + u.id + '" data-name="' + escapeHtml(u.name) + '" data-avatar="' + escapeHtml(u.avatar_url) + '"><img src="' + escapeHtml(u.avatar_url) + '" alt="' + escapeHtml(u.name) + '" class="w-7 h-7 rounded-full"><span class="text-slate-700">' + escapeHtml(u.name) + '</span></button>';
-                    }).join('');
-                    bindContactItems();
-                });
+            searchTimer = setTimeout(function() {
+                fetch('{{ route("private-chat.search-users") }}?q=' + encodeURIComponent(q))
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (!d.ok) return;
+                        contactListEl.innerHTML = (d.users || []).map(function(u) {
+                            return '<button type="button" class="contact-item w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition text-left" data-id="' + u.id + '" data-name="' + escapeHtml(u.name) + '" data-avatar="' + escapeHtml(u.avatar_url) + '"><img src="' + escapeHtml(u.avatar_url) + '" alt="' + escapeHtml(u.name) + '" class="w-7 h-7 rounded-full"><span class="text-slate-700">' + escapeHtml(u.name) + '</span></button>';
+                        }).join('') || '<div class="px-3 py-2 text-sm text-slate-400">未找到用户</div>';
+                        bindContactItems();
+                    });
+            }, 200);
         });
     }
 

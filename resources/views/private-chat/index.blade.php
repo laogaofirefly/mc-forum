@@ -17,9 +17,9 @@
         </span>
     </div>
 
-    <div class="card overflow-hidden flex flex-col lg:flex-row" style="height:calc(100vh - 220px);min-height:520px;">
-        {{-- ===== 左侧：联系人列表 ===== --}}
-        <div class="w-full lg:w-72 xl:w-80 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white flex flex-col">
+    <div class="card overflow-hidden flex flex-col lg:flex-row" style="height:calc(100vh - 220px);height:calc(100dvh - 220px);min-height:400px;">
+        {{-- ===== 左侧：联系人列表（手机端选人时隐藏） ===== --}}
+        <div class="w-full lg:w-72 xl:w-80 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white flex flex-col {{ $chatUser ? 'hidden lg:flex' : 'flex' }}">
             {{-- 搜索栏 --}}
             <div class="p-3 border-b border-slate-100">
                 <div class="relative">
@@ -82,9 +82,9 @@ $currentUserName = auth()->user()->name;
                 {{-- 聊天头部 --}}
                 <div class="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center gap-3 flex-shrink-0">
                     {{-- 移动端返回按钮 --}}
-                    <button type="button" onclick="history.back()" class="lg:hidden flex-shrink-0 text-slate-500 hover:text-slate-700 p-1 -ml-1">
+                    <a href="{{ route('private-chat') }}" class="lg:hidden flex-shrink-0 text-slate-500 hover:text-slate-700 p-1 -ml-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                    </button>
+                    </a>
                     <img src="{{ $chatUser->getAvatarUrl() }}" alt="{{ $chatUser->name }}" class="w-8 h-8 rounded-full flex-shrink-0">
                     <span class="font-medium text-slate-800 truncate">{{ $chatUser->name }}</span>
                     <a href="{{ route('profile.show', $chatUser) }}" class="ml-auto flex-shrink-0 text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">查看主页</a>
@@ -125,7 +125,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                     $lastPlayerName = $isMine ? $currentUserName : $chatUser->name;
                     $bubbleClass = $isMine ? $bubbleMine : $bubbleOther;
                     $displayName = $isMine ? $currentUserName : $chatUser->name;
-                    $avatarUrl = $isMine ? \App\Services\PlayerAvatarService::url($currentUserName, auth()->user()->mc_uuid) : \App\Services\PlayerAvatarService::url($chatUser->name, $chatUser->mc_uuid);
+                    $avatarUrl = $isMine ? auth()->user()->getAvatarUrl() : $chatUser->getAvatarUrl();
                     $bubbleHtml = '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' . $bubbleClass . '">' . e($m->message) . '</div>';
 @endphp
                     @if($showDate && $msgDate)

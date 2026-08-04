@@ -95,7 +95,7 @@ class GameChatController extends Controller
                 ['text' => $message, 'color' => 'white'],
             ], JSON_UNESCAPED_UNICODE);
 
-            $command = 'tellraw @a ' . escapeshellarg($raw);
+            $command = 'tellraw @a ' . $raw;
             $rcon->sendCommand($command);
             $rcon->disconnect();
         } catch (\Throwable $e) {

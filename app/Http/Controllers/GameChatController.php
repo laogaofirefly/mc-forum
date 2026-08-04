@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\GameChatMessage;
 use App\Services\MinecraftRconService;
+use App\Services\MinecraftLogSyncService;
 use App\Services\PlayerAvatarService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,8 +22,20 @@ class GameChatController extends Controller
         return view('game-chat.index', compact('messages'));
     }
 
-    public function fetch(Request $request): JsonResponse
+    public function fetch(Request $request, MinecraftLogSyncService $syncService): JsonResponse
     {
+        // 页面轮询时增量同步日志，避免依赖常驻的 chat:sync --watch 进程。
+        $lockKey = 'mc_chat_log_sync_lock';
+        if (Cache::add($lockKey, 1, now()->addSeconds(1))) {
+            try {
+                $syncService->sync();
+            } catch (\Throwable $e) {
+                Log::warning('游戏聊天日志同步失败', ['error' => $e->getMessage()]);
+            } finally {
+                Cache::forget($lockKey);
+            }
+        }
+
         $afterId = $request->integer('after_id', 0);
         $limit = min(200, max(10, $request->integer('limit', 100)));
 
@@ -44,7 +59,7 @@ class GameChatController extends Controller
                     'timestamp' => $m->timestamp?->format('Y-m-d H:i:s') ?? now()->format('Y-m-d H:i:s'),
                 ];
             }),
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

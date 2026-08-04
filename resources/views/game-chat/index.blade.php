@@ -261,7 +261,11 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     async function fetchMessages() {
         try {
             // 静默刷新，不显示状态变化
-            const res = await fetch('{{ route("game-chat.fetch") }}?after_id=' + lastId, { credentials: 'same-origin' });
+            const res = await fetch('{{ route("game-chat.fetch") }}?after_id=' + encodeURIComponent(lastId) + '&_=' + Date.now(), {
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' },
+            });
             const data = await res.json();
             if (data && data.ok) {
                 if (data.current_user_name) currentUserName = data.current_user_name;
@@ -345,7 +349,19 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     function onLoadScroll() { scrollToBottom(false); [300, 800].forEach(function(d) { setTimeout(function() { scrollToBottom(false); }, d); }); }
     if (document.readyState === 'complete') { onLoadScroll(); } else { window.addEventListener('load', onLoadScroll); }
     // 启动定时刷新（只拉数据，不读日志，速度快）- 2秒实时刷新
-    refreshTimer = setInterval(fetchMessages, 2000);
+    // 请求完成后再安排下一次，避免慢请求重叠；页面隐藏时降低频率。
+    async function pollMessages() {
+        if (document.hidden) {
+            refreshTimer = setTimeout(pollMessages, 5000);
+            return;
+        }
+        await fetchMessages();
+        refreshTimer = setTimeout(pollMessages, 1200);
+    }
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) pollMessages();
+    });
+    pollMessages();
 })();
 </script>
 @endsection

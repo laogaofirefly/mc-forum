@@ -1,4 +1,9 @@
+{{-- $noCard: 当外部已有 card 包裹时传 true，避免双层嵌套 --}}
+@if(!isset($noCard) || !$noCard)
 <div class="card p-4" id="serverStatusCard">
+@else
+<div id="serverStatusCard">
+@endif
     <div class="flex items-center justify-between mb-3">
         <h3 class="text-base font-bold text-slate-900 flex items-center">
             <svg class="w-5 h-5 mr-2 text-primary-600" fill="currentColor" viewBox="0 0 20 20">

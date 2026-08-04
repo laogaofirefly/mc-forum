@@ -5,7 +5,7 @@
             <h4 class="font-semibold text-base sm:text-lg">
                 <a href="{{ route('threads.show', $thread->slug) }}" class="text-slate-900 hover:text-primary-600 transition inline-flex items-center gap-1.5">
                     @if($thread->is_pinned)
-                        <span class="text-amber-500 text-sm" title="已置顶">📌</span>
+                        @include('layouts.partials.icons', ['name' => 'pin', 'class' => 'w-4 h-4 inline text-amber-500'])
                     @endif
                     <span>{{ $thread->title }}</span>
                 </a>

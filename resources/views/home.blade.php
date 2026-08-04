@@ -10,13 +10,13 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mb-1.5 flex items-center">
-                    <span class="mr-2">⛏️</span>MC 玩家论坛
+                    @include('layouts.partials.icons', ['name' => 'pickaxe', 'class' => 'w-7 h-7 mr-2 flex-shrink-0'])MC 玩家论坛
                 </h1>
                 <p class="text-primary-50 text-base">分享你的建筑、生存、红石技巧，和 MC 玩家一起交流</p>
             </div>
             @auth
-                <a href="{{ route('threads.create') }}" class="bg-white text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-xl font-bold text-center whitespace-nowrap inline-block transition shadow-sm">
-                    ✏️ 发布新帖
+                <a href="{{ route('threads.create') }}" class="bg-white text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-xl font-bold text-center whitespace-nowrap inline-block transition shadow-sm flex items-center gap-2">
+                    @include('layouts.partials.icons', ['name' => 'pencil', 'class' => 'w-5 h-5'])发布新帖
                 </a>
             @else
                 <div class="flex flex-col sm:flex-row gap-2">
@@ -44,19 +44,17 @@
                 查看全部 →
             </a>
         </div>
-        <div class="space-y-2.5 sm:space-y-3">
+        <div class="space-y-0 divide-y divide-slate-100">
             @foreach($latestThreads as $thread)
-                <div class="card card-hover p-3 sm:p-4">
+                <a href="{{ route('threads.show', $thread->slug) }}" class="block p-3 sm:p-4 hover:bg-slate-50 transition -mx-3 sm:-mx-4 px-3 sm:px-4 first:rounded-t-lg last:rounded-b-lg">
                     <div class="flex items-start space-x-3">
                         <img src="{{ $thread->user->getAvatarUrl() }}" alt="{{ $thread->user->name }}" class="w-9 h-9 sm:w-11 sm:h-11 rounded-full ring-2 ring-slate-100 flex-shrink-0">
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-sm sm:text-base leading-snug">
-                                <a href="{{ route('threads.show', $thread->slug) }}" class="text-slate-900 hover:text-primary-600 transition break-words">
-                                    @if($thread->is_pinned)
-                                        <span class="text-amber-500 text-xs sm:text-sm mr-0.5">📌</span>
-                                    @endif
-                                    {{ $thread->title }}
-                                </a>
+                            <h4 class="font-semibold text-sm sm:text-base leading-snug text-slate-900 group-hover:text-primary-600 transition">
+                                @if($thread->is_pinned)
+                                    @include('layouts.partials.icons', ['name' => 'pin', 'class' => 'w-3.5 h-3.5 inline text-amber-500 mr-0.5'])
+                                @endif
+                                {{ $thread->title }}
                             </h4>
                             <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 mt-1.5">
                                 <a href="{{ route('profile.show', $thread->user) }}" class="text-primary-600 hover:underline">{{ $thread->user->name }}</a>
@@ -80,7 +78,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </a>
             @endforeach
             @if($latestThreads->isEmpty())
                 <div class="py-10 text-center text-slate-400">
@@ -95,7 +93,7 @@
 
     {{-- 服务器状态 --}}
     <div class="card p-4 sm:p-5">
-        @include('partials.server-status')
+        @include('partials.server-status', ['noCard' => true])
     </div>
 
 </div>

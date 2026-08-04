@@ -16,16 +16,7 @@
                 <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
                 在线
             </span>
-            @auth
-                @if(auth()->user()->isAdmin())
-                    <button type="button" id="syncLogBtnTop" class="btn-secondary no-disable text-xs sm:text-sm flex items-center gap-1">
-                        @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])同步游戏日志
-                    </button>
-                    <button type="button" id="demoMsgBtnTop" class="btn-secondary no-disable text-xs sm:text-sm flex items-center gap-1">
-                        @include('layouts.partials.icons', ['name' => 'flask', 'class' => 'w-4 h-4'])测试消息
-                    </button>
-                @endif
-            @endauth
+            
         </div>
     </div>
 
@@ -130,23 +121,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         </div>
     @endauth
 
-    @auth
-        @if(auth()->user()->isAdmin())
-            <div class="card p-3 sm:p-4 text-xs sm:text-sm text-slate-600">
-                <p class="font-medium text-slate-900 flex items-center gap-1.5">
-                    @include('layouts.partials.icons', ['name' => 'wrench', 'class' => 'w-4 h-4'])管理员工具
-                </p>
-                <div class="flex items-center gap-2 mt-2">
-                    <button type="button" id="syncLogBtn" class="btn-secondary no-disable text-xs flex items-center gap-1">
-                        @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-3.5 h-3.5'])同步游戏日志
-                    </button>
-                    <button type="button" id="demoMsgBtn" class="btn-secondary no-disable text-xs flex items-center gap-1">
-                        @include('layouts.partials.icons', ['name' => 'flask', 'class' => 'w-3.5 h-3.5'])测试消息
-                    </button>
-                </div>
-            </div>
-        @endif
-    @endauth
+    
 </div>
 
 <script>
@@ -156,10 +131,6 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     const msgCountEl = document.getElementById('msgCount');
     const statusEl = document.getElementById('chatStatus');
     const scrollBtn = document.getElementById('scrollBottomBtn');
-    const demoBtn = document.getElementById('demoMsgBtn');
-    const syncBtn = document.getElementById('syncLogBtn');
-    const demoBtnTop = document.getElementById('demoMsgBtnTop');
-    const syncBtnTop = document.getElementById('syncLogBtnTop');
     const sendInput = document.getElementById('sendInput');
     const sendBtn = document.getElementById('sendBtn');
     const sendHint = document.getElementById('sendHint');
@@ -303,59 +274,6 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         }
     }
 
-    if (demoBtn) {
-        const origHtml = demoBtn.innerHTML;
-        demoBtn.addEventListener('click', async function() {
-            try {
-                demoBtn.disabled = true;
-                demoBtn.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>发送中</span>';
-                const res = await fetch('{{ route("game-chat.demo") }}', {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: '{}',
-                });
-                const data = await res.json();
-                if (data && data.ok) appendMessage(data.message);
-                demoBtn.disabled = false;
-                demoBtn.innerHTML = origHtml;
-            } catch(e) { demoBtn.disabled = false; demoBtn.innerHTML = origHtml; }
-        });
-        // 顶部测试消息按钮委托
-        if (demoBtnTop) {
-            demoBtnTop.addEventListener('click', function() { demoBtn.click(); });
-        }
-    }
-
-    if (syncBtn) {
-        const origSyncHtml = syncBtn.innerHTML;
-        syncBtn.addEventListener('click', async function() {
-            try {
-                syncBtn.disabled = true;
-                syncBtn.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>同步中</span>';
-                const res = await fetch('{{ route("chat-sync") }}', {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: '{}',
-                });
-                const data = await res.json();
-                syncBtn.disabled = false;
-                syncBtn.innerHTML = origSyncHtml;
-                if (data && data.ok) {
-                    await fetchMessages();
-                }
-            } catch(e) {
-                syncBtn.disabled = false;
-                syncBtn.innerHTML = origSyncHtml;
-            }
-        });
-        // 顶部同步按钮委托
-        if (syncBtnTop) {
-            syncBtnTop.addEventListener('click', function() { syncBtn.click(); });
-        }
-    }
-
     // === 发消息到游戏（支持 Enter 键发送） ===
     if (sendBtn && sendInput) {
         let sending = false;
@@ -428,15 +346,6 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     if (document.readyState === 'complete') { onLoadScroll(); } else { window.addEventListener('load', onLoadScroll); }
     // 启动定时刷新（只拉数据，不读日志，速度快）- 2秒实时刷新
     refreshTimer = setInterval(fetchMessages, 2000);
-    // 单独定时同步 MC 日志（5 秒一次，与拉数据分开，避免阻塞发送）
-    setInterval(function() {
-        fetch('{{ route("chat-sync") }}', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: '{}',
-        }).catch(function(){});
-    }, 5000);
 })();
 </script>
 @endsection

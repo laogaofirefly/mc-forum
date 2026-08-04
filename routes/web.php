@@ -222,9 +222,24 @@ Route::post('/admin/console/start', function () {
         return response()->json(['ok' => false, 'message' => '仅管理员可操作'], 403);
     }
 
-    $command = config('services.minecraft.start_command', '');
-    if (empty($command)) {
-        return response()->json(['ok' => false, 'message' => '未配置 MC_START_COMMAND，请在 .env 中设置启动命令']);
+    $command = trim((string) config('services.minecraft.start_command', ''));
+    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $cwd = ! empty($mcPath) ? rtrim((string) $mcPath, '\\/') : null;
+    // 未显式配置时自动识别常见启动脚本或服务端 JAR，仍可直接从网页启动。
+    if ($command === '' && $cwd && is_dir($cwd)) {
+        if (PHP_OS_FAMILY === 'Windows' && is_file($cwd . DIRECTORY_SEPARATOR . 'start.bat')) {
+            $command = 'start.bat';
+        } elseif (PHP_OS_FAMILY !== 'Windows' && is_file($cwd . DIRECTORY_SEPARATOR . 'start.sh')) {
+            $command = 'bash start.sh';
+        } else {
+            $jars = glob($cwd . DIRECTORY_SEPARATOR . '*.jar') ?: [];
+            $preferred = array_values(array_filter($jars, fn ($jar) => preg_match('/(server|paper|purpur|spigot|fabric|forge)/i', basename($jar))));
+            $jar = $preferred[0] ?? ($jars[0] ?? null);
+            if ($jar) $command = 'java -Xms1G -Xmx2G -jar ' . escapeshellarg(basename($jar)) . ' nogui';
+        }
+    }
+    if ($command === '') {
+        return response()->json(['ok' => false, 'message' => '未找到启动命令。请在 .env 设置 MC_START_COMMAND，或在 MC_SERVER_PATH 放置 start.sh/start.bat 或服务端 JAR']);
     }
 
     // 先检查是否已在运行

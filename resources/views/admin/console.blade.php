@@ -20,7 +20,7 @@
                 <span class="inline-block w-2 h-2 bg-slate-400 rounded-full mr-1"></span>
                 未连接
             </span>
-            <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 hidden" title="启动 MC 服务器">
+            <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5" title="启动 MC 服务器">
                 @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])启动服务器
             </button>
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
@@ -529,9 +529,7 @@
         } else {
             serverStatusEl.className = 'badge text-xs sm:text-sm px-2.5 py-1 border bg-red-50 text-red-700 border-red-200';
             serverStatusEl.innerHTML = '<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>MC 已停止';
-            @if(!empty(config('services.minecraft.start_command')))
             startServerBtn.classList.remove('hidden');
-            @endif
         }
     }
 

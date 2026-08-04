@@ -74,6 +74,12 @@ Route::middleware('auth')->group(function () {
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 
 Route::get('/admin/monitor', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'index'])->name('admin.monitor')->middleware('auth');
+Route::get('/admin/console', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        abort(403, '仅管理员可访问');
+    }
+    return view('admin.console');
+})->name('admin.console')->middleware('auth');
 Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
 
 // 管理员用户管理（列表、详情、封禁、解封）

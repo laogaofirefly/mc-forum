@@ -321,8 +321,9 @@
                     @auth
                         <a href="{{ route('threads.create') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('threads.create') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">发帖</a>
                         @if(auth()->user()->isAdmin())
-                            <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' }}">用户管理</a>
+                            <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.monitor') && !request()->routeIs('admin.console') ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' }}">用户管理</a>
                             <a href="{{ route('admin.monitor') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' }}">监控</a>
+                            <a href="{{ route('admin.console') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.console') ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' }}">控制台</a>
                         @endif
                     @endauth
                 </div>
@@ -394,11 +395,14 @@
                         @include('layouts.partials.icons', ['name' => 'pencil', 'class' => 'w-5 h-5 flex-shrink-0']) 发帖
                     </a>
                     @if(auth()->check() && auth()->user()->isAdmin())
-                        <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2.5 text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : '' }}">
+                        <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2.5 text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.monitor') && !request()->routeIs('admin.console') ? 'bg-amber-50 text-amber-700 font-semibold' : '' }}">
                             @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-5 h-5 flex-shrink-0']) 用户管理
                         </a>
                         <a href="{{ route('admin.monitor') }}" class="flex items-center gap-2.5 text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : '' }}">
                             @include('layouts.partials.icons', ['name' => 'chart', 'class' => 'w-5 h-5 flex-shrink-0']) 服务器监控
+                        </a>
+                        <a href="{{ route('admin.console') }}" class="flex items-center gap-2.5 text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('admin.console') ? 'bg-amber-50 text-amber-700 font-semibold' : '' }}">
+                            @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-5 h-5 flex-shrink-0']) 控制台
                         </a>
                     @endif
                     <a href="{{ route('profile.show', auth()->user()) }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('profile.show') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">

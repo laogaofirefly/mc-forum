@@ -277,6 +277,9 @@ Route::post('/admin/console/start', function () {
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
+        if ($cwd && ! is_dir($cwd)) {
+            return response()->json(['ok' => false, 'message' => 'MC_SERVER_PATH 目录不存在：' . $cwd], 500);
+        }
         $process = proc_open($command, $descriptors, $pipes, $cwd);
         if (! is_resource($process)) {
             return response()->json(['ok' => false, 'message' => '无法执行启动命令']);

@@ -199,6 +199,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
 
 <script>
 (function() {
+    try {
     var chatBody = document.getElementById('chatBody');
     var msgCountEl = document.getElementById('msgCount');
     var statusEl = document.getElementById('chatStatus');
@@ -360,14 +361,14 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
             var q = this.value.trim();
             clearTimeout(searchTimer);
             if (q.length < 1) {
-                contactListEl.innerHTML = defaultListHtml;
+                if (contactListEl) contactListEl.innerHTML = defaultListHtml;
                 return;
             }
             searchTimer = setTimeout(function() {
                 fetch('{{ route("private-chat.search-users") }}?q=' + encodeURIComponent(q))
                     .then(function(r) { return r.json(); })
                     .then(function(d) {
-                        if (!d.ok) return;
+                        if (!d.ok || !contactListEl) return;
                         contactListEl.innerHTML = (d.users || []).map(function(u) {
                             var name = escapeHtml(u.name);
                             var avatar = escapeHtml(u.avatar_url || '');
@@ -446,6 +447,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         if (document.readyState === 'complete') { onLoadScroll(); } else { window.addEventListener('load', onLoadScroll); }
         refreshTimer = setInterval(fetchMessages, 2000);
     }
+    } catch(e) { console.error(e); }
 })();
 </script>
 @endsection

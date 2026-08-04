@@ -51,23 +51,123 @@ class ProfileController extends Controller
         ]);
 
         $user = Auth::user();
+        $file = $request->file('avatar');
+        
+        // 裁剪参数
+        $cropX = (float) $request->input('crop_x', 0);
+        $cropY = (float) $request->input('crop_y', 0);
+        $cropScale = (float) $request->input('crop_scale', 1);
+        $cropSize = (int) $request->input('crop_size', 300);
 
-        // 删除旧头像（仅删除本地自定义上传的）
+        // 删除旧头像
         if ($user->avatar && str_starts_with($user->avatar, '/avatars/')) {
             $oldPath = public_path(ltrim($user->avatar, '/'));
             if (is_file($oldPath)) @unlink($oldPath);
         }
 
-        $file = $request->file('avatar');
         $ext  = $file->getClientOriginalExtension();
         $name = 'avatar_' . $user->id . '_' . time() . '.' . $ext;
-        // 直接存到 public/avatars，无需软链接即可访问
-        $file->move(public_path('avatars'), $name);
+        $dir = public_path('avatars');
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+        if ($cropX !== 0.0 || $cropY !== 0.0 || $cropScale !== 1.0) {
+            // 有裁剪参数，进行裁剪
+            $this->cropAvatar($file, $dir . '/' . $name, $cropX, $cropY, $cropScale, $cropSize);
+        } else {
+            // 无裁剪参数，直接保存
+            $file->move($dir, $name);
+        }
 
         $user->avatar = '/avatars/' . $name;
         $user->save();
 
         return redirect()->route('profile.show', $user)->with('success', '头像更新成功！');
+    }
+
+    /**
+     * 裁剪头像图片
+     */
+    private function cropAvatar($file, string $destPath, float $cropX, float $cropY, float $cropScale, int $cropSize): void
+    {
+        $srcPath = $file->getRealPath();
+        $ext = strtolower($file->getClientOriginalExtension());
+        
+        // 创建源图像
+        switch ($ext) {
+            case 'jpg':
+            case 'jpeg':
+                $src = imagecreatefromjpeg($srcPath);
+                break;
+            case 'png':
+                $src = imagecreatefrompng($srcPath);
+                break;
+            case 'webp':
+                $src = imagecreatefromwebp($srcPath);
+                break;
+            case 'gif':
+                $src = imagecreatefromgif($srcPath);
+                break;
+            default:
+                $file->move(dirname($destPath), basename($destPath));
+                return;
+        }
+
+        if (!$src) {
+            $file->move(dirname($destPath), basename($destPath));
+            return;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+
+        // 裁剪区域：cropX/cropY 是相对于原图的偏移比例（0~1），cropScale 是缩放比例
+        // 裁剪框大小 = min(srcW, srcH) / cropScale
+        $cropBoxSize = min($srcW, $srcH) / $cropScale;
+        $srcCropX = (int) round($cropX * $srcW);
+        $srcCropY = (int) round($cropY * $srcH);
+
+        // 限制裁剪区域不超出原图
+        $srcCropX = max(0, min($srcCropX, $srcW - $cropBoxSize));
+        $srcCropY = max(0, min($srcCropY, $srcH - $cropBoxSize));
+
+        // 创建目标图像（正方形）
+        $dest = imagecreatetruecolor($cropSize, $cropSize);
+
+        // 处理 PNG 透明背景
+        if ($ext === 'png') {
+            imagealphablending($dest, false);
+            imagesavealpha($dest, true);
+            $transparent = imagecolorallocatealpha($dest, 0, 0, 0, 127);
+            imagefill($dest, 0, 0, $transparent);
+        }
+
+        imagecopyresampled(
+            $dest, $src,
+            0, 0,                    // 目标 x, y
+            $srcCropX, $srcCropY,    // 源 x, y
+            $cropSize, $cropSize,    // 目标宽高
+            (int) $cropBoxSize, (int) $cropBoxSize  // 源宽高
+        );
+
+        // 保存
+        switch ($ext) {
+            case 'jpg':
+            case 'jpeg':
+                imagejpeg($dest, $destPath, 90);
+                break;
+            case 'png':
+                imagepng($dest, $destPath, 8);
+                break;
+            case 'webp':
+                imagewebp($dest, $destPath, 90);
+                break;
+            case 'gif':
+                imagegif($dest, $destPath);
+                break;
+        }
+
+        imagedestroy($src);
+        imagedestroy($dest);
     }
 
 

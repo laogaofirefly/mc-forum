@@ -816,12 +816,53 @@
     loadPropsBtn.addEventListener('click', loadProperties);
     savePropsBtn.addEventListener('click', saveProperties);
     // 从导航栏进入“服务器配置”时自动定位并加载面板，避免看起来像入口失效。
-    if (window.location.hash === '#serverPropsPanel') {
+    if (window.location.hash === '#serverPropsPanel' || new URLSearchParams(window.location.search).get('section') === 'properties') {
         setTimeout(function() {
             document.getElementById('serverPropsPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             loadProperties();
         }, 100);
     }
+})();
+</script>
+<script>
+// 独立的配置面板兜底初始化：即使控制台日志脚本异常，也不影响配置按钮。
+(function () {
+    function initServerPropertiesPanel() {
+        const load = document.getElementById('loadPropsBtn');
+        const save = document.getElementById('savePropsBtn');
+        const content = document.getElementById('propsContent');
+        if (!load || !content || load.dataset.bound === '1') return;
+        load.dataset.bound = '1';
+        load.addEventListener('click', async function () {
+            load.disabled = true;
+            load.textContent = '加载中...';
+            try {
+                const response = await fetch('{{ route("admin.console.properties") }}?_=' + Date.now(), {
+                    credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (!data.ok) throw new Error(data.message || '读取配置失败');
+                const props = data.properties || {};
+                content.innerHTML = Object.entries(props).map(function ([key, value]) {
+                    return '<label class="block mb-2"><span class="block text-xs text-slate-500 mb-1">' + escapeHtml(key) + '</span><input class="input text-sm w-full" data-fallback-prop="' + escapeHtml(key) + '" value="' + escapeHtml(value) + '"></label>';
+                }).join('') || '<span class="text-slate-500">配置文件为空</span>';
+                if (save) save.classList.remove('hidden');
+            } catch (error) {
+                content.innerHTML = '<span class="text-red-500">加载失败：' + escapeHtml(error.message) + '</span>';
+            } finally {
+                load.disabled = false;
+                load.textContent = '读取配置';
+            }
+        });
+        if (window.location.hash === '#serverPropsPanel') load.click();
+    }
+    function escapeHtml(value) {
+        const node = document.createElement('div');
+        node.textContent = value == null ? '' : String(value);
+        return node.innerHTML;
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initServerPropertiesPanel);
+    else initServerPropertiesPanel();
 })();
 </script>
 @endsection

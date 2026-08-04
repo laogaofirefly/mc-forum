@@ -304,13 +304,11 @@
             const data = await res.json();
 
             if (data && data.ok) {
-                if (data.response) {
+                if (data.response && data.response.trim()) {
                     const lines = data.response.split('\n');
                     lines.forEach(function(l) {
                         if (l.trim()) appendHtml('<span class="text-cyan-300 bg-cyan-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">' + escapeHtml(l) + '</span>');
                     });
-                } else {
-                    appendHtml('<span class="text-cyan-300 bg-cyan-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">（命令执行成功，无返回文本）</span>');
                 }
                 setStatus('已连接', 'green');
             } else {

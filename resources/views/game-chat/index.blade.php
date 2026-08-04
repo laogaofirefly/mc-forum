@@ -68,6 +68,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                     $lastPlayerName = $m->player_name;
                     $bubbleClass = $isMine ? $bubbleMine : $bubbleOther;
                     $bubbleHtml = '<div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words ' . $bubbleClass . '">' . e($m->message) . '</div>';
+                $avatarFallback = \App\Services\PlayerAvatarService::initialAvatar($m->player_name);
                 @endphp
                 @if($showDate && $msgDate)
                 <div class="flex justify-center my-2">
@@ -77,14 +78,14 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                 <div class="chat-row flex {{ $isMine ? 'justify-end' : 'justify-start' }} px-2 {{ $showName ? 'py-1' : 'py-0.5' }} items-start" data-id="{{ $m->id }}">
                     @if($showName)
                         @if(!$isMine)
-                        <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
+                        <img src="{{ \App\Services\PlayerAvatarService::url($m->player_name, $m->player_uuid) }}" alt="{{ $m->player_name }}" data-fallback="{{ $avatarFallback }}" onerror="var f=this.getAttribute('data-fallback');if(f){this.src=f;this.onerror=null;}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 mr-2 object-cover">
                         @endif
                         <div class="max-w-[75%] sm:max-w-[65%]">
                             <div class="text-xs text-slate-400 mb-0.5 {{ $isMine ? 'text-right' : 'text-left' }}">{{ $m->player_name }} · {{ $timeDisplay }}</div>
                             {!! $bubbleHtml !!}
                         </div>
                         @if($isMine)
-                        <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 order-1 object-cover">
+                        <img src="{{ \App\Services\PlayerAvatarService::url($currentUserName, auth()->check() ? auth()->user()->mc_uuid : null) }}" alt="{{ $currentUserName }}" data-fallback="{{ \App\Services\PlayerAvatarService::initialAvatar($currentUserName) }}" onerror="var f=this.getAttribute('data-fallback');if(f){this.src=f;this.onerror=null;}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-slate-200 bg-white flex-shrink-0 ml-2 order-1 object-cover">
                         @endif
                     @else
                         <div class="max-w-[75%] sm:max-w-[65%] {{ $isMine ? 'mr-9 sm:mr-10' : 'ml-9 sm:ml-10' }}">
@@ -255,7 +256,8 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         lastPlayerName = m.player_name;
         const bubble = makeBubble(m.message, isMine);
         const avatarUrl = m.avatar_url || '';
-        const avatarImg = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" class="' + AVATAR_CLASS + '">' : '';
+        const avatarFallback = m.avatar_fallback || '';
+        const avatarImg = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" data-fallback="' + escapeHtml(avatarFallback) + '" onerror="var f=this.getAttribute(\'data-fallback\');if(f){this.src=f;this.onerror=null;}" class="' + AVATAR_CLASS + '">' : '';
         const row = document.createElement('div');
         row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
         row.dataset.id = m.id;

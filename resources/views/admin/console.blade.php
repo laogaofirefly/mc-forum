@@ -815,6 +815,13 @@
     // 按钮事件绑定
     loadPropsBtn.addEventListener('click', loadProperties);
     savePropsBtn.addEventListener('click', saveProperties);
+    // 从导航栏进入“服务器配置”时自动定位并加载面板，避免看起来像入口失效。
+    if (window.location.hash === '#serverPropsPanel') {
+        setTimeout(function() {
+            document.getElementById('serverPropsPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            loadProperties();
+        }, 100);
+    }
 })();
 </script>
 @endsection

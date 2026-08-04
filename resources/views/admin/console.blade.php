@@ -39,6 +39,9 @@
             <button type="button" id="logAutoScrollBtn" class="text-[11px] text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded transition flex items-center gap-1">
                 @include('layouts.partials.icons', ['name' => 'chevron-down', 'class' => 'w-3 h-3'])自动滚动
             </button>
+            <button type="button" id="logJumpBottomBtn" class="text-[11px] text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded transition hidden items-center gap-1">
+                @include('layouts.partials.icons', ['name' => 'chevron-down', 'class' => 'w-3 h-3'])到底部
+            </button>
         </div>
 
         {{-- 终端输出区 --}}
@@ -128,9 +131,39 @@
     let logTimer = null;
     let logPos = 0;
     let logFileSize = 0;
+    let logLineCount = 0;
+    const LOG_MAX_LINES = 2000;
     let cmdHistory = [];
     let cmdHistoryIndex = -1;
     let executing = false;
+
+    // ========== localStorage 缓存 ==========
+    const CACHE_KEY = 'mc_console_state';
+    function saveState() {
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                logPos: logPos,
+                logAutoScroll: logAutoScroll,
+                logPaused: logPaused,
+                ts: Date.now()
+            }));
+        } catch(e) {}
+    }
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(CACHE_KEY);
+            if (!raw) return;
+            const state = JSON.parse(raw);
+            // 只恢复 30 分钟内的缓存
+            if (state.ts && Date.now() - state.ts < 30 * 60 * 1000) {
+                if (typeof state.logPos === 'number' && state.logPos > 0) logPos = state.logPos;
+                if (typeof state.logAutoScroll === 'boolean') logAutoScroll = state.logAutoScroll;
+                if (typeof state.logPaused === 'boolean') logPaused = state.logPaused;
+                return true;
+            }
+        } catch(e) {}
+        return false;
+    }
 
     function scrollToBottom() {
         if (!logAutoScroll) return;
@@ -159,6 +192,8 @@
         line.className = (cls || 'text-slate-400') + ' leading-relaxed';
         line.textContent = text;
         output.appendChild(line);
+        logLineCount++;
+        trimOldLines();
         scrollToBottom();
     }
 
@@ -167,7 +202,16 @@
         div.className = 'leading-relaxed';
         div.innerHTML = html;
         output.appendChild(div);
+        logLineCount++;
+        trimOldLines();
         scrollToBottom();
+    }
+
+    function trimOldLines() {
+        while (output.children.length > LOG_MAX_LINES) {
+            output.removeChild(output.firstChild);
+            logLineCount--;
+        }
     }
 
     function escapeHtml(s) {
@@ -198,7 +242,7 @@
             }
             logFileSize = data.size;
             if (data.lines.length === 0) {
-                logInfo.textContent = '已是最新 · ' + formatSize(data.size);
+                logInfo.textContent = '已是最新 · ' + formatSize(data.size) + ' · ' + logLineCount + ' 行';
                 return;
             }
 
@@ -232,7 +276,8 @@
             });
 
             logPos = data.pos;
-            logInfo.textContent = formatSize(data.size) + ' · 已加载 ' + lines.length + ' 行';
+            logInfo.textContent = formatSize(data.size) + ' · +' + lines.length + ' 行 · 共 ' + logLineCount + ' 行';
+            saveState();
         } catch(e) {
             logInfo.textContent = '网络错误: ' + e.message;
         }
@@ -254,16 +299,25 @@
             logInfo.textContent = '恢复中...';
             fetchLog();
         }
+        saveState();
     });
 
     logAutoScrollBtn.addEventListener('click', function() {
         logAutoScroll = !logAutoScroll;
         if (logAutoScroll) {
             logAutoScrollBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>自动滚动';
+            logJumpBottomBtn.classList.add('hidden');
             scrollToBottom();
         } else {
             logAutoScrollBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>已锁定';
+            logJumpBottomBtn.classList.remove('hidden');
         }
+        saveState();
+    });
+
+    const logJumpBottomBtn = document.getElementById('logJumpBottomBtn');
+    logJumpBottomBtn.addEventListener('click', function() {
+        output.scrollTop = output.scrollHeight;
     });
 
     // ========== 命令执行 ==========
@@ -357,11 +411,14 @@
 
     function clearOutput() {
         output.innerHTML = '';
+        logLineCount = 0;
+        logPos = 0;
+        // 清除 localStorage 缓存
+        try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
     }
 
     clearBtn.addEventListener('click', function() {
         clearOutput();
-        logPos = 0;
         appendLine('Minecraft 服务器控制台 — 实时日志 + 命令执行', 'text-slate-500');
         appendLine('---', 'text-slate-700');
         fetchLog();
@@ -470,7 +527,7 @@
     checkServerStatus();
     setInterval(checkServerStatus, 30000);
 
-    // 测试 RCON 连接
+    // 测试 RCON 连接（静默，仅更新状态）
     (async function testConnection() {
         try {
             const formData = new FormData();
@@ -482,20 +539,30 @@
                 body: formData,
             });
             const data = await res.json();
-            if (data && data.ok) {
-                setStatus('已连接', 'green');
-            } else {
-                const msg = (data && data.message) ? data.message : '无法连接';
-                setStatus('未连接', 'red');
-                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">RCON 连接测试失败: ' + escapeHtml(msg) + '</span>');
-            }
+            setStatus(data && data.ok ? '已连接' : '未连接', data && data.ok ? 'green' : 'red');
         } catch(e) {
             setStatus('未连接', 'red');
-            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">RCON 连接测试失败: ' + escapeHtml(e.message) + '</span>');
         }
     })();
 
     // 启动日志轮询
+    // 恢复缓存状态
+    const restored = loadState();
+
+    // 恢复暂停按钮状态
+    if (logPaused) {
+        logPauseBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>继续';
+    }
+
+    // 恢复自动滚动按钮状态
+    if (!logAutoScroll) {
+        logAutoScrollBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>已锁定';
+        logJumpBottomBtn.classList.remove('hidden');
+    }
+
+    if (restored) {
+        logInfo.textContent = '从缓存恢复 · ' + formatSize(logFileSize);
+    }
     fetchLog();
     startLogPolling();
 })();

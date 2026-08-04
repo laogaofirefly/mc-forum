@@ -18,10 +18,10 @@
             </span>
             @auth
                 @if(auth()->user()->isAdmin())
-                    <button type="button" id="syncLogBtn" class="btn-secondary no-disable text-xs sm:text-sm flex items-center gap-1">
+                    <button type="button" id="syncLogBtnTop" class="btn-secondary no-disable text-xs sm:text-sm flex items-center gap-1">
                         @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])同步游戏日志
                     </button>
-                    <button type="button" id="demoMsgBtn" class="btn-secondary no-disable text-xs sm:text-sm flex items-center gap-1">
+                    <button type="button" id="demoMsgBtnTop" class="btn-secondary no-disable text-xs sm:text-sm flex items-center gap-1">
                         @include('layouts.partials.icons', ['name' => 'flask', 'class' => 'w-4 h-4'])测试消息
                     </button>
                 @endif
@@ -133,28 +133,16 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     @auth
         @if(auth()->user()->isAdmin())
             <div class="card p-3 sm:p-4 text-xs sm:text-sm text-slate-600">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="font-medium text-slate-900 flex items-center gap-1.5">
-                        @include('layouts.partials.icons', ['name' => 'wrench', 'class' => 'w-4 h-4'])管理员工具
-                    </p>
-                    <button type="button" id="toggleLogPreview" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
-                        ▶ 查看日志解析情况
+                <p class="font-medium text-slate-900 flex items-center gap-1.5">
+                    @include('layouts.partials.icons', ['name' => 'wrench', 'class' => 'w-4 h-4'])管理员工具
+                </p>
+                <div class="flex items-center gap-2 mt-2">
+                    <button type="button" id="syncLogBtn" class="btn-secondary no-disable text-xs flex items-center gap-1">
+                        @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-3.5 h-3.5'])同步游戏日志
                     </button>
-                </div>
-                <div id="logPreviewWrap" class="hidden mt-3 border-t border-slate-200 pt-3">
-                    <div class="flex items-center gap-2 mb-2">
-                        <button type="button" id="loadLogPreview" class="btn-secondary no-disable text-xs">
-                            读取最近 30 行日志
-                        </button>
-                        <span id="logPreviewMeta" class="text-xs text-slate-500"></span>
-                    </div>
-                    <div id="logPreviewBody" class="card bg-slate-50 font-mono text-xs space-y-1 max-h-72 overflow-y-auto p-2">
-                        <div class="text-slate-400">点击上方按钮加载日志...</div>
-                    </div>
-                    <p class="mt-2 text-xs text-slate-500">
-                        <span class="inline-block w-2 h-2 bg-primary-500 rounded-full"></span> 绿色 = 识别为聊天消息　
-                        <span class="inline-block w-2 h-2 bg-slate-400 rounded-full ml-2"></span> 灰色 = 系统消息（会被跳过）
-                    </p>
+                    <button type="button" id="demoMsgBtn" class="btn-secondary no-disable text-xs flex items-center gap-1">
+                        @include('layouts.partials.icons', ['name' => 'flask', 'class' => 'w-3.5 h-3.5'])测试消息
+                    </button>
                 </div>
             </div>
         @endif
@@ -170,6 +158,8 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     const scrollBtn = document.getElementById('scrollBottomBtn');
     const demoBtn = document.getElementById('demoMsgBtn');
     const syncBtn = document.getElementById('syncLogBtn');
+    const demoBtnTop = document.getElementById('demoMsgBtnTop');
+    const syncBtnTop = document.getElementById('syncLogBtnTop');
     const sendInput = document.getElementById('sendInput');
     const sendBtn = document.getElementById('sendBtn');
     const sendHint = document.getElementById('sendHint');
@@ -178,6 +168,18 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     let totalCount = {{ $messages->count() }};
     let autoScroll = true;
     let refreshTimer = null;
+
+    // ========== localStorage 缓存 lastId ==========
+    const CHAT_CACHE_KEY = 'mc_chat_last_id';
+    (function() {
+        try {
+            const cached = parseInt(localStorage.getItem(CHAT_CACHE_KEY), 10);
+            if (cached > lastId) lastId = cached;
+        } catch(e) {}
+    })();
+    function saveChatCache() {
+        try { localStorage.setItem(CHAT_CACHE_KEY, String(lastId)); } catch(e) {}
+    }
 
     chatBody.addEventListener('scroll', function() {
         const bottom = chatBody.scrollHeight - chatBody.clientHeight - chatBody.scrollTop;
@@ -294,6 +296,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                 if (data.current_user_name) currentUserName = data.current_user_name;
                 (data.messages || []).forEach(appendMessage);
                 if (data.last_id > lastId) lastId = data.last_id;
+                saveChatCache();
             }
         } catch (e) {
             // 静默失败
@@ -318,6 +321,10 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                 demoBtn.innerHTML = origHtml;
             } catch(e) { demoBtn.disabled = false; demoBtn.innerHTML = origHtml; }
         });
+        // 顶部测试消息按钮委托
+        if (demoBtnTop) {
+            demoBtnTop.addEventListener('click', function() { demoBtn.click(); });
+        }
     }
 
     if (syncBtn) {
@@ -343,6 +350,10 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                 syncBtn.innerHTML = origSyncHtml;
             }
         });
+        // 顶部同步按钮委托
+        if (syncBtnTop) {
+            syncBtnTop.addEventListener('click', function() { syncBtn.click(); });
+        }
     }
 
     // === 发消息到游戏（支持 Enter 键发送） ===
@@ -409,67 +420,6 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                 doSend();
             }
         });
-    }
-
-    // === 日志预览面板 ===
-    const toggleBtn = document.getElementById('toggleLogPreview');
-    const logWrap = document.getElementById('logPreviewWrap');
-    const loadBtn = document.getElementById('loadLogPreview');
-    const logBody = document.getElementById('logPreviewBody');
-    const logMeta = document.getElementById('logPreviewMeta');
-
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            logWrap.classList.toggle('hidden');
-            toggleBtn.textContent = logWrap.classList.contains('hidden') ? '▶ 查看日志解析情况' : '▼ 收起日志预览';
-            if (!logWrap.classList.contains('hidden') && logBody.children.length <= 1) {
-                loadLogPreview();
-            }
-        });
-    }
-
-    if (loadBtn) {
-        loadBtn.addEventListener('click', loadLogPreview);
-    }
-
-    async function loadLogPreview() {
-        logBody.innerHTML = '<div class="text-amber-600">读取中...</div>';
-        loadBtn.disabled = true;
-        try {
-            const res = await fetch('{{ route("chat-log-preview") }}', { credentials: 'same-origin' });
-            const data = await res.json();
-            loadBtn.disabled = false;
-            if (!data.ok) {
-                logBody.innerHTML = '<div class="text-red-600">错误：' + escapeHtml(data.error || '未知') + '</div>';
-                return;
-            }
-            logMeta.textContent = '路径：' + data.log_path;
-            const rows = data.rows || [];
-            if (rows.length === 0) {
-                logBody.innerHTML = '<div class="text-slate-500">日志为空</div>';
-                return;
-            }
-            let chatCount = 0;
-            logBody.innerHTML = '';
-            rows.forEach(function(r) {
-                const div = document.createElement('div');
-                const isChat = r.is_chat;
-                if (isChat) chatCount++;
-                div.className = 'flex items-start gap-2 ' + (isChat ? 'text-primary-700' : 'text-slate-500');
-                const dot = '<span class="inline-block w-2 h-2 mt-1.5 rounded-full ' + (isChat ? 'bg-primary-500' : 'bg-slate-400') + ' flex-shrink-0"></span>';
-                const text = '<span class="break-all">' + escapeHtml(r.raw) + '</span>';
-                let parsed = '';
-                if (isChat && r.parsed) {
-                    parsed = '<span class="text-primary-600 ml-2">→ [' + escapeHtml(r.parsed.player) + '] ' + escapeHtml(r.parsed.message) + '</span>';
-                }
-                div.innerHTML = dot + '<div class="flex-1">' + text + parsed + '</div>';
-                logBody.appendChild(div);
-            });
-            logMeta.textContent = '路径：' + data.log_path + '　|　共 ' + rows.length + ' 行，其中 ' + chatCount + ' 行被识别为聊天';
-        } catch(e) {
-            loadBtn.disabled = false;
-            logBody.innerHTML = '<div class="text-red-600">读取失败：' + escapeHtml(e.message) + '</div>';
-        }
     }
 
     // 初始滚动到底部（多次延迟确保图片加载后也正确）

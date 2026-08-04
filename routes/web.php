@@ -228,14 +228,19 @@ Route::post('/admin/console/start', function () {
     // 未显式配置时自动识别常见启动脚本或服务端 JAR，仍可直接从网页启动。
     if ($command === '' && $cwd && is_dir($cwd)) {
         if (PHP_OS_FAMILY === 'Windows' && is_file($cwd . DIRECTORY_SEPARATOR . 'start.bat')) {
-            $command = 'start.bat';
+            $command = 'cmd /c start.bat';
         } elseif (PHP_OS_FAMILY !== 'Windows' && is_file($cwd . DIRECTORY_SEPARATOR . 'start.sh')) {
             $command = 'bash start.sh';
         } else {
             $jars = glob($cwd . DIRECTORY_SEPARATOR . '*.jar') ?: [];
             $preferred = array_values(array_filter($jars, fn ($jar) => preg_match('/(server|paper|purpur|spigot|fabric|forge)/i', basename($jar))));
             $jar = $preferred[0] ?? ($jars[0] ?? null);
-            if ($jar) $command = 'java -Xms1G -Xmx2G -jar ' . escapeshellarg(basename($jar)) . ' nogui';
+            if ($jar) {
+                $jarName = basename($jar);
+                $command = PHP_OS_FAMILY === 'Windows'
+                    ? 'cmd /c start "" /b java -Xms1G -Xmx2G -jar "' . $jarName . '" nogui'
+                    : 'java -Xms1G -Xmx2G -jar ' . escapeshellarg($jarName) . ' nogui';
+            }
         }
     }
     if ($command === '') {

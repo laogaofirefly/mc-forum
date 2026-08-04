@@ -74,6 +74,10 @@
 
         {{-- ===== 右侧：聊天区域 ===== --}}
         <div class="flex-1 flex flex-col min-w-0 min-h-0">
+@php
+$currentUserId = auth()->id();
+$currentUserName = auth()->user()->name;
+@endphp
             @if($chatUser)
                 {{-- 聊天头部 --}}
                 <div class="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center gap-3 flex-shrink-0">
@@ -100,8 +104,6 @@
                         </div>
                     @endif
 @php
-$currentUserId = auth()->id();
-$currentUserName = auth()->user()->name;
 $today = now()->format('Y-m-d');
 $lastDate = '';
 $lastPlayerName = '';

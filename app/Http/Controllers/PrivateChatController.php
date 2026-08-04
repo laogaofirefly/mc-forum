@@ -84,7 +84,7 @@ class PrivateChatController extends Controller
                     'id' => $m->id,
                     'sender_id' => $m->sender_id,
                     'player_name' => $sender->name,
-                    'avatar_url' => PlayerAvatarService::url($sender->name, $sender->mc_uuid),
+                    'avatar_url' => $sender->getAvatarUrl(),
                     'message' => $m->message,
                     'timestamp' => $m->created_at->format('Y-m-d H:i:s'),
                 ];
@@ -140,7 +140,7 @@ class PrivateChatController extends Controller
                 'id' => $saved->id,
                 'sender_id' => $saved->sender_id,
                 'player_name' => $user->name,
-                'avatar_url' => PlayerAvatarService::url($user->name, $user->mc_uuid),
+                'avatar_url' => $user->getAvatarUrl(),
                 'message' => $saved->message,
                 'timestamp' => $saved->created_at->format('Y-m-d H:i:s'),
             ],

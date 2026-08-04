@@ -121,9 +121,67 @@
             <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-purple-500/30"></span> 系统消息</span>
         </div>
     </div>
+
 </div>
 
+<style>
+    /* 美化复选框开关 */
+    .toggle-checkbox {
+        appearance: none;
+        width: 2.5rem;
+        height: 1.5rem;
+        background-color: #d1d5db; /* gray-300 */
+        border-radius: 9999px;
+        position: relative;
+        transition: background-color 0.2s;
+    }
+    .toggle-checkbox:checked {
+        background-color: #6366f1; /* indigo-500 */
+    }
+    .toggle-checkbox::before {
+        content: "";
+        position: absolute;
+        top: 0.125rem;
+        left: 0.125rem;
+        width: 1.25rem;
+        height: 1.25rem;
+        background-color: white;
+        border-radius: 9999px;
+        transition: transform 0.2s;
+    }
+    .toggle-checkbox:checked::before {
+        transform: translateX(1rem);
+    }
+
+    /* 数值滑块样式 */
+    .range-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 0.5rem;
+        background: #e5e7eb; /* gray-200 */
+        border-radius: 0.25rem;
+        outline: none;
+    }
+    .range-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 1rem;
+        height: 1rem;
+        background: #6366f1; /* indigo-500 */
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    .range-slider::-moz-range-thumb {
+        width: 1rem;
+        height: 1rem;
+        background: #6366f1;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+</style>
+
 <script>
+
 (function() {
     const output = document.getElementById('consoleOutput');
     const input = document.getElementById('consoleInput');
@@ -626,26 +684,68 @@
     };
 
     function renderForm(properties) {
-        const keys = Object.keys(properties);
-        let html = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">';
-        keys.forEach(function(k) {
+        const categories = [
+            { title: '基础设置', icon: '🎮', keys: ['motd', 'server-name', 'gamemode', 'difficulty', 'max-players', 'hardcore'] },
+            { title: '世界设置', icon: '🌍', keys: ['level-name', 'level-seed', 'level-type', 'max-world-size', 'spawn-protection', 'view-distance', 'simulation-distance'] },
+            { title: '游戏规则', icon: '⚔️', keys: ['pvp', 'allow-flight', 'allow-nether', 'enable-command-block', 'force-gamemode', 'white-list', 'enforce-whitelist'] },
+            { title: '生物与建筑', icon: '🐄', keys: ['spawn-animals', 'spawn-monsters', 'spawn-npcs', 'generate-structures'] },
+            { title: '网络与 RCON', icon: '🌐', keys: ['server-ip', 'server-port', 'query.port', 'enable-rcon', 'rcon.port', 'rcon.password'] },
+        ];
+        const booleanKeys = ['pvp', 'allow-flight', 'allow-nether', 'enable-command-block', 'white-list', 'enforce-whitelist', 'hardcore', 'force-gamemode', 'spawn-animals', 'spawn-monsters', 'spawn-npcs', 'generate-structures', 'enable-rcon'];
+        const used = new Set();
+        let html = '<div class="space-y-4">';
+
+        function renderField(k) {
+            if (!(k in properties)) return '';
+            used.add(k);
             const label = propLabels[k] || k;
-            const val = properties[k] || '';
-            html += '<div class="flex flex-col gap-1"><label class="text-slate-600 font-medium" for="prop_' + escapeHtml(k) + '">' + escapeHtml(label) + '</label>';
-            if (selectOptions[k]) {
-                html += '<select class="input text-xs py-1" name="' + escapeHtml(k) + '" id="prop_' + escapeHtml(k) + '">';
+            const val = properties[k] == null ? '' : String(properties[k]);
+            const id = 'prop_' + k.replace(/[^a-zA-Z0-9_-]/g, '_');
+            let control = '';
+
+            if (booleanKeys.includes(k)) {
+                const checked = ['true', '1', 'yes', 'on'].includes(val.toLowerCase());
+                control = '<label class="relative inline-flex items-center cursor-pointer">' +
+                    '<input type="checkbox" class="sr-only peer prop-control" id="' + id + '" data-prop-key="' + escapeHtml(k) + '" ' + (checked ? 'checked' : '') + '>' +
+                    '<span class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-primary-500 after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></span>' +
+                    '<span class="ml-2 text-xs text-slate-500">' + (checked ? '已开启' : '已关闭') + '</span></label>';
+            } else if (selectOptions[k]) {
+                control = '<select class="input text-sm prop-control" id="' + id + '" data-prop-key="' + escapeHtml(k) + '">';
                 Object.entries(selectOptions[k]).forEach(([optVal, optLabel]) => {
-                    html += '<option value="' + escapeHtml(optVal) + '"' + (val === optVal ? ' selected' : '') + '>' + escapeHtml(optLabel) + '</option>';
+                    control += '<option value="' + escapeHtml(optVal) + '"' + (val === optVal ? ' selected' : '') + '>' + escapeHtml(optLabel) + '</option>';
                 });
-                html += '</select>';
+                if (!Object.prototype.hasOwnProperty.call(selectOptions[k], val)) control += '<option value="' + escapeHtml(val) + '" selected>' + escapeHtml(val) + '</option>';
+                control += '</select>';
             } else {
-                html += '<input class="input text-xs py-1" id="prop_' + escapeHtml(k) + '" value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(k) + '">';
+                const type = ['max-players', 'max-world-size', 'spawn-protection', 'view-distance', 'simulation-distance', 'server-port', 'query.port', 'rcon.port'].includes(k) ? 'number' : 'text';
+                control = '<input type="' + type + '" class="input text-sm prop-control" id="' + id + '" data-prop-key="' + escapeHtml(k) + '" value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(k) + '">';
             }
-            html += '</div>';
+            return '<div class="rounded-xl border border-slate-200 bg-white p-3 hover:border-primary-300 transition"><div class="flex items-center justify-between gap-3"><div><label class="block text-sm font-medium text-slate-700" for="' + id + '">' + escapeHtml(label) + '</label><span class="text-[11px] text-slate-400">' + escapeHtml(k) + '</span></div>' + control + '</div></div>';
+        }
+
+        categories.forEach(function(category) {
+            const fields = category.keys.filter(k => k in properties);
+            if (!fields.length) return;
+            html += '<section class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"><h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3"><span class="text-lg">' + category.icon + '</span>' + category.title + '</h3><div class="grid grid-cols-1 lg:grid-cols-2 gap-3">';
+            fields.forEach(k => { html += renderField(k); });
+            html += '</div></section>';
         });
+
+        Object.keys(properties).filter(k => !used.has(k)).forEach(function(k) {
+            if (!used.size) html += '<section class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3"><h3 class="text-sm font-semibold text-slate-800 mb-3">其他设置</h3><div class="grid grid-cols-1 lg:grid-cols-2 gap-3">';
+            html += renderField(k);
+        });
+        if (Object.keys(properties).some(k => !used.has(k))) html += '</div></section>';
         html += '</div>';
         propsContent.innerHTML = html;
         savePropsBtn.classList.remove('hidden');
+
+        propsContent.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+            el.addEventListener('change', function() {
+                const text = this.parentElement.querySelector('span:last-child');
+                if (text) text.textContent = this.checked ? '已开启' : '已关闭';
+            });
+        });
     }
 
     async function loadProperties() {

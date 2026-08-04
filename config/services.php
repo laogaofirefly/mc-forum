@@ -45,6 +45,13 @@ return [
             'port' => (int) env('MC_RCON_PORT', 25575),
             'password' => env('MC_RCON_PASSWORD', ''),
         ],
+        // MCSM 面板（秒服务器管理）API 配置
+        'mcsm' => [
+            'api_url' => env('MCSM_API_URL', ''),
+            'api_key' => env('MCSM_API_KEY', ''),
+            'daemon_id' => env('MCSM_DAEMON_ID', ''),
+            'instance_id' => env('MCSM_INSTANCE_ID', ''),
+        ],
     ],
 
 ];

@@ -5,10 +5,10 @@
 @section('content')
 <div class="space-y-4 sm:space-y-6">
     <div class="flex items-center justify-between flex-wrap gap-3">
-        <h1 class="text-xl sm:text-2xl font-bold text-slate-900">全部帖子</h1>
+        <h1 class="page-title text-slate-900">全部帖子</h1>
         @auth
-            <a href="{{ route('threads.create') }}" class="btn-primary inline-flex items-center px-4 py-2 text-sm">
-                + 发布新帖
+            <a href="{{ route('threads.create') }}" class="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm">
+                @include('layouts.partials.icons', ['name' => 'plus', 'class' => 'w-4 h-4'])发布新帖
             </a>
         @endauth
     </div>
@@ -16,27 +16,27 @@
     <form method="GET" action="{{ route('threads.index') }}" class="flex flex-col sm:flex-row gap-2">
         <input type="text" name="q" value="{{ $search }}" placeholder="搜索帖子标题或内容..."
             class="input flex-1 px-4 py-2">
-        <button type="submit" class="btn-primary px-5 py-2 text-sm">
-            🔍 搜索
+        <button type="submit" class="btn-primary px-3 py-2 text-sm" title="搜索">
+            @include('layouts.partials.icons', ['name' => 'search', 'class' => 'w-5 h-5'])
         </button>
     </form>
 
     <div class="space-y-3">
         @foreach($threads as $thread)
-            <div class="card card-hover p-3 sm:p-4">
+            <a href="{{ route('threads.show', $thread->slug) }}" class="card card-hover p-3 sm:p-4 block group">
                 <div class="flex items-start space-x-3">
                     <img src="{{ $thread->user->getAvatarUrl() }}" alt="{{ $thread->user->name }}" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-slate-100 flex-shrink-0">
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-base sm:text-lg">
-                            <a href="{{ route('threads.show', $thread->slug) }}" class="text-slate-900 hover:text-primary-700 transition break-words">
+                            <span class="text-slate-900 group-hover:text-primary-700 transition break-words">
                                 @if($thread->is_pinned)
-                                    <span class="text-amber-500">📌</span>
+                                    @include('layouts.partials.icons', ['name' => 'pin', 'class' => 'w-4 h-4 inline text-amber-500'])
                                 @endif
                                 {{ $thread->title }}
-                            </a>
+                            </span>
                         </h4>
                         <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:text-sm text-slate-500 mt-1">
-                            <a href="{{ route('profile.show', $thread->user) }}" class="text-primary-600 hover:text-primary-700 hover:underline">{{ $thread->user->name }}</a>
+                            <span class="text-primary-600">{{ $thread->user->name }}</span>
                             <span>{{ $thread->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="flex items-center space-x-4 mt-2 text-xs sm:text-sm">
@@ -51,7 +51,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         @endforeach
 
         @if($threads->isEmpty())

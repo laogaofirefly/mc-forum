@@ -6,18 +6,18 @@
 <div class="space-y-4 sm:space-y-6">
     <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
-                <span class="mr-2">📊</span>服务器性能监控
+            <h1 class="page-title text-slate-900 flex items-center">
+                @include('layouts.partials.icons', ['name' => 'chart', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])服务器性能监控
             </h1>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">仅管理员可访问 · 实时监控服务器运行状态</p>
         </div>
         <div class="flex items-center gap-2">
             <span id="monitorStatus" class="badge text-xs sm:text-sm px-2.5 py-1 bg-primary-50 text-primary-700 border border-primary-200">
                 <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
-                实时刷新中
+                在线
             </span>
             <button type="button" id="refreshMetricsBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 transition font-medium">
-                🔄 立即刷新
+                @include('layouts.partials.icons', ['name' => 'refresh', 'class' => 'w-4 h-4'])立即刷新
             </button>
         </div>
     </div>
@@ -121,7 +121,7 @@
             MC 服务器状态
             <span id="mcStatusDot" class="ml-auto w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
         </h2>
-        @include('partials.server-status')
+        @include('partials.server-status', ['noCard' => true])
     </div>
 
     {{-- MC 服务器命令控制台（RCON） --}}
@@ -134,11 +134,11 @@
 
         {{-- 快捷命令按钮 --}}
         <div class="flex flex-wrap gap-1.5 mb-3">
-            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="list">📋 在线玩家</button>
-            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="time query day">🕑 游戏时间</button>
-            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="weather query">🌦️ 天气</button>
-            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="tps">⚡ 服务器TPS</button>
-            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="whitelist list">📝 白名单</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="list">@include('layouts.partials.icons', ['name' => 'clipboard', 'class' => 'w-3.5 h-3.5'])在线玩家</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="time query day">@include('layouts.partials.icons', ['name' => 'clock', 'class' => 'w-3.5 h-3.5'])游戏时间</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="weather query">@include('layouts.partials.icons', ['name' => 'cloud', 'class' => 'w-3.5 h-3.5'])天气</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="tps">@include('layouts.partials.icons', ['name' => 'bolt', 'class' => 'w-3.5 h-3.5'])服务器TPS</button>
+            <button type="button" class="quick-cmd text-xs px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition" data-cmd="whitelist list">@include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-3.5 h-3.5'])白名单</button>
         </div>
 
         <form id="rconForm" class="flex flex-col sm:flex-row gap-2 mb-3">
@@ -183,7 +183,8 @@
         <div id="rconHistory" class="text-xs sm:text-sm font-mono max-h-64 overflow-y-auto rounded-md bg-slate-50 border border-slate-200 p-2.5 space-y-2">
             <div class="text-slate-400">还没有执行过命令。点击上方快捷按钮，或输入命令后点“执行命令”。</div>
         </div>
-        <p class="mt-2 text-xs text-red-500">⚠️ 危险命令 /stop /restart 被禁止，请在服务器控制台执行。其他命令执行有风险，请谨慎操作。</p>
+        <p class="mt-2 text-xs text-red-500 flex items-center gap-1">
+            @include('layouts.partials.icons', ['name' => 'warning', 'class' => 'w-3.5 h-3.5 flex-shrink-0'])危险命令 /stop /restart 被禁止，请在服务器控制台执行。其他命令执行有风险，请谨慎操作。</p>
     </div>
 
     {{-- 近期帖子统计（迷你） --}}
@@ -243,7 +244,7 @@
 
     async function refresh() {
         try {
-            setStatus('<span class="inline-block w-2 h-2 bg-amber-400 rounded-full mr-1 animate-pulse"></span> 刷新中...', 'yellow');
+            // 静默刷新，不显示状态变化
             const res = await fetch('{{ route("admin.monitor.metrics") }}', {
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
                 credentials: 'same-origin',
@@ -259,12 +260,9 @@
                     if (appMU) appMU.textContent = data.app.total_users;
                 }
                 if (data.mc) setMcOnlineColor(data.mc.online);
-                setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 实时刷新中', 'green');
-            } else {
-                setStatus('<span class="inline-block w-2 h-2 bg-amber-400 rounded-full mr-1"></span> 响应异常', 'yellow');
             }
         } catch (e) {
-            setStatus('<span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-1"></span> 刷新失败，稍后重试', 'red');
+            // 静默失败
         }
     }
 

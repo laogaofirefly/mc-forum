@@ -13,7 +13,11 @@
             <div class="mc-card rounded-lg p-5 hover:border-primary-500/50 transition">
                 <div class="flex items-start space-x-4">
                     <div class="w-14 h-14 bg-primary-900 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
-                        {{ $category->icon ?? '📁' }}
+                        @if($category->icon)
+                        {{ $category->icon }}
+                    @else
+                        @include('layouts.partials.icons', ['name' => 'folder', 'class' => 'w-6 h-6'])
+                    @endif
                     </div>
                     <div class="flex-1">
                         <div class="flex items-center justify-between">

@@ -15,9 +15,9 @@
             <img src="{{ $thread->user->getAvatarUrl() }}" alt="{{ $thread->user->name }}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full ring-2 ring-slate-100 flex-shrink-0">
             <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between flex-wrap gap-2">
-                    <h1 class="text-xl sm:text-2xl font-bold text-slate-900 break-words">
+                    <h1 class="page-title text-slate-900 break-words">
                         @if($thread->is_pinned)
-                            <span class="text-amber-500">📌</span>
+                            @include('layouts.partials.icons', ['name' => 'pin', 'class' => 'w-5 h-5 inline text-amber-500'])
                         @endif
                         {{ $thread->title }}
                     </h1>

@@ -48,7 +48,7 @@
                             <div class="text-xs text-slate-400">MC 账号</div>
                             <div class="text-slate-700">
                                 {{ $user->mc_username }}
-                                @if($user->mc_verified)<span class="text-primary-500 text-xs">✓已验证</span>@endif
+                                @if($user->mc_verified)@include('layouts.partials.icons', ['name' => 'check', 'class' => 'w-3 h-3 inline text-primary-500'])已验证@endif
                             </div>
                         </div>
                     @endif

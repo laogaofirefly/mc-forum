@@ -5,7 +5,7 @@
 @section('content')
 <div class="max-w-3xl mx-auto">
     <div class="card p-5 sm:p-6">
-        <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-6">编辑帖子</h2>
+        <h2 class="page-title text-slate-900 mb-6">编辑帖子</h2>
         <form method="POST" action="{{ route('threads.update', $thread->slug) }}">
             @csrf
             @method('PUT')

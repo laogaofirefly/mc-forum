@@ -6,13 +6,13 @@
 <div class="space-y-5">
     <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
-                <span class="mr-2">👥</span>用户管理
+            <h1 class="page-title text-slate-900 flex items-center">
+                @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])用户管理
             </h1>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">监控所有注册用户 · 封禁/解封</p>
         </div>
         <a href="{{ route('admin.monitor') }}" class="btn-secondary text-sm px-4 py-2">
-            📊 服务器监控
+            @include('layouts.partials.icons', ['name' => 'chart', 'class' => 'w-4 h-4'])服务器监控
         </a>
     </div>
 
@@ -50,7 +50,7 @@
         <input type="text" name="q" value="{{ $search }}" placeholder="搜索用户名 / 邮箱 / MC昵称..."
             class="input flex-1 px-4 py-2 text-sm">
         @if($filter !== 'all')<input type="hidden" name="filter" value="{{ $filter }}">@endif
-        <button type="submit" class="btn-primary px-5 py-2 text-sm whitespace-nowrap">🔍 搜索</button>
+        <button type="submit" class="btn-primary px-5 py-2 text-sm whitespace-nowrap">@include('layouts.partials.icons', ['name' => 'search', 'class' => 'w-5 h-5'])</button>
         @if($search || $filter !== 'all')
             <a href="{{ route('admin.users.index') }}" class="btn-secondary px-4 py-2 text-sm">清除</a>
         @endif
@@ -90,7 +90,7 @@
                                 @if($user->mc_username)
                                     <span class="text-slate-700">{{ $user->mc_username }}</span>
                                     @if($user->mc_verified)
-                                        <span class="text-primary-500 text-xs ml-0.5">✓</span>
+                                        @include('layouts.partials.icons', ['name' => 'check', 'class' => 'w-3 h-3 inline text-primary-500'])
                                     @endif
                                 @else
                                     <span class="text-slate-300">未绑定</span>

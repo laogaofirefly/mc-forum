@@ -7,8 +7,8 @@
     {{-- 顶部标题与统计 --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
-                <span class="mr-2">👥</span>服务器成员
+            <h1 class="page-title text-slate-900 flex items-center">
+                @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])服务器成员
             </h1>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">登录过 MC 服务器的所有玩家</p>
         </div>
@@ -16,7 +16,7 @@
         @if($ok)
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="badge bg-green-100 text-green-700">
-                    🟢 在线 {{ $onlineCount }} / {{ $maxPlayers }}
+                    <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>在线 {{ $onlineCount }} / {{ $maxPlayers }}
                 </span>
                 <span class="badge bg-slate-100 text-slate-600">
                     总成员 {{ $total }}
@@ -44,7 +44,7 @@
             <input type="text" name="q" value="{{ $keyword }}" placeholder="搜索玩家名..."
                 class="input flex-1">
             <button type="submit" class="btn-primary px-5 rounded-lg text-sm">
-                搜索
+                @include('layouts.partials.icons', ['name' => 'search', 'class' => 'w-5 h-5'])
             </button>
             @if($keyword !== '')
                 <a href="{{ route('players.index') }}" class="btn-secondary px-4 rounded-lg text-sm">清除</a>

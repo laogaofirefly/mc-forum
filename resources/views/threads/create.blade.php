@@ -6,7 +6,7 @@
 <div class="max-w-3xl mx-auto">
     <div class="card p-5 sm:p-6">
         <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl sm:text-2xl font-bold text-slate-900">发布新帖</h2>
+            <h2 class="page-title text-slate-900">发布新帖</h2>
             <button type="button" id="previewBtn" class="text-sm text-primary-600 hover:text-primary-700 px-3 py-2 rounded-md border border-primary-200 hover:border-primary-400 transition hidden sm:inline-flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 预览
@@ -42,7 +42,7 @@
                             内容 <span class="text-red-500">*</span>
                             <span class="text-slate-500 font-normal ml-1">(支持 Markdown 和图片)</span>
                         </label>
-                        <button type="button" id="insertTipBtn" class="text-xs text-slate-500 hover:text-primary-600">💡 格式提示</button>
+                        <button type="button" id="insertTipBtn" class="text-xs text-slate-500 hover:text-primary-600">@include('layouts.partials.icons', ['name' => 'lightbulb', 'class' => 'w-4 h-4'])格式提示</button>
                     </div>
                     @include('partials.markdown-editor', [
                         'name' => 'body',
@@ -58,7 +58,7 @@
                         ← 返回
                     </a>
                     <button type="submit" class="btn-primary px-6 py-3 text-sm">
-                        📝 发布帖子
+                        @include('layouts.partials.icons', ['name' => 'pencil', 'class' => 'w-4 h-4'])发布帖子
                     </button>
                 </div>
             </div>
@@ -74,11 +74,11 @@
                 </button>
             </div>
             <ul class="space-y-2 text-sm text-slate-700">
-                <li>📝 <b>标题</b>：简洁明了，突出主题（最多100字）</li>
-                <li>📄 <b>正文</b>：支持 Markdown 语法，自动格式化</li>
-                <li>🖼️ <b>图片</b>：点击工具栏图片按钮上传，或直接粘贴/拖拽图片</li>
-                <li>⌨️ <b>快捷键</b>：Ctrl+B 加粗、Ctrl+I 斜体、Ctrl+K 链接</li>
-                <li>⚠️ <b>规则</b>：禁止发布违规、广告、恶意内容</li>
+                <li>@include('layouts.partials.icons', ['name' => 'pencil', 'class' => 'w-4 h-4 inline']) <b>标题</b>：简洁明了，突出主题（最多100字）</li>
+                <li>@include('layouts.partials.icons', ['name' => 'document', 'class' => 'w-4 h-4 inline']) <b>正文</b>：支持 Markdown 语法，自动格式化</li>
+                <li>@include('layouts.partials.icons', ['name' => 'image', 'class' => 'w-4 h-4 inline']) <b>图片</b>：点击工具栏图片按钮上传，或直接粘贴/拖拽图片</li>
+                <li>@include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-4 h-4 inline']) <b>快捷键</b>：Ctrl+B 加粗、Ctrl+I 斜体、Ctrl+K 链接</li>
+                <li>@include('layouts.partials.icons', ['name' => 'warning', 'class' => 'w-4 h-4 inline']) <b>规则</b>：禁止发布违规、广告、恶意内容</li>
             </ul>
             <button type="button" id="closeTipBtn" class="btn-primary w-full py-2 mt-4">知道了</button>
         </div>

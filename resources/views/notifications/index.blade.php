@@ -4,8 +4,8 @@
 <div class="space-y-5">
     <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
-                <span class="mr-2">🔔</span>消息通知
+            <h1 class="page-title text-slate-900 flex items-center">
+                @include('layouts.partials.icons', ['name' => 'bell', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])消息通知
             </h1>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">所有人对你的帖子/回复的操作记录</p>
         </div>

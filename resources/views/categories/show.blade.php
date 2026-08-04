@@ -7,7 +7,11 @@
     <div class="flex items-center justify-between flex-wrap gap-4">
         <div>
             <h1 class="text-2xl font-bold text-white flex items-center">
-                <span class="text-3xl mr-3">{{ $category->icon ?? '📁' }}</span>
+                @if($category->icon)
+                    <span class="text-3xl mr-3">{{ $category->icon }}</span>
+                @else
+                    @include('layouts.partials.icons', ['name' => 'folder', 'class' => 'w-8 h-8 mr-3'])
+                @endif
                 {{ $category->name }}
             </h1>
             @if($category->description)

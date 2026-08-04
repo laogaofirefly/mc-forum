@@ -6,14 +6,14 @@
 <div class="space-y-3 sm:space-y-4">
     <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
-                <span class="mr-2">✉️</span>私聊
+            <h1 class="page-title text-slate-900 flex items-center">
+                @include('layouts.partials.icons', ['name' => 'mail', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])私聊
             </h1>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">与其他用户一对一私密聊天</p>
         </div>
         <span id="chatStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-50 text-primary-700 border-primary-200">
             <span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span>
-            实时刷新中
+            在线
         </span>
     </div>
 
@@ -159,7 +159,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
                         · 与 <span class="text-primary-600 font-medium">{{ $chatUser->name }}</span> 的私聊
                     </div>
                     <button type="button" id="scrollBottomBtn" class="no-disable text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded hover:bg-primary-50 transition">
-                        ↓ 底部
+                        @include('layouts.partials.icons', ['name' => 'chevron-down', 'class' => 'w-3.5 h-3.5'])底部
                     </button>
                 </div>
 
@@ -336,19 +336,16 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     async function fetchMessages() {
         if (!chatUserId) return;
         try {
-            setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1 animate-pulse"></span> 刷新中...', 'yellow');
+            // 静默刷新，不显示状态变化
             var res = await fetch('{{ route("private-chat.fetch") }}?with_id=' + chatUserId + '&after_id=' + lastId, { credentials: 'same-origin' });
             var data = await res.json();
             if (data && data.ok) {
                 if (data.chat_user_name) chatUserName = data.chat_user_name;
                 (data.messages || []).forEach(appendMessage);
                 if (data.last_id > lastId) lastId = data.last_id;
-                setStatus('<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1 animate-pulse"></span> 实时刷新中', 'green');
-            } else {
-                setStatus('<span class="inline-block w-2 h-2 bg-amber-500 rounded-full mr-1"></span> 数据异常', 'yellow');
             }
         } catch (e) {
-            setStatus('<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span> 刷新失败', 'red');
+            // 静默失败
         }
     }
 

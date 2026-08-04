@@ -41,15 +41,6 @@ class PrivateChatController extends Controller
             ->limit(20)
             ->get();
 
-        dd([
-            'db_connection' => config('database.default'),
-            'db_database' => config('database.connections.sqlite.database'),
-            'db_path' => database_path('database.sqlite'),
-            'db_exists' => file_exists(database_path('database.sqlite')),
-            'table_exists' => Schema::hasTable('private_messages'),
-            'withId' => $withId,
-            'chatUser' => $chatUser?->id,
-        ]);
         return view('private-chat.index', compact('messages', 'chatUser', 'contacts', 'users'));
     }
 

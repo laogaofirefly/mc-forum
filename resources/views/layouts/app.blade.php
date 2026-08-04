@@ -32,6 +32,8 @@
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        heading: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['SF Mono', 'Monaco', 'Consolas', 'ui-monospace', 'monospace'],
                     }
                 }
             }
@@ -214,6 +216,16 @@
         .dark .link-primary { color: #34d399; }
         .dark .link-primary:hover { color: #10b981; }
 
+        /* ====== 字体层级区分 ====== */
+        h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: -0.01em; }
+        h1 { font-weight: 800; }
+        h2 { font-weight: 700; }
+        h3 { font-weight: 600; }
+        .font-mono, code, pre { font-family: 'SF Mono', 'Monaco', 'Consolas', 'ui-monospace', monospace; }
+        .text-body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+        .page-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+        @media (min-width: 640px) { .page-title { font-size: 1.75rem; } }
+
         /* ====== Markdown 渲染样式（prose） ====== */
         .prose { color: var(--text-main); line-height: 1.7; font-size: 0.95rem; word-wrap: break-word; }
         .prose-base { font-size: 1rem; }
@@ -285,29 +297,32 @@
         .dark .bg-slate-100 { background-color: #1e293b !important; }
     </style>
 </head>
-<body class="min-h-screen text-slate-800 antialiased">
+<body class="min-h-screen text-slate-800 antialiased flex flex-col">
     <nav class="sticky top-0 z-50 border-b backdrop-blur-lg" style="background-color: var(--nav-bg); border-color: var(--nav-border);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <a href="{{ route('home') }}" class="flex items-center space-x-2.5">
-                        <div class="w-9 h-9 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-sm">
-                            MC
-                        </div>
+                        {{-- Logo --}}
+                        <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="36" height="36" rx="8" fill="url(#logo-grad)"/>
+                            <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#34d399"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+                            <text x="18" y="25" text-anchor="middle" fill="white" font-size="17" font-weight="800" font-family="Inter, sans-serif">MC</text>
+                        </svg>
                         <span class="text-lg font-bold hidden sm:inline" style="color: var(--text-main);">MC论坛</span>
                     </a>
                 </div>
                 <div class="hidden md:flex items-center space-x-1">
-                    <a href="{{ route('home') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">首页</a>
-                    <a href="{{ route('threads.index') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">全部帖子</a>
-                    <a href="{{ route('players.index') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">服务器成员</a>
-                    <a href="{{ route('game-chat') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">游戏聊天</a>
-                    <a href="{{ route('private-chat') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">私聊</a>
+                    <a href="{{ route('home') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('home') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">首页</a>
+                    <a href="{{ route('threads.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('threads.index') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">全部帖子</a>
+                    <a href="{{ route('players.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('players.index') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">服务器成员</a>
+                    <a href="{{ route('game-chat') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('game-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">游戏聊天</a>
+                    <a href="{{ route('private-chat') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('private-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">私聊</a>
                     @auth
-                        <a href="{{ route('threads.create') }}" class="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-lg text-sm font-medium transition">发帖</a>
+                        <a href="{{ route('threads.create') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('threads.create') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">发帖</a>
                         @if(auth()->user()->isAdmin())
-                            <a href="{{ route('admin.users.index') }}" class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-lg text-sm font-medium transition">用户管理</a>
-                            <a href="{{ route('admin.monitor') }}" class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-3 py-2 rounded-lg text-sm font-medium transition">监控</a>
+                            <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' }}">用户管理</a>
+                            <a href="{{ route('admin.monitor') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' }}">监控</a>
                         @endif
                     @endauth
                 </div>
@@ -350,39 +365,67 @@
                 {{-- 夜间模式切换 --}}
                 <button type="button" id="mobileDarkToggle" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700" aria-label="切换夜间模式">
                     <span class="flex items-center gap-2">
-                        <span id="mobileDarkIcon">🌙</span> 夜间模式
+                        <span id="mobileDarkIcon">@include('layouts.partials.icons', ['name' => 'moon', 'class' => 'w-5 h-5'])</span> 夜间模式
                     </span>
                     <span class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-slate-300 dark:bg-primary-500" id="mobileDarkSwitch">
                         <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1 dark:translate-x-6"></span>
                     </span>
                 </button>
-                <a href="{{ route('home') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🏠 首页</a>
-                <a href="{{ route('threads.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">📋 全部帖子</a>
-                <a href="{{ route('players.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">👥 服务器成员</a>
-                <a href="{{ route('game-chat') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">💬 游戏聊天</a>
-                <a href="{{ route('private-chat') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">✉️ 私聊</a>
+                <a href="{{ route('home') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('home') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                    @include('layouts.partials.icons', ['name' => 'home', 'class' => 'w-5 h-5 flex-shrink-0']) 首页
+                </a>
+                <a href="{{ route('threads.index') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('threads.index') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                    @include('layouts.partials.icons', ['name' => 'posts', 'class' => 'w-5 h-5 flex-shrink-0']) 全部帖子
+                </a>
+                <a href="{{ route('players.index') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('players.index') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                    @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-5 h-5 flex-shrink-0']) 服务器成员
+                </a>
+                <a href="{{ route('game-chat') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('game-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                    @include('layouts.partials.icons', ['name' => 'chat', 'class' => 'w-5 h-5 flex-shrink-0']) 游戏聊天
+                </a>
+                <a href="{{ route('private-chat') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('private-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                    @include('layouts.partials.icons', ['name' => 'mail', 'class' => 'w-5 h-5 flex-shrink-0']) 私聊
+                </a>
                 @auth
-                    <a href="{{ route('notifications.index') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🔔 消息通知 <span id="mobileNotifyCount" class="hidden ml-1 inline-block px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">0</span></a>
-                    <a href="{{ route('threads.create') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">✏️ 发帖</a>
+                    <a href="{{ route('notifications.index') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('notifications.index') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                        @include('layouts.partials.icons', ['name' => 'bell', 'class' => 'w-5 h-5 flex-shrink-0']) 消息通知 <span id="mobileNotifyCount" class="hidden ml-1 inline-block px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">0</span>
+                    </a>
+                    <a href="{{ route('threads.create') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('threads.create') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                        @include('layouts.partials.icons', ['name' => 'pencil', 'class' => 'w-5 h-5 flex-shrink-0']) 发帖
+                    </a>
                     @if(auth()->check() && auth()->user()->isAdmin())
-                        <a href="{{ route('admin.users.index') }}" class="block text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition">👥 用户管理</a>
-                        <a href="{{ route('admin.monitor') }}" class="block text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition">📊 服务器监控</a>
+                        <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2.5 text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : '' }}">
+                            @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-5 h-5 flex-shrink-0']) 用户管理
+                        </a>
+                        <a href="{{ route('admin.monitor') }}" class="flex items-center gap-2.5 text-amber-600 hover:bg-amber-50 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('admin.monitor') ? 'bg-amber-50 text-amber-700 font-semibold' : '' }}">
+                            @include('layouts.partials.icons', ['name' => 'chart', 'class' => 'w-5 h-5 flex-shrink-0']) 服务器监控
+                        </a>
                     @endif
-                    <a href="{{ route('profile.show', auth()->user()) }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">👤 我的主页</a>
-                    <a href="{{ route('profile.edit') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">⚙️ 设置</a>
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('profile.show') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                        @include('layouts.partials.icons', ['name' => 'user', 'class' => 'w-5 h-5 flex-shrink-0']) 我的主页
+                    </a>
+                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('profile.edit') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                        @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-5 h-5 flex-shrink-0']) 设置
+                    </a>
                     <form method="POST" action="{{ route('logout') }}" class="block">
                         @csrf
-                        <button type="submit" class="w-full text-left text-red-500 hover:bg-red-50 px-3 py-2.5 rounded-lg font-medium transition">🚪 退出登录</button>
+                        <button type="submit" class="w-full text-left flex items-center gap-2.5 text-red-500 hover:bg-red-50 px-3 py-2.5 rounded-lg font-medium transition">
+                            @include('layouts.partials.icons', ['name' => 'logout', 'class' => 'w-5 h-5 flex-shrink-0']) 退出登录
+                        </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="block text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition">🔑 登录</a>
-                    <a href="{{ route('register') }}" class="block btn-primary text-center px-3 py-2.5 rounded-lg mt-2">📝 立即注册</a>
+                    <a href="{{ route('login') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('login') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                        @include('layouts.partials.icons', ['name' => 'login', 'class' => 'w-5 h-5 flex-shrink-0']) 登录
+                    </a>
+                    <a href="{{ route('register') }}" class="flex items-center justify-center gap-2 btn-primary text-center px-3 py-2.5 rounded-lg mt-2">
+                        @include('layouts.partials.icons', ['name' => 'plus', 'class' => 'w-5 h-5 flex-shrink-0']) 立即注册
+                    </a>
                 @endauth
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         @if(session('success'))
             <div class="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-xl text-primary-800 flex items-center" style="background-color: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2);">
                 <svg class="w-5 h-5 mr-2.5 flex-shrink-0 text-primary-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -423,7 +466,7 @@
             </div>
         @endif
     </main>
-    <footer style="background-color: var(--footer-bg); border-color: var(--footer-border);" class="border-t mt-12">
+    <footer style="background-color: var(--footer-bg); border-color: var(--footer-border);" class="border-t">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div class="text-center text-slate-500">
                 <p class="font-bold text-base sm:text-lg mb-1" style="color: var(--text-main);">MC论坛 · 我的世界玩家社区</p>
@@ -448,13 +491,13 @@
                     html.classList.add('dark');
                     if (darkIcon) darkIcon.classList.add('hidden');
                     if (lightIcon) lightIcon.classList.remove('hidden');
-                    if (mobileDarkIcon) mobileDarkIcon.textContent = '☀️';
+                    if (mobileDarkIcon) mobileDarkIcon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>';
                     if (mobileSwitch) { mobileSwitch.classList.add('dark:bg-primary-500'); mobileSwitch.classList.remove('bg-slate-300'); }
                 } else {
                     html.classList.remove('dark');
                     if (lightIcon) lightIcon.classList.add('hidden');
                     if (darkIcon) darkIcon.classList.remove('hidden');
-                    if (mobileDarkIcon) mobileDarkIcon.textContent = '🌙';
+                    if (mobileDarkIcon) mobileDarkIcon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>';
                     if (mobileSwitch) { mobileSwitch.classList.remove('dark:bg-primary-500'); mobileSwitch.classList.add('bg-slate-300'); }
                 }
             }

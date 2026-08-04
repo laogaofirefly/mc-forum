@@ -21,30 +21,11 @@
                 未连接
             </span>
             <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 hidden" title="启动 MC 服务器">
-                @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])启动
-            </button>
-            <button type="button" id="stopServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 hidden" title="停止 MC 服务器" style="background:#ef4444;border-color:#dc2626;">
-                @include('layouts.partials.icons', ['name' => 'pause', 'class' => 'w-4 h-4 mr-1'])停止
-            </button>
-            <button type="button" id="restartServerBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5 hidden" title="重启 MC 服务器">
-                @include('layouts.partials.icons', ['name' => 'refresh', 'class' => 'w-4 h-4 mr-1'])重启
+                @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])启动服务器
             </button>
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])清屏
             </button>
-        </div>
-    </div>
-
-    {{-- MCSM 配置信息面板（默认折叠） --}}
-    <div class="card p-3 sm:p-4" id="mcsmPanel" style="display:none;">
-        <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-slate-700">🔧 MCSM 面板配置</span>
-            <button type="button" id="toggleMcsmPanel" class="text-xs text-slate-400 hover:text-slate-600">
-                收起
-            </button>
-        </div>
-        <div id="mcsmConfigContent" class="text-xs text-slate-500 leading-relaxed space-y-1">
-            加载中...
         </div>
     </div>
 
@@ -138,13 +119,6 @@
     const statusEl = document.getElementById('rconStatus');
     const serverStatusEl = document.getElementById('serverStatus');
     const startServerBtn = document.getElementById('startServerBtn');
-    const stopServerBtn = document.getElementById('stopServerBtn');
-    const restartServerBtn = document.getElementById('restartServerBtn');
-    const mcsmPanel = document.getElementById('mcsmPanel');
-    const mcsmConfigContent = document.getElementById('mcsmConfigContent');
-    const toggleMcsmPanelBtn = document.getElementById('toggleMcsmPanel');
-    let serverOnline = false;
-    let mcsmConfigured = false;
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     // 日志控制
@@ -463,137 +437,91 @@
     // 初始焦点
     input.focus();
 
-    // ========== 服务器状态检测与启停 ==========
+    // ========== 服务器状态检测与启动 ==========
     async function checkServerStatus() {
         try {
             const res = await fetch('{{ route("admin.console.status") }}', { credentials: 'same-origin' });
             const data = await res.json();
             if (data && data.ok) {
-                serverOnline = data.online !== undefined ? data.online : data.running;
-                updateServerStatusUI(serverOnline);
+                updateServerStatusUI(data.running);
             }
-        } catch(e) {}
+        } catch(e) {
+            // 静默失败
+        }
     }
 
     function updateServerStatusUI(running) {
-        serverOnline = running;
         if (running) {
             serverStatusEl.className = 'badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-50 text-primary-700 border-primary-200';
             serverStatusEl.innerHTML = '<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1"></span>MC 运行中';
             startServerBtn.classList.add('hidden');
-            if (mcsmConfigured) {
-                stopServerBtn.classList.remove('hidden');
-                restartServerBtn.classList.remove('hidden');
-            }
         } else {
             serverStatusEl.className = 'badge text-xs sm:text-sm px-2.5 py-1 border bg-red-50 text-red-700 border-red-200';
             serverStatusEl.innerHTML = '<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>MC 已停止';
-            stopServerBtn.classList.add('hidden');
-            restartServerBtn.classList.add('hidden');
-            if (mcsmConfigured) {
-                startServerBtn.classList.remove('hidden');
-            }
             @if(!empty(config('services.minecraft.start_command')))
-            if (!mcsmConfigured) startServerBtn.classList.remove('hidden');
+            startServerBtn.classList.remove('hidden');
             @endif
         }
     }
 
-    // ========== MCSM 配置面板 ==========
-    async function loadMcsmInfo() {
-        try {
-            const res = await fetch('{{ route("admin.console.mcsm-info") }}', { credentials: 'same-origin' });
-            const data = await res.json();
-            if (!data || !data.ok) return;
-            mcsmConfigured = data.configured;
-            if (mcsmConfigured) {
-                mcsmPanel.style.display = '';
-                mcsmConfigContent.innerHTML =
-                    '<div><span class="font-medium text-slate-600">API URL：</span>' + escapeHtml(data.api_url || '') + '</div>' +
-                    '<div><span class="font-medium text-slate-600">Api Key：</span>' + escapeHtml(data.api_key || '') + '</div>' +
-                    '<div><span class="font-medium text-slate-600">实例ID：</span>' + escapeHtml(data.instance_id || '') + '</div>' +
-                    '<div><span class="font-medium text-slate-600">UUID：</span>' + escapeHtml(data.uuid || '') + '</div>' +
-                    '<div class="mt-1 text-green-600">✅ MCSM 已配置，将通过 MCSM API 控制服务器</div>';
-            }
-        } catch(e) {
-            mcsmConfigContent.innerHTML = '<span class="text-red-500">获取 MCSM status failed: ' + escapeHtml(e.message) + '</span>';
-        }
-    }
-
-    toggleMcsmPanelBtn.addEventListener('click', function() {
-        const hidden = mcsmConfigContent.style.display === 'none';
-        mcsmConfigContent.style.display = hidden ? '' : 'none';
-        toggleMcsmPanelBtn.textContent = hidden ? '收起' : '展开';
-    });
-
-    // 启停按钮
     startServerBtn.addEventListener('click', async function() {
         if (startServerBtn.disabled) return;
-        await executeServerAction('start');
-    });
-    stopServerBtn.addEventListener('click', async function() {
-        if (stopServerBtn.disabled) return;
-        if (!confirm('确定要停止 MC 服务器吗？')) return;
-        await executeServerAction('stop');
-    });
-    restartServerBtn.addEventListener('click', async function() {
-        if (restartServerBtn.disabled) return;
-        if (!confirm('确定要重启 MC 服务器吗？')) return;
-        await executeServerAction('restart');
-    });
+        startServerBtn.disabled = true;
+        const origText = startServerBtn.innerHTML;
+        startServerBtn.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>启动中...</span>';
 
-    async function executeServerAction(action) {
-        const btn = action === 'start' ? startServerBtn : (action === 'stop' ? stopServerBtn : restartServerBtn);
-        const origHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<svg class="animate-spin w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>' +
-            (action === 'start' ? '启动中' : (action === 'stop' ? '停止中' : '重启中'));
-
-        const endpoints = {
-            start: '{{ route("admin.console.start") }}',
-            stop: '{{ route("admin.console.stop") }}',
-            restart: '{{ route("admin.console.restart") }}',
-        };
         try {
-            const res = await fetch(endpoints[action], { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }, credentials: 'same-origin' });
+            const res = await fetch('{{ route("admin.console.start") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
             const data = await res.json();
             if (data && data.ok) {
-                appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 px-3">' + escapeHtml(data.message || '操作成功') + '</span>');
+                appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] ' + escapeHtml(data.message) + '</span>');
+                appendHtml('<span class="text-purple-400/70 bg-purple-500/5 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 执行命令: ' + escapeHtml(data.command) + '</span>');
+                if (data.cwd) appendHtml('<span class="text-purple-400/70 bg-purple-500/5 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 工作目录: ' + escapeHtml(data.cwd) + '</span>');
+
                 let pollCount = 0;
                 const pollTimer = setInterval(async () => {
                     pollCount++;
                     try {
                         const sRes = await fetch('{{ route("admin.console.status") }}', { credentials: 'same-origin' });
                         const sData = await sRes.json();
-                        if (sData && sData.ok) {
-                            if ((action === 'start' && sData.online) || (action === 'stop' && !sData.online) || (action === 'restart' && sData.online)) {
-                                clearInterval(pollTimer);
-                                updateServerStatusUI(sData.online || sData.running);
-                                const labels = {start:'启动成功', stop:'已停止', restart:'重启完成'};
-                                appendHtml('<p class="text-green-400 bg-green-500/10 -mx-3 px-4">' + labels[action] + '！</p>');
-                                btn.disabled = false;
-                                btn.innerHTML = origHtml;
-                            }
-                        }
-                        if (pollCount >= 20) {
+                        if (sData && sData.ok && sData.running) {
                             clearInterval(pollTimer);
-                            btn.disabled = false;
-                            btn.innerHTML = origHtml;
-                            checkServerStatus();
+                            updateServerStatusUI(true);
+                            setStatus('已连接', 'green');
+                            appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 服务器已启动成功！</span>');
+                            startServerBtn.disabled = false;
+                            startServerBtn.innerHTML = origText;
+                            startServerBtn.classList.add('hidden');
+                        } else if (pollCount >= 30) {
+                            clearInterval(pollTimer);
+                            appendHtml('<span class="text-amber-400 bg-amber-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 等待超时（90秒），请手动检查服务器状态</span>');
+                            startServerBtn.disabled = false;
+                            startServerBtn.innerHTML = origText;
                         }
-                    } catch(e) { if (pollCount >= 20) {clearInterval(pollTimer); btn.disabled = false; btn.innerHTML = origHtml;} }
+                    } catch(e) {
+                        if (pollCount >= 30) {
+                            clearInterval(pollTimer);
+                            startServerBtn.disabled = false;
+                            startServerBtn.innerHTML = origText;
+                        }
+                    }
                 }, 3000);
             } else {
-                appendHtml('<p class="text-red-400 bg-red-500/10 -mx-3 px-4">' + escapeHtml(data.message || '失败') + '</p>');
-                btn.disabled = false;
-                btn.innerHTML = origHtml;
+                const errMsg = (data && data.message) ? data.message : '启动失败';
+                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] ' + escapeHtml(errMsg) + '</span>');
+                startServerBtn.disabled = false;
+                startServerBtn.innerHTML = origText;
             }
         } catch(e) {
-            appendHtml('<p class="text-red-400 bg-red-500/10 -mx-3 px-4">网络错误: ' + escapeHtml(e.message) + '</p>');
-            btn.disabled = false;
-            btn.innerHTML = origHtml;
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 网络错误: ' + escapeHtml(e.message) + '</span>');
+            startServerBtn.disabled = false;
+            startServerBtn.innerHTML = origText;
         }
-    }
+    });
 
     // 初始检测
     checkServerStatus();
@@ -637,7 +565,6 @@
     }
     fetchLog();
     startLogPolling();
-    loadMcsmInfo();
 })();
 </script>
 @endsection

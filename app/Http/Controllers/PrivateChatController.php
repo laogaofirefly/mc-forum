@@ -41,7 +41,6 @@ class PrivateChatController extends Controller
             ->limit(20)
             ->get();
 
-        dd($request->all(), $withId, $chatUser, $tableExists);
         return view('private-chat.index', compact('messages', 'chatUser', 'contacts', 'users'));
     }
 

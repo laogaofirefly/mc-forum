@@ -23,6 +23,9 @@
             <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5" title="启动 MC 服务器">
                 @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])启动服务器
             </button>
+            <button type="button" id="openPropsTopBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5" title="打开服务器配置">
+                @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4 mr-1'])服务器配置
+            </button>
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])清屏
             </button>
@@ -190,6 +193,15 @@
     const statusEl = document.getElementById('rconStatus');
     const serverStatusEl = document.getElementById('serverStatus');
     const startServerBtn = document.getElementById('startServerBtn');
+    const openPropsTopBtn = document.getElementById('openPropsTopBtn');
+    if (openPropsTopBtn) {
+        openPropsTopBtn.addEventListener('click', function() {
+            const panel = document.getElementById('serverPropsPanel');
+            if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const btn = document.getElementById('loadPropsBtn');
+            if (btn) btn.click();
+        });
+    }
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     // 日志控制

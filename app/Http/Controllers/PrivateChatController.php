@@ -21,9 +21,9 @@ class PrivateChatController extends Controller
         $withId = $request->integer('with');
         $tableExists = Schema::hasTable('private_messages');
 
-        if ($withId && $withId !== $userId && $tableExists) {
+        if ($withId && $withId !== $userId) {
             $chatUser = User::where('id', $withId)->where('is_blocked', false)->first();
-            if ($chatUser) {
+            if ($chatUser && $tableExists) {
                 $messages = PrivateMessage::getConversation($userId, $chatUser->id, 100);
                 PrivateMessage::where('sender_id', $chatUser->id)
                     ->where('receiver_id', $userId)

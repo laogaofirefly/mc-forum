@@ -80,6 +80,208 @@ Route::get('/admin/console', function () {
     }
     return view('admin.console');
 })->name('admin.console')->middleware('auth');
+
+// 控制台日志读取 API
+Route::get('/admin/console/log', function (\Illuminate\Http\Request $request) {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可访问'], 403);
+    }
+
+    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    if (empty($mcPath)) {
+        return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH']);
+    }
+    $logPath = rtrim($mcPath, '\\/') . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'latest.log';
+    if (! file_exists($logPath) || ! is_readable($logPath)) {
+        return response()->json(['ok' => false, 'message' => '日志文件不存在或不可读: ' . $logPath]);
+    }
+
+    $fileSize = filesize($logPath);
+    $after = (int) $request->input('after', 0);
+    $limit = min(500, max(10, (int) $request->input('lines', 200)));
+
+    // 如果 after 超过文件大小，说明没有新内容
+    if ($after >= $fileSize) {
+        return response()->json(['ok' => true, 'lines' => [], 'size' => $fileSize, 'pos' => $fileSize]);
+    }
+
+    $handle = fopen($logPath, 'rb');
+    if (! $handle) {
+        return response()->json(['ok' => false, 'message' => '无法打开日志文件']);
+    }
+
+    // 如果是首次加载 (after=0)，从文件末尾往前读
+    if ($after === 0 && $fileSize > 0) {
+        $startPos = max(0, $fileSize - 131072); // 最多读最后 128KB
+        fseek($handle, $startPos);
+        // 跳过可能不完整的第一行
+        if ($startPos > 0) {
+            fgets($handle);
+        }
+    } else {
+        fseek($handle, $after);
+    }
+
+    $lines = [];
+    $pos = ftell($handle);
+    $lineNum = 0;
+
+    while (($line = fgets($handle, 8192)) !== false) {
+        $lineNum++;
+        $pos = ftell($handle);
+        $raw = rtrim($line, "\r\n");
+
+        // 解析是否为聊天消息
+        $chat = null;
+        $service = app(\App\Services\MinecraftLogSyncService::class);
+        $parsed = $service->parseLine($line);
+        if ($parsed) {
+            $chat = ['player' => $parsed['player'], 'message' => $parsed['message']];
+        }
+
+        $lines[] = [
+            'n' => $lineNum,
+            'raw' => $raw,
+            'chat' => $chat,
+        ];
+
+        if (count($lines) >= $limit) break;
+    }
+
+    fclose($handle);
+
+    return response()->json([
+        'ok' => true,
+        'lines' => $lines,
+        'size' => $fileSize,
+        'pos' => $pos,
+        'log_path' => $logPath,
+    ]);
+})->name('admin.console.log')->middleware('auth');
+
+// 服务器状态检测 API
+Route::get('/admin/console/status', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可访问'], 403);
+    }
+
+    $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
+    $rconPort = (int) config('services.minecraft.rcon.port', 25575);
+    $rconPassword = config('services.minecraft.rcon.password', '');
+    $mcHost = config('services.minecraft.host', '127.0.0.1');
+    $mcPort = (int) config('services.minecraft.port', 25565);
+
+    $running = false;
+    $method = '';
+
+    // 方法1：尝试 RCON 连接
+    if (! empty($rconPassword)) {
+        try {
+            $rcon = new \App\Services\MinecraftRconService($rconHost, $rconPort, $rconPassword, 2);
+            $rcon->connect();
+            $rcon->disconnect();
+            $running = true;
+            $method = 'rcon';
+        } catch (\Throwable $e) {
+            // RCON 连不上，继续尝试其他方法
+        }
+    }
+
+    // 方法2：检查 MC 端口是否开放
+    if (! $running) {
+        $socket = @fsockopen($mcHost, $mcPort, $errno, $errstr, 2);
+        if ($socket) {
+            fclose($socket);
+            $running = true;
+            $method = 'port';
+        }
+    }
+
+    // 方法3：检查 Java 进程
+    if (! $running) {
+        if (PHP_OS_FAMILY === 'Windows') {
+            @exec('tasklist /FI "IMAGENAME eq javaw.exe" 2>&1', $output, $code);
+            $running = ($code === 0 && ! empty($output) && ! str_contains(implode(' ', $output), 'INFO: No tasks'));
+        } else {
+            @exec('pgrep -f "java.*minecraft\|java.*server\.jar\|java.*paper\.jar\|java.*spigot\.jar\|java.*purpur\.jar\|java.*fabric" 2>&1', $output, $code);
+            $running = ($code === 0 && ! empty($output) && ! empty(trim($output[0] ?? '')));
+        }
+        if ($running) $method = 'process';
+    }
+
+    return response()->json([
+        'ok' => true,
+        'running' => $running,
+        'method' => $method,
+    ]);
+})->name('admin.console.status')->middleware('auth');
+
+// 启动 MC 服务器 API
+Route::post('/admin/console/start', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可操作'], 403);
+    }
+
+    $command = config('services.minecraft.start_command', '');
+    if (empty($command)) {
+        return response()->json(['ok' => false, 'message' => '未配置 MC_START_COMMAND，请在 .env 中设置启动命令']);
+    }
+
+    // 先检查是否已在运行
+    $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
+    $rconPort = (int) config('services.minecraft.rcon.port', 25575);
+    $rconPassword = config('services.minecraft.rcon.password', '');
+    $mcHost = config('services.minecraft.host', '127.0.0.1');
+    $mcPort = (int) config('services.minecraft.port', 25565);
+
+    $alreadyRunning = false;
+    if (! empty($rconPassword)) {
+        try {
+            $rcon = new \App\Services\MinecraftRconService($rconHost, $rconPort, $rconPassword, 2);
+            $rcon->connect();
+            $rcon->disconnect();
+            $alreadyRunning = true;
+        } catch (\Throwable $e) {}
+    }
+    if (! $alreadyRunning) {
+        $socket = @fsockopen($mcHost, $mcPort, $errno, $errstr, 2);
+        if ($socket) { fclose($socket); $alreadyRunning = true; }
+    }
+
+    if ($alreadyRunning) {
+        return response()->json(['ok' => false, 'message' => '服务器已在运行中，无需重复启动']);
+    }
+
+    // 执行启动命令（后台运行）
+    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $cwd = ! empty($mcPath) ? rtrim($mcPath, '\\/') : null;
+
+    try {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $process = proc_open($command, $descriptors, $pipes, $cwd);
+        if (! is_resource($process)) {
+            return response()->json(['ok' => false, 'message' => '无法执行启动命令']);
+        }
+
+        // 关闭所有管道，让进程脱离
+        foreach ($pipes as $pipe) fclose($pipe);
+        proc_close($process);
+
+        return response()->json([
+            'ok' => true,
+            'message' => '启动命令已发送，请等待 10-30 秒后刷新状态',
+            'command' => $command,
+            'cwd' => $cwd,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'message' => '启动失败：' . $e->getMessage()], 500);
+    }
+})->name('admin.console.start')->middleware('auth');
+
 Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
 
 // 管理员用户管理（列表、详情、封禁、解封）

@@ -39,6 +39,7 @@ return [
         'host' => env('MINECRAFT_SERVER_HOST', 'localhost'),
         'port' => env('MINECRAFT_SERVER_PORT', 25565),
         'log_path' => env('MC_SERVER_PATH', ''),
+        'start_command' => env('MC_START_COMMAND', ''),
         'rcon' => [
             'host' => env('MC_RCON_HOST', '127.0.0.1'),
             'port' => (int) env('MC_RCON_PORT', 25575),

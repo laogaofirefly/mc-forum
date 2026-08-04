@@ -96,6 +96,19 @@
         </div>
     </div>
 
+    {{-- 服务器配置 ──}}
+    <div class="card p-3 sm:p-4" id="serverPropsPanel">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-sm font-medium text-slate-700">⚙️ 服务器配置（server.properties）</p>
+            <div class="flex items-center gap-2">
+                <button type="button" id="loadPropsBtn" class="btn-secondary text-xs px-3 py-1">读取配置</button>
+                <button type="button" id="savePropsBtn" class="btn-primary text-xs px-3 py-1 hidden">保存</button>
+            </div>
+        </div>
+        <div id="propsContent" class="text-xs text-slate-500">点击「读取配置」加载 server.properties</div>
+        <div id="propsSaveMsg" class="text-xs mt-2 hidden"></div>
+    </div>
+
     {{-- 图例 --}}
     <div class="card p-3 sm:p-4">
         <div class="flex flex-wrap gap-3 text-xs text-slate-500">
@@ -565,6 +578,143 @@
     }
     fetchLog();
     startLogPolling();
+
+    // ====== server.properties 面板 ======
+    const loadPropsBtn = document.getElementById('loadPropsBtn');
+    const savePropsBtn = document.getElementById('savePropsBtn');
+    const propsContent = document.getElementById('propsContent');
+    const propsSaveMsg = document.getElementById('propsSaveMsg');
+    let originalProps = {};
+
+    // 常见配置项 + 中文说明
+    const propLabels = {
+        'motd':              '服务器标题 (motd)',
+        'server-name':       '服务器名称',
+        'gamemode':          '游戏模式',
+        'difficulty':        '难度',
+        'max-players':       '最大玩家数',
+        'max-world-size':    '世界大小',
+        'spawn-protection':  '出生点保护半径',
+        'pvp':               'PVP',
+        'allow-nether':      '允许下界',
+        'allow-flight':      '允许飞行',
+        'enable-command-block': '命令方块',
+        'white-list':        '白名单',
+        'enforce-whitelist': '强制白名单',
+        'hardcore':          '硬核模式',
+        'force-gamemode':    '强制游戏模式',
+        'view-distance':     '视距',
+        'simulation-distance': '模拟距离',
+        'spawn-animals':     '生成动物',
+        'spawn-monsters':    '生成怪物',
+        'spawn-npcs':        '生成NPC',
+        'generate-structures': '生成建筑',
+        'level-seed':         '世界种子',
+        'level-name':         '地图名',
+        'level-type':         '世界类型',
+        'enable-rcon':       'RCON',
+        'rcon.password':     'RCON密码',
+        'rcon.port':         'RCON端口',
+        'server-port':       '服务器端口',
+        'server-ip':         '服务器IP',
+        'query.port':        '查询端口',
+    };
+    const selectOptions = {
+        'gamemode': { 'survival': '生存', 'creative': '创造', 'adventure': '冒险', 'spectator': '旁观' },
+        'difficulty': { 'peaceful': '和平', 'easy': '简单', 'normal': '普通', 'hard': '困难' },
+        'level-type': { 'default': '默认', 'flat': '超平坦', 'largebiomes': '大型生物群系', 'amplified': '放大化' },
+    };
+
+    function renderForm(properties) {
+        const keys = Object.keys(properties);
+        let html = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">';
+        keys.forEach(function(k) {
+            const label = propLabels[k] || k;
+            const val = properties[k] || '';
+            html += '<div class="flex flex-col gap-1"><label class="text-slate-600 font-medium" for="prop_' + escapeHtml(k) + '">' + escapeHtml(label) + '</label>';
+            if (selectOptions[k]) {
+                html += '<select class="input text-xs py-1" name="' + escapeHtml(k) + '" id="prop_' + escapeHtml(k) + '">';
+                Object.entries(selectOptions[k]).forEach(([optVal, optLabel]) => {
+                    html += '<option value="' + escapeHtml(optVal) + '"' + (val === optVal ? ' selected' : '') + '>' + escapeHtml(optLabel) + '</option>';
+                });
+                html += '</select>';
+            } else {
+                html += '<input class="input text-xs py-1" id="prop_' + escapeHtml(k) + '" value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(k) + '">';
+            }
+            html += '</div>';
+        });
+        html += '</div>';
+        propsContent.innerHTML = html;
+        savePropsBtn.classList.remove('hidden');
+    }
+
+    async function loadProperties() {
+        loadPropsBtn.disabled = true;
+        loadPropsBtn.textContent = '加载中...';
+        try {
+            const r = await fetch('{{ route("admin.console.properties") }}', { credentials: 'same-origin' });
+            const d = await r.json();
+            if (d.ok) {
+                originalProps = d.properties || {};
+                renderForm(originalProps);
+            } else {
+                propsContent.innerHTML = '<span class="text-red-500">' + escapeHtml(d.message) + '</span>';
+            }
+        } catch(e) {
+            propsContent.innerHTML = '<span class="text-red-500">加载失败：' + escapeHtml(e.message) + '</span>';
+        }
+        loadPropsBtn.disabled = false;
+        loadPropsBtn.textContent = '读取配置';
+    }
+
+    async function saveProperties() {
+        const updates = {};
+        const keys = Object.keys(originalProps).concat(Object.keys(selectOptions).filter(k => !originalProps.hasOwnProperty(k)));
+        Object.keys(originalProps).forEach(k => {
+            const el = document.getElementById('prop_' + k);
+            if (!el) return;
+            const newVal = el.value.trim();
+            if (newVal !== originalProps[k]) updates[k] = newVal;
+        });
+        if (!Object.keys(updates).length) {
+            propsSaveMsg.classList.remove('hidden');
+            propsSaveMsg.className = 'text-xs text-amber-600 mt-2';
+            propsSaveMsg.textContent = '没有改动';
+            return;
+        }
+        savePropsBtn.disabled = true;
+        savePropsBtn.textContent = '保存中...';
+        propsSaveMsg.classList.add('hidden');
+        try {
+            const r = await fetch('{{ route("admin.console.properties.save") }}', {
+                method: 'POST',
+                headers: {'X-CSRF-TOKEN': csrf, 'Accept': 'application/json','Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({updates}),
+            });
+            const d = await r.json();
+            propsSaveMsg.classList.remove('hidden');
+            if (d.ok) {
+                propsSaveMsg.className = 'text-xs text-primary-600 mt-2';
+                propsSaveMsg.textContent = d.message;
+                if (d.updated) { for (const [k,v] of Object.entries(d.updated)) { originalProps[k] = v; } }
+            } else {
+                propsSaveMsg.className = 'text-xs text-red-600 mt-2';
+                propsSaveMsg.textContent = d.message;
+            }
+        } catch(e) {
+            propsSaveMsg.classList.remove('hidden');
+            propsSaveMsg.className = 'text-xs text-red-600 mt-2';
+            propsSaveMsg.textContent = '保存失败：' + e.message;
+        } finally {
+            savePropsBtn.disabled = false;
+            savePropsBtn.textContent = '保存';
+        }
+    }
+
+    // 按钮事件绑定
+    loadPropsBtn.addEventListener('click', loadProperties);
+    savePropsBtn.addEventListener('click', saveProperties);
 })();
 </script>
 @endsection

@@ -282,6 +282,61 @@ Route::post('/admin/console/start', function () {
     }
 })->name('admin.console.start')->middleware('auth');
 
+// ── server.properties 读写 ──
+Route::get('/admin/console/properties', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
+    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    if (empty($mcPath)) return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH'], 200);
+    $file = rtrim((string) $mcPath, '\\/') . '/server.properties';
+    if (! file_exists($file) || ! is_readable($file)) return response()->json(['ok' => false, 'message' => '文件不可读：' . $file], 200);
+    $props = [];
+    foreach (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        $t = trim($line);
+        if ($t === '' || str_starts_with($t, '#')) continue;
+        $eq = strpos($t, '=');
+        if ($eq === false) continue;
+        $props[trim(substr($t, 0, $eq))] = trim(substr($t, $eq + 1));
+    }
+    return response()->json(['ok' => true, 'properties' => $props, 'path' => $file]);
+})->name('admin.console.properties')->middleware('auth');
+
+Route::post('/admin/console/properties', function (\Illuminate\Http\Request $r) {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
+    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    if (empty($mcPath)) return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH'], 500);
+    $propPath = rtrim((string) $mcPath, '\\/') . '/server.properties';
+    if (! file_exists($propPath)) return response()->json(['ok' => false, 'message' => '文件不存在：' . $propPath], 200);
+    if (! is_writable($propPath)) return response()->json(['ok' => false, 'message' => '无写入权限：' . $propPath], 200);
+
+    $updates = $r->input('updates', []);
+    if (! is_array($updates) || empty($updates)) return response()->json(['ok' => false, 'message' => '无修改'], 200);
+
+    $bak = $propPath . '.bak.' . time();
+    copy($propPath, $bak);
+
+    $lines = file($propPath);
+    $updated = [];
+    foreach ($lines as $i => &$line) {
+        $t = trim($line);
+        if (str_starts_with($t, '#')) continue;
+        $eq = strpos($t, '=');
+        if ($eq === false || $eq === 0) continue;
+        $k = trim(substr($t, 0, $eq));
+        if (array_key_exists($k, $updates)) {
+            $line = $k . '=' . trim((string) $updates[$k]) . "\n";
+            $updated[$k] = trim((string) $updates[$k]);
+        }
+    }
+    foreach ($updates as $k => $v) {
+        if (! array_key_exists($k, $updated)) { $lines[] = $k . '=' . trim((string) $v) . "\n"; $updated[$k] = trim((string) $v); }
+    }
+    if (file_put_contents($propPath, implode('', $lines)) === false) {
+        copy($bak, $propPath);
+        return response()->json(['ok' => false, 'message' => '写入失败，已恢复'], 500);
+    }
+    return response()->json(['ok' => true, 'message' => '已保存 ' . count($updated) . ' 项（需重启服务器生效）', 'updated' => $updated, 'backup' => basename($bak)]);
+})->name('admin.console.properties.save')->middleware('auth');
+
 Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
 
 // 管理员用户管理（列表、详情、封禁、解封）

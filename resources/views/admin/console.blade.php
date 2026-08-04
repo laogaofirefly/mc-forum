@@ -9,7 +9,7 @@
             <h1 class="page-title text-slate-900 flex items-center">
                 @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])服务器控制台
             </h1>
-            <p class="text-slate-500 text-xs sm:text-sm mt-1" id="pageSubtitle">通过 RCON 向 MC 服务器发送命令</p>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1" id="pageSubtitle">实时日志 + RCON 命令控制台</p>
         </div>
         <div class="flex items-center gap-2">
             <span id="serverStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-slate-100 text-slate-600 border-slate-200">
@@ -29,54 +29,43 @@
         </div>
     </div>
 
-    {{-- 模式切换标签 --}}
-    <div class="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-        <button type="button" id="tabCmd" class="px-4 py-1.5 rounded-md text-sm font-medium transition bg-white text-slate-800 shadow-sm">
-            @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-4 h-4 inline mr-1'])命令
-        </button>
-        <button type="button" id="tabLog" class="px-4 py-1.5 rounded-md text-sm font-medium transition text-slate-500 hover:text-slate-700">
-            @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4 inline mr-1'])日志
-        </button>
-    </div>
-
     <div class="card overflow-hidden">
+        {{-- 日志控制栏 --}}
+        <div class="border-b border-slate-700 bg-slate-900 px-3 py-1.5 flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] text-slate-500 flex-1" id="logInfo">等待加载...</span>
+            <button type="button" id="logPauseBtn" class="text-[11px] text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded transition flex items-center gap-1">
+                @include('layouts.partials.icons', ['name' => 'pause', 'class' => 'w-3 h-3'])暂停
+            </button>
+            <button type="button" id="logAutoScrollBtn" class="text-[11px] text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded transition flex items-center gap-1">
+                @include('layouts.partials.icons', ['name' => 'chevron-down', 'class' => 'w-3 h-3'])自动滚动
+            </button>
+        </div>
+
         {{-- 终端输出区 --}}
-        <div id="consoleOutput" class="bg-slate-950 text-green-400 font-mono text-xs sm:text-sm p-3 sm:p-4 overflow-y-auto overflow-x-hidden" style="height:calc(100vh - 360px);min-height:400px;">
-            <div class="text-slate-500">Minecraft 服务器控制台 — 输入命令后按 Enter 执行</div>
-            <div class="text-slate-600">可用命令: help, list, say, whitelist, ban, kick, op, deop, gamemode, time, weather, tp, give, 等</div>
-            <div class="text-slate-600">禁止命令: stop, restart</div>
+        <div id="consoleOutput" class="bg-slate-950 text-green-400 font-mono text-xs sm:text-sm p-3 sm:p-4 overflow-y-auto overflow-x-hidden" style="height:calc(100vh - 380px);min-height:400px;">
+            <div class="text-slate-500">Minecraft 服务器控制台 — 实时日志 + 命令执行</div>
+            <div class="text-slate-600">输入命令按 Enter 执行，日志自动流式显示</div>
             <div class="text-slate-700">---</div>
         </div>
 
-        {{-- 命令模式输入区 --}}
-        <div id="cmdInputArea" class="border-t border-slate-700 bg-slate-900 px-3 py-2.5 flex items-center gap-2">
-            <span class="text-green-500 font-mono text-sm flex-shrink-0 select-none">$</span>
+        {{-- 命令输入区 --}}
+        <div class="border-t border-slate-700 bg-slate-900 px-3 py-2.5 flex items-center gap-2">
+            <span class="text-cyan-400 font-mono font-bold text-sm flex-shrink-0 select-none">$</span>
             <input
                 type="text"
                 id="consoleInput"
                 autocomplete="off"
                 placeholder="输入命令，如 list、say hello..."
-                class="flex-1 bg-transparent border-none outline-none text-green-300 font-mono text-sm placeholder-slate-600"
+                class="flex-1 bg-transparent border-none outline-none text-cyan-300 font-mono text-sm placeholder-slate-600"
             >
             <button type="button" id="sendCommandBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 flex-shrink-0">
                 执行
             </button>
         </div>
-
-        {{-- 日志模式控制栏 --}}
-        <div id="logControlBar" class="border-t border-slate-700 bg-slate-900 px-3 py-2.5 flex items-center gap-2 hidden">
-            <span class="text-xs text-slate-500 flex-1" id="logInfo">等待加载...</span>
-            <button type="button" id="logPauseBtn" class="btn-secondary text-xs px-2.5 py-1 flex items-center gap-1">
-                @include('layouts.partials.icons', ['name' => 'pause', 'class' => 'w-3.5 h-3.5'])暂停
-            </button>
-            <button type="button" id="logAutoScrollBtn" class="btn-secondary text-xs px-2.5 py-1 flex items-center gap-1">
-                @include('layouts.partials.icons', ['name' => 'chevron-down', 'class' => 'w-3.5 h-3.5'])自动滚动
-            </button>
-        </div>
     </div>
 
-    {{-- 命令模式：快捷命令 --}}
-    <div id="quickCmdsCard" class="card p-3 sm:p-4">
+    {{-- 快捷命令 --}}
+    <div class="card p-3 sm:p-4">
         <p class="text-xs text-slate-500 mb-2 font-medium">快捷命令</p>
         <div class="flex flex-wrap gap-1.5">
             @php
@@ -90,11 +79,12 @@
                 'seed' => '世界种子',
                 'tps' => '服务器TPS',
                 'save-all' => '保存世界',
+                'stop' => '停止服务器',
             ];
             @endphp
             @foreach($quickCommands as $cmd => $label)
                 <button type="button"
-                    class="quick-cmd-btn text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition text-slate-600"
+                    class="quick-cmd-btn text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition text-slate-600 {{ $cmd === 'stop' ? 'border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 hover:border-red-300' : '' }}"
                     data-cmd="{{ $cmd }}"
                     title="{{ $label }}">
                     /{{ $cmd }}
@@ -103,13 +93,16 @@
         </div>
     </div>
 
-    {{-- 日志模式：图例 --}}
-    <div id="logLegend" class="card p-3 sm:p-4 hidden">
+    {{-- 图例 --}}
+    <div class="card p-3 sm:p-4">
         <div class="flex flex-wrap gap-3 text-xs text-slate-500">
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-amber-500/40"></span> 命令输入</span>
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-cyan-500/40"></span> 命令输出</span>
             <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-green-500/30"></span> 聊天消息</span>
             <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-amber-500/30"></span> 玩家进出</span>
-            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-slate-500/30"></span> 系统信息</span>
             <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-red-500/30"></span> 警告/错误</span>
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-slate-500/30"></span> 系统信息</span>
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-purple-500/30"></span> 系统消息</span>
         </div>
     </div>
 </div>
@@ -123,21 +116,13 @@
     const statusEl = document.getElementById('rconStatus');
     const serverStatusEl = document.getElementById('serverStatus');
     const startServerBtn = document.getElementById('startServerBtn');
-    const subtitle = document.getElementById('pageSubtitle');
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // 模式切换
-    const tabCmd = document.getElementById('tabCmd');
-    const tabLog = document.getElementById('tabLog');
-    const cmdInputArea = document.getElementById('cmdInputArea');
-    const logControlBar = document.getElementById('logControlBar');
-    const quickCmdsCard = document.getElementById('quickCmdsCard');
-    const logLegend = document.getElementById('logLegend');
+    // 日志控制
     const logPauseBtn = document.getElementById('logPauseBtn');
     const logAutoScrollBtn = document.getElementById('logAutoScrollBtn');
     const logInfo = document.getElementById('logInfo');
 
-    let currentMode = 'cmd'; // 'cmd' | 'log'
     let logPaused = false;
     let logAutoScroll = true;
     let logTimer = null;
@@ -148,7 +133,7 @@
     let executing = false;
 
     function scrollToBottom() {
-        if (currentMode === 'log' && !logAutoScroll) return;
+        if (!logAutoScroll) return;
         output.scrollTop = output.scrollHeight;
     }
 
@@ -191,49 +176,7 @@
         return d.innerHTML;
     }
 
-    // ========== 模式切换 ==========
-    function switchMode(mode) {
-        currentMode = mode;
-        if (mode === 'cmd') {
-            tabCmd.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition bg-white text-slate-800 shadow-sm';
-            tabLog.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition text-slate-500 hover:text-slate-700';
-            cmdInputArea.classList.remove('hidden');
-            logControlBar.classList.add('hidden');
-            quickCmdsCard.classList.remove('hidden');
-            logLegend.classList.add('hidden');
-            subtitle.textContent = '通过 RCON 向 MC 服务器发送命令';
-            stopLogPolling();
-            clearOutput();
-            appendLine('Minecraft 服务器控制台 — 输入命令后按 Enter 执行', 'text-slate-500');
-            appendLine('可用命令: help, list, say, whitelist, ban, kick, op, deop, gamemode, time, weather, tp, give, 等', 'text-slate-600');
-            appendLine('禁止命令: stop, restart', 'text-slate-600');
-            appendLine('---', 'text-slate-700');
-            input.focus();
-        } else {
-            tabCmd.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition text-slate-500 hover:text-slate-700';
-            tabLog.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition bg-white text-slate-800 shadow-sm';
-            cmdInputArea.classList.add('hidden');
-            logControlBar.classList.remove('hidden');
-            quickCmdsCard.classList.add('hidden');
-            logLegend.classList.remove('hidden');
-            subtitle.textContent = '实时查看 MC 服务器日志（latest.log）';
-            clearOutput();
-            appendLine('正在加载日志...', 'text-slate-500');
-            logPos = 0;
-            logFileSize = 0;
-            logPaused = false;
-            logPauseBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>暂停';
-            logAutoScroll = true;
-            logAutoScrollBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>自动滚动';
-            fetchLog();
-            startLogPolling();
-        }
-    }
-
-    tabCmd.addEventListener('click', function() { if (currentMode !== 'cmd') switchMode('cmd'); });
-    tabLog.addEventListener('click', function() { if (currentMode !== 'log') switchMode('log'); });
-
-    // ========== 日志模式 ==========
+    // ========== 日志流 ==========
     function startLogPolling() {
         stopLogPolling();
         logTimer = setInterval(fetchLog, 2000);
@@ -250,7 +193,7 @@
             const res = await fetch(url, { credentials: 'same-origin' });
             const data = await res.json();
             if (!data || !data.ok) {
-                logInfo.textContent = '错误: ' + (data ? data.message : '请求失败');
+                logInfo.textContent = '日志错误: ' + (data ? data.message : '请求失败');
                 return;
             }
             logFileSize = data.size;
@@ -259,6 +202,12 @@
                 return;
             }
 
+            const now = new Date();
+            const timePrefix = '<span class="text-slate-600">' +
+                String(now.getHours()).padStart(2,'0') + ':' +
+                String(now.getMinutes()).padStart(2,'0') + ':' +
+                String(now.getSeconds()).padStart(2,'0') + '</span> ';
+
             const lines = data.lines;
             lines.forEach(function(l) {
                 const raw = l.raw;
@@ -266,7 +215,6 @@
                 let bg = '';
 
                 if (l.chat) {
-                    // 聊天消息高亮
                     cls = 'text-green-300';
                     bg = 'bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4';
                 } else if (/\b(joined the game|logged in)\b/i.test(raw)) {
@@ -278,11 +226,9 @@
                 } else if (/\b(WARN|ERROR|Exception|FATAL|SEVERE)\b/i.test(raw)) {
                     cls = 'text-red-400';
                     bg = 'bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4';
-                } else if (/\b(INFO)\b/i.test(raw)) {
-                    cls = 'text-slate-400';
                 }
 
-                appendHtml('<span class="' + cls + (bg ? ' ' + bg : '') + '">' + escapeHtml(raw) + '</span>');
+                appendHtml(timePrefix + '<span class="' + cls + (bg ? ' ' + bg : '') + '">' + escapeHtml(raw) + '</span>');
             });
 
             logPos = data.pos;
@@ -301,10 +247,10 @@
     logPauseBtn.addEventListener('click', function() {
         logPaused = !logPaused;
         if (logPaused) {
-            logPauseBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>继续';
+            logPauseBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>继续';
             logInfo.textContent = '已暂停 · ' + formatSize(logFileSize);
         } else {
-            logPauseBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>暂停';
+            logPauseBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>暂停';
             logInfo.textContent = '恢复中...';
             fetchLog();
         }
@@ -313,14 +259,14 @@
     logAutoScrollBtn.addEventListener('click', function() {
         logAutoScroll = !logAutoScroll;
         if (logAutoScroll) {
-            logAutoScrollBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>自动滚动';
+            logAutoScrollBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>自动滚动';
             scrollToBottom();
         } else {
-            logAutoScrollBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>已锁定';
+            logAutoScrollBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>已锁定';
         }
     });
 
-    // ========== 命令模式 ==========
+    // ========== 命令执行 ==========
     async function executeCommand(cmd) {
         if (executing) return;
         const command = cmd.trim();
@@ -331,6 +277,10 @@
         }
         cmdHistoryIndex = cmdHistory.length;
 
+        // 暂停日志滚动防止被命令输出打断
+        const wasAutoScroll = logAutoScroll;
+        logAutoScroll = true;
+
         executing = true;
         sendBtn.disabled = true;
         sendBtn.textContent = '执行中...';
@@ -338,7 +288,9 @@
 
         const now = new Date();
         const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
-        appendLine('[' + timeStr + '] $ ' + command, 'text-amber-400');
+
+        // 命令输入行：青色背景高亮
+        appendHtml('<span class="text-amber-400 bg-amber-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[' + timeStr + '] <span class="text-amber-300 font-bold">$</span> ' + escapeHtml(command) + '</span>');
 
         try {
             const formData = new FormData();
@@ -355,17 +307,19 @@
                 if (data.response) {
                     const lines = data.response.split('\n');
                     lines.forEach(function(l) {
-                        if (l.trim()) appendLine(l, 'text-green-300');
+                        if (l.trim()) appendHtml('<span class="text-cyan-300 bg-cyan-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">' + escapeHtml(l) + '</span>');
                     });
+                } else {
+                    appendHtml('<span class="text-cyan-300 bg-cyan-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">（命令执行成功，无返回文本）</span>');
                 }
                 setStatus('已连接', 'green');
             } else {
                 const errMsg = (data && data.message) ? data.message : '执行失败';
-                appendLine('错误: ' + errMsg, 'text-red-400');
+                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">' + escapeHtml(errMsg) + '</span>');
                 setStatus('错误', 'red');
             }
         } catch(e) {
-            appendLine('网络错误: ' + e.message, 'text-red-400');
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">网络错误: ' + escapeHtml(e.message) + '</span>');
             setStatus('连接失败', 'red');
         } finally {
             executing = false;
@@ -373,6 +327,7 @@
             sendBtn.textContent = '执行';
             input.value = '';
             input.focus();
+            logAutoScroll = wasAutoScroll;
         }
     }
 
@@ -408,14 +363,10 @@
 
     clearBtn.addEventListener('click', function() {
         clearOutput();
-        if (currentMode === 'cmd') {
-            appendLine('Minecraft 服务器控制台 — 输入命令后按 Enter 执行', 'text-slate-500');
-            appendLine('---', 'text-slate-700');
-        } else {
-            appendLine('日志已清空，正在重新加载...', 'text-slate-500');
-            logPos = 0;
-            fetchLog();
-        }
+        logPos = 0;
+        appendLine('Minecraft 服务器控制台 — 实时日志 + 命令执行', 'text-slate-500');
+        appendLine('---', 'text-slate-700');
+        fetchLog();
     });
 
     // 快捷命令
@@ -472,10 +423,10 @@
             });
             const data = await res.json();
             if (data && data.ok) {
-                appendLine('[系统] ' + data.message, 'text-amber-400');
-                appendLine('[系统] 执行命令: ' + data.command, 'text-slate-500');
-                if (data.cwd) appendLine('[系统] 工作目录: ' + data.cwd, 'text-slate-500');
-                // 开始轮询等待服务器启动
+                appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] ' + escapeHtml(data.message) + '</span>');
+                appendHtml('<span class="text-purple-400/70 bg-purple-500/5 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 执行命令: ' + escapeHtml(data.command) + '</span>');
+                if (data.cwd) appendHtml('<span class="text-purple-400/70 bg-purple-500/5 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 工作目录: ' + escapeHtml(data.cwd) + '</span>');
+
                 let pollCount = 0;
                 const pollTimer = setInterval(async () => {
                     pollCount++;
@@ -486,13 +437,13 @@
                             clearInterval(pollTimer);
                             updateServerStatusUI(true);
                             setStatus('已连接', 'green');
-                            appendLine('[系统] 服务器已启动成功！', 'text-green-400');
+                            appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 服务器已启动成功！</span>');
                             startServerBtn.disabled = false;
                             startServerBtn.innerHTML = origText;
                             startServerBtn.classList.add('hidden');
                         } else if (pollCount >= 30) {
                             clearInterval(pollTimer);
-                            appendLine('[系统] 等待超时（90秒），请手动检查服务器状态', 'text-amber-400');
+                            appendHtml('<span class="text-amber-400 bg-amber-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 等待超时（90秒），请手动检查服务器状态</span>');
                             startServerBtn.disabled = false;
                             startServerBtn.innerHTML = origText;
                         }
@@ -506,12 +457,12 @@
                 }, 3000);
             } else {
                 const errMsg = (data && data.message) ? data.message : '启动失败';
-                appendLine('[系统] 错误: ' + errMsg, 'text-red-400');
+                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] ' + escapeHtml(errMsg) + '</span>');
                 startServerBtn.disabled = false;
                 startServerBtn.innerHTML = origText;
             }
         } catch(e) {
-            appendLine('[系统] 网络错误: ' + e.message, 'text-red-400');
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 网络错误: ' + escapeHtml(e.message) + '</span>');
             startServerBtn.disabled = false;
             startServerBtn.innerHTML = origText;
         }
@@ -519,8 +470,9 @@
 
     // 初始检测
     checkServerStatus();
-    // 每 30 秒检测一次服务器状态
     setInterval(checkServerStatus, 30000);
+
+    // 测试 RCON 连接
     (async function testConnection() {
         try {
             const formData = new FormData();
@@ -537,13 +489,17 @@
             } else {
                 const msg = (data && data.message) ? data.message : '无法连接';
                 setStatus('未连接', 'red');
-                appendLine('RCON 连接测试失败: ' + msg, 'text-red-400');
+                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">RCON 连接测试失败: ' + escapeHtml(msg) + '</span>');
             }
         } catch(e) {
             setStatus('未连接', 'red');
-            appendLine('RCON 连接测试失败: ' + e.message, 'text-red-400');
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">RCON 连接测试失败: ' + escapeHtml(e.message) + '</span>');
         }
     })();
+
+    // 启动日志轮询
+    fetchLog();
+    startLogPolling();
 })();
 </script>
 @endsection

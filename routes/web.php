@@ -305,12 +305,6 @@ Route::post('/admin/rcon', function (\Illuminate\Http\Request $request) {
     $raw = trim($request->input('command'));
     // 去掉开头的 /（如果用户加了）
     $command = ltrim($raw, '/');
-    // 不允许执行 stop 等破坏服务器的命令
-    $blocklist = ['stop', 'restart'];
-    $firstWord = strtolower(explode(' ', $command)[0] ?? '');
-    if (in_array($firstWord, $blocklist, true)) {
-        return response()->json(['ok' => false, 'message' => "命令 {$firstWord} 被禁止，请到服务器控制台执行"]);
-    }
 
     $rconHost = config('services.minecraft.rcon.host', '127.0.0.1');
     $rconPort = (int) config('services.minecraft.rcon.port', 25575);

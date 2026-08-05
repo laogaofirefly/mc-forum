@@ -355,6 +355,7 @@
     const logAutoScrollBtn = document.getElementById('logAutoScrollBtn');
     const logInfo = document.getElementById('logInfo');
 
+    // ========== 自适应日志轮询 ==========
     let logPaused = false;
     let logAutoScroll = true;
     let logTimer = null;
@@ -365,6 +366,17 @@
     let cmdHistory = [];
     let cmdHistoryIndex = -1;
     let executing = false;
+    let logFetching = false;                // 请求去重：防止并发请求
+    let logBurstCount = 0;                 // 爆发计数：连续有新数据则加速
+    let logErrorCount = 0;                 // 错误计数：指数退避
+    let logIdleCount = 0;                  // 空闲计数：长期无数据则降速
+    const LOG_POLL_FAST = 800;             // 快速轮询间隔（ms）
+    const LOG_POLL_NORMAL = 1500;          // 正常轮询间隔
+    const LOG_POLL_IDLE = 3000;            // 空闲降速间隔
+    const LOG_POLL_HIDDEN = 5000;          // 页面隐藏时间隔
+    const LOG_POLL_ERROR_BASE = 2000;      // 错误退避基础间隔
+    const LOG_BURST_MAX = 3;               // 最多连续快速轮询次数
+    const LOG_IDLE_THRESHOLD = 6;          // 连续 N 次无数据后降速
 
     // ========== localStorage 缓存 ==========
     const CACHE_KEY = 'mc_console_state';
@@ -589,31 +601,57 @@
         return d.innerHTML;
     }
 
-    // ========== 日志流 ==========
-    function startLogPolling() {
+    // ========== 自适应日志轮询（核心） ==========
+    function getLogPollInterval() {
+        if (document.hidden) return LOG_POLL_HIDDEN;
+        if (logErrorCount > 0) return Math.min(LOG_POLL_ERROR_BASE * Math.pow(2, logErrorCount - 1), 30000);
+        if (logBurstCount > 0 && logBurstCount <= LOG_BURST_MAX) return LOG_POLL_FAST;
+        if (logIdleCount >= LOG_IDLE_THRESHOLD) return LOG_POLL_IDLE;
+        return LOG_POLL_NORMAL;
+    }
+
+    function scheduleLogPoll() {
         stopLogPolling();
-        logTimer = setInterval(fetchLog, 2000);
+        logTimer = setTimeout(runLogPoll, getLogPollInterval());
     }
 
     function stopLogPolling() {
-        if (logTimer) { clearInterval(logTimer); logTimer = null; }
+        if (logTimer) { clearTimeout(logTimer); logTimer = null; }
     }
 
-    async function fetchLog() {
-        if (logPaused) return;
+    async function runLogPoll() {
+        if (logPaused) { scheduleLogPoll(); return; }
+        if (logFetching) { scheduleLogPoll(); return; } // 请求去重：上一个请求未完成则跳过
+
+        logFetching = true;
         try {
             const url = '{{ route("admin.console.log") }}?after=' + logPos + '&lines=200';
-            const res = await fetch(url, { credentials: 'same-origin' });
+            const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
             const data = await res.json();
             if (!data || !data.ok) {
                 logInfo.textContent = '日志错误: ' + (data ? data.message : '请求失败');
+                logErrorCount++;
+                logBurstCount = 0;
+                logIdleCount = 0;
+                scheduleLogPoll();
                 return;
             }
+
             logFileSize = data.size;
+            logErrorCount = 0; // 请求成功，重置错误计数
+
             if (data.lines.length === 0) {
+                logIdleCount++;
+                logBurstCount = 0; // 无新数据，退出爆发模式
                 logInfo.textContent = '已是最新 · ' + formatSize(data.size) + ' · ' + logLineCount + ' 行';
+                scheduleLogPoll();
                 return;
             }
+
+            // 有新数据：重置空闲计数，进入爆发模式
+            logIdleCount = 0;
+            if (logBurstCount < LOG_BURST_MAX) logBurstCount++;
+            else logBurstCount = 0; // 爆发结束后回归正常
 
             const now = new Date();
             const timePrefix = '<span class="text-slate-600">' +
@@ -622,6 +660,8 @@
                 String(now.getSeconds()).padStart(2,'0') + '</span> ';
 
             const lines = data.lines;
+            // 使用 DocumentFragment 批量插入，一次性渲染
+            const fragment = document.createDocumentFragment();
             lines.forEach(function(l) {
                 const raw = l.raw;
                 let cls = 'text-slate-400';
@@ -640,21 +680,49 @@
                     cls = 'text-red-400';
                     bg = 'bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4';
                 } else if (/\bRCON (Client|Listener)\b/i.test(raw)) {
-                    // 屏蔽 RCON 连接/断开日志
                     cls = 'text-slate-700';
                     bg = 'opacity-40';
                 }
 
-                appendHtml(timePrefix + '<span class="' + cls + (bg ? ' ' + bg : '') + '">' + escapeHtml(raw) + '</span>');
+                const div = document.createElement('div');
+                div.className = 'leading-relaxed';
+                div.innerHTML = timePrefix + '<span class="' + cls + (bg ? ' ' + bg : '') + '">' + escapeHtml(raw) + '</span>';
+                fragment.appendChild(div);
+                logLineCount++;
             });
+            output.appendChild(fragment);
+            trimOldLines();
+            scrollToBottom();
 
             logPos = data.pos;
             logInfo.textContent = formatSize(data.size) + ' · +' + lines.length + ' 行 · 共 ' + logLineCount + ' 行';
             saveState();
+
+            // 爆发模式下立即再拉一次，不等待间隔
+            if (logBurstCount > 0 && logBurstCount <= LOG_BURST_MAX) {
+                logFetching = false;
+                runLogPoll();
+                return;
+            }
         } catch(e) {
             logInfo.textContent = '网络错误: ' + e.message;
+            logErrorCount++;
+            logBurstCount = 0;
+            logIdleCount = 0;
+        } finally {
+            logFetching = false;
         }
+        scheduleLogPoll();
     }
+
+    // 页面可见性变化时调整轮询
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && !logPaused) {
+            stopLogPolling();
+            logBurstCount = 1; // 回到页面时立即快速拉取
+            runLogPoll();
+        }
+    });
 
     function formatSize(bytes) {
         if (bytes < 1024) return bytes + ' B';
@@ -670,7 +738,7 @@
         } else {
             logPauseBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>暂停';
             logInfo.textContent = '恢复中...';
-            fetchLog();
+            runLogPoll();
         }
         saveState();
     });
@@ -791,7 +859,7 @@
         clearOutput();
         appendLine('Minecraft 服务器控制台 — 实时日志 + 命令执行', 'text-slate-500');
         appendLine('---', 'text-slate-700');
-        fetchLog();
+        runLogPoll();
     });
 
     // 快捷命令
@@ -926,8 +994,7 @@
     if (restored) {
         logInfo.textContent = '从缓存恢复 · ' + formatSize(logFileSize);
     }
-    fetchLog();
-    startLogPolling();
+    runLogPoll();
 
     // ====== server.properties 面板 ======
     const loadPropsBtn = document.getElementById('loadPropsBtn');

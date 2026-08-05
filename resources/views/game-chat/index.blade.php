@@ -138,7 +138,6 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     let lastId = {{ $messages->last()?->id ?? 0 }};
     let totalCount = {{ $messages->count() }};
     let autoScroll = true;
-    let refreshTimer = null;
 
     // ========== localStorage 缓存 lastId ==========
     const CHAT_CACHE_KEY = 'mc_chat_last_id';
@@ -258,26 +257,6 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         return d.innerHTML;
     }
 
-    async function fetchMessages() {
-        try {
-            // 静默刷新，不显示状态变化
-            const res = await fetch('{{ route("game-chat.fetch") }}?after_id=' + encodeURIComponent(lastId) + '&_=' + Date.now(), {
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: { 'Accept': 'application/json' },
-            });
-            const data = await res.json();
-            if (data && data.ok) {
-                if (data.current_user_name) currentUserName = data.current_user_name;
-                (data.messages || []).forEach(appendMessage);
-                if (data.last_id > lastId) lastId = data.last_id;
-                saveChatCache();
-            }
-        } catch (e) {
-            // 静默失败
-        }
-    }
-
     // === 发消息到游戏（支持 Enter 键发送） ===
     if (sendBtn && sendInput) {
         let sending = false;
@@ -348,20 +327,95 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
     [50, 100, 200, 500, 1000, 1500].forEach(function(d) { setTimeout(function() { scrollToBottom(false); }, d); });
     function onLoadScroll() { scrollToBottom(false); [300, 800].forEach(function(d) { setTimeout(function() { scrollToBottom(false); }, d); }); }
     if (document.readyState === 'complete') { onLoadScroll(); } else { window.addEventListener('load', onLoadScroll); }
-    // 启动定时刷新（只拉数据，不读日志，速度快）- 2秒实时刷新
-    // 请求完成后再安排下一次，避免慢请求重叠；页面隐藏时降低频率。
-    async function pollMessages() {
-        if (document.hidden) {
-            refreshTimer = setTimeout(pollMessages, 5000);
-            return;
-        }
-        await fetchMessages();
-        refreshTimer = setTimeout(pollMessages, 1200);
+    // ========== 自适应消息轮询 ==========
+    let refreshTimer = null;
+    let chatFetching = false;          // 请求去重
+    let chatBurstCount = 0;           // 爆发计数
+    let chatErrorCount = 0;           // 错误退避计数
+    let chatIdleCount = 0;            // 空闲计数
+    const CHAT_POLL_FAST = 800;       // 快速轮询（ms）
+    const CHAT_POLL_NORMAL = 1500;    // 正常轮询
+    const CHAT_POLL_IDLE = 3000;      // 空闲降速
+    const CHAT_POLL_HIDDEN = 5000;    // 页面隐藏
+    const CHAT_POLL_ERROR_BASE = 2000;// 错误退避基础
+    const CHAT_BURST_MAX = 3;         // 最多连续爆发
+    const CHAT_IDLE_THRESHOLD = 8;    // 连续 N 次无新消息后降速
+
+    function getChatPollInterval() {
+        if (document.hidden) return CHAT_POLL_HIDDEN;
+        if (chatErrorCount > 0) return Math.min(CHAT_POLL_ERROR_BASE * Math.pow(2, chatErrorCount - 1), 30000);
+        if (chatBurstCount > 0 && chatBurstCount <= CHAT_BURST_MAX) return CHAT_POLL_FAST;
+        if (chatIdleCount >= CHAT_IDLE_THRESHOLD) return CHAT_POLL_IDLE;
+        return CHAT_POLL_NORMAL;
     }
+
+    function stopChatPolling() {
+        if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
+    }
+
+    function scheduleChatPoll() {
+        stopChatPolling();
+        refreshTimer = setTimeout(runChatPoll, getChatPollInterval());
+    }
+
+    async function runChatPoll() {
+        if (chatFetching) { scheduleChatPoll(); return; }
+
+        chatFetching = true;
+        try {
+            const res = await fetch('{{ route("game-chat.fetch") }}?after_id=' + encodeURIComponent(lastId) + '&_=' + Date.now(), {
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            if (data && data.ok) {
+                chatErrorCount = 0; // 请求成功，重置错误计数
+
+                if (data.current_user_name) currentUserName = data.current_user_name;
+                (data.messages || []).forEach(appendMessage);
+                if (data.last_id > lastId) lastId = data.last_id;
+                saveChatCache();
+
+                if (data.messages && data.messages.length > 0) {
+                    // 有新消息：重置空闲，进入爆发模式
+                    chatIdleCount = 0;
+                    if (chatBurstCount < CHAT_BURST_MAX) {
+                        chatBurstCount++;
+                        // 爆发模式：立即再拉一次
+                        chatFetching = false;
+                        runChatPoll();
+                        return;
+                    } else {
+                        chatBurstCount = 0;
+                    }
+                } else {
+                    // 无新消息：累加空闲计数，退出爆发
+                    chatIdleCount++;
+                    chatBurstCount = 0;
+                }
+            }
+        } catch (e) {
+            chatErrorCount++;
+            chatBurstCount = 0;
+            chatIdleCount = 0;
+        } finally {
+            chatFetching = false;
+        }
+        scheduleChatPoll();
+    }
+
+    // 页面可见性变化：立即拉取最新消息
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) pollMessages();
+        if (!document.hidden) {
+            stopChatPolling();
+            chatBurstCount = 1;
+            chatIdleCount = 0;
+            runChatPoll();
+        }
     });
-    pollMessages();
+    // 启动首次轮询
+    runChatPoll();
 })();
 </script>
 @endsection

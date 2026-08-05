@@ -23,8 +23,8 @@
 <button type="button" id="configToggleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4'])配置
             </button>
-            <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 hidden" title="启动 MC 服务器">
-                @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])启动服务器
+            <button type="button" id="startServerBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5 hidden" title="启动 MC 服务器" disabled>
+                @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])检测中...
             </button>
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])清屏
@@ -889,14 +889,21 @@
     }
 
     function updateServerStatusUI(running) {
+        startServerBtn.classList.remove('hidden'); // 始终显示
         if (running) {
             serverStatusEl.className = 'badge text-xs sm:text-sm px-2.5 py-1 border bg-primary-50 text-primary-700 border-primary-200';
             serverStatusEl.innerHTML = '<span class="inline-block w-2 h-2 bg-primary-500 rounded-full mr-1"></span>MC 运行中';
-            startServerBtn.classList.add('hidden');
+            startServerBtn.className = 'btn-secondary text-xs sm:text-sm px-3 py-1.5 opacity-50 cursor-not-allowed';
+            startServerBtn.disabled = true;
+            startServerBtn.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>服务器运行中';
+            startServerBtn.title = '服务器已在运行中';
         } else {
             serverStatusEl.className = 'badge text-xs sm:text-sm px-2.5 py-1 border bg-red-50 text-red-700 border-red-200';
             serverStatusEl.innerHTML = '<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>MC 已停止';
-            startServerBtn.classList.remove('hidden');
+            startServerBtn.className = 'btn-primary text-xs sm:text-sm px-3 py-1.5';
+            startServerBtn.disabled = false;
+            startServerBtn.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>启动服务器';
+            startServerBtn.title = '启动 MC 服务器';
         }
     }
 
@@ -929,33 +936,39 @@
                             updateServerStatusUI(true);
                             setStatus('已连接', 'green');
                             appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 服务器已启动成功！</span>');
-                            startServerBtn.disabled = false;
-                            startServerBtn.innerHTML = origText;
-                            startServerBtn.classList.add('hidden');
                         } else if (pollCount >= 30) {
                             clearInterval(pollTimer);
                             appendHtml('<span class="text-amber-400 bg-amber-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 等待超时（90秒），请手动检查服务器状态</span>');
+                            // 恢复按钮为可启动状态
+                            startServerBtn.className = 'btn-primary text-xs sm:text-sm px-3 py-1.5';
                             startServerBtn.disabled = false;
-                            startServerBtn.innerHTML = origText;
+                            startServerBtn.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>启动服务器';
+                            startServerBtn.title = '启动 MC 服务器';
                         }
                     } catch(e) {
                         if (pollCount >= 30) {
                             clearInterval(pollTimer);
+                            startServerBtn.className = 'btn-primary text-xs sm:text-sm px-3 py-1.5';
                             startServerBtn.disabled = false;
                             startServerBtn.innerHTML = origText;
+                            startServerBtn.title = '启动 MC 服务器';
                         }
                     }
                 }, 3000);
             } else {
                 const errMsg = (data && data.message) ? data.message : '启动失败';
                 appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] ' + escapeHtml(errMsg) + '</span>');
+                startServerBtn.className = 'btn-primary text-xs sm:text-sm px-3 py-1.5';
                 startServerBtn.disabled = false;
                 startServerBtn.innerHTML = origText;
+                startServerBtn.title = '启动 MC 服务器';
             }
         } catch(e) {
             appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 网络错误: ' + escapeHtml(e.message) + '</span>');
+            startServerBtn.className = 'btn-primary text-xs sm:text-sm px-3 py-1.5';
             startServerBtn.disabled = false;
             startServerBtn.innerHTML = origText;
+            startServerBtn.title = '启动 MC 服务器';
         }
     });
 

@@ -203,7 +203,7 @@ Route::get('/admin/console/status', function () {
             @exec('tasklist /FI "IMAGENAME eq javaw.exe" 2>&1', $output, $code);
             $running = ($code === 0 && ! empty($output) && ! str_contains(implode(' ', $output), 'INFO: No tasks'));
         } else {
-            @exec('pgrep -f "java.*minecraft\|java.*server\.jar\|java.*paper\.jar\|java.*spigot\.jar\|java.*purpur\.jar\|java.*fabric" 2>&1', $output, $code);
+            @exec('pgrep -f "java.*(minecraft|server\.jar|paper\.jar|spigot\.jar|purpur\.jar|fabric)" 2>&1', $output, $code);
             $running = ($code === 0 && ! empty($output) && ! empty(trim($output[0] ?? '')));
         }
         if ($running) $method = 'process';

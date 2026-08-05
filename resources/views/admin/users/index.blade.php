@@ -11,8 +11,8 @@
             </h1>
             <p class="text-slate-500 text-xs sm:text-sm mt-1">监控所有注册用户 · 封禁/解封</p>
         </div>
-        <a href="{{ route('admin.monitor') }}" class="btn-secondary text-sm px-4 py-2">
-            @include('layouts.partials.icons', ['name' => 'chart', 'class' => 'w-4 h-4'])服务器监控
+        <a href="{{ route('admin.console') }}" class="btn-secondary text-sm px-4 py-2">
+            @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-4 h-4'])服务器控制台
         </a>
     </div>
 

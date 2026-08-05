@@ -56,6 +56,9 @@
             <button type="button" class="config-tab" data-tab="tabJava">
                 @include('layouts.partials.icons', ['name' => 'chip', 'class' => 'w-3.5 h-3.5'])Java / 启动
             </button>
+            <button type="button" class="config-tab" data-tab="tabMonitor">
+                @include('layouts.partials.icons', ['name' => 'chart', 'class' => 'w-3.5 h-3.5'])系统监控
+            </button>
         </div>
 
         {{-- Tab 1: 服务器设置 --}}
@@ -145,6 +148,75 @@
                     <input type="text" id="cfgStopCommand" placeholder="stop" class="input w-full text-sm py-2 font-mono">
                     <p class="text-[11px] text-slate-400 mt-0.5">通过 RCON 发送此命令停止服务器</p>
                 </div>
+            </div>
+        </div>
+
+        {{-- Tab 4: 系统监控 --}}
+        <div id="tabMonitor" class="config-tab-content hidden p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {{-- 系统环境 --}}
+                <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <h3 class="text-sm font-semibold text-slate-700">系统环境</h3>
+                    </div>
+                    <div class="p-3 space-y-1.5 text-xs" id="monitorSystem">
+                        <div class="text-slate-400 text-center py-4">加载中...</div>
+                    </div>
+                </div>
+
+                {{-- PHP 资源 + 负载 --}}
+                <div class="space-y-4">
+                    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                        <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <h3 class="text-sm font-semibold text-slate-700">PHP 资源</h3>
+                    </div>
+                    <div class="p-3 space-y-1.5 text-xs" id="monitorPhp">
+                        <div class="text-slate-400 text-center py-4">加载中...</div>
+                    </div>
+                    </div>
+
+                    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden" id="monitorLoadCard">
+                        <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <h3 class="text-sm font-semibold text-slate-700">系统负载</h3>
+                        </div>
+                        <div class="p-3" id="monitorLoad">
+                            <div class="text-slate-400 text-center py-4">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 磁盘空间 --}}
+            <div class="mt-4 rounded-xl border border-slate-200 bg-white overflow-hidden" id="monitorDiskCard">
+                <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                    <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    <h3 class="text-sm font-semibold text-slate-700">磁盘空间</h3>
+                </div>
+                <div class="p-3" id="monitorDisk">
+                    <div class="text-slate-400 text-center py-4">加载中...</div>
+                </div>
+            </div>
+
+            {{-- 应用指标 --}}
+            <div class="mt-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                    <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <h3 class="text-sm font-semibold text-slate-700">应用指标</h3>
+                    <span class="text-[11px] text-slate-400 ml-auto" id="monitorMetricsTime"></span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 text-xs" id="monitorApp">
+                    <div class="text-slate-400 text-center py-4 col-span-4">加载中...</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 mt-4">
+                <button type="button" id="refreshMetricsBtn" class="btn-secondary text-xs px-4 py-2">
+                    @include('layouts.partials.icons', ['name' => 'refresh', 'class' => 'w-3.5 h-3.5 mr-1'])刷新监控
+                </button>
+                <span id="monitorUpdateStatus" class="text-xs text-slate-400"></span>
             </div>
         </div>
 
@@ -440,6 +512,10 @@
             if (this.getAttribute('data-tab') === 'tabGame') {
                 loadProperties();
             }
+            // 切换到系统监控 tab 时自动加载
+            if (this.getAttribute('data-tab') === 'tabMonitor') {
+                loadMetrics();
+            }
         });
     });
 
@@ -478,20 +554,19 @@
 
         try {
             const formData = new FormData();
-            formData.append('mc_server_path', document.getElementById('cfgMcServerPath').value.trim());
-            formData.append('mc_host', document.getElementById('cfgMcHost').value.trim());
-            formData.append('mc_port', document.getElementById('cfgMcPort').value.trim());
-            formData.append('query_port', document.getElementById('cfgQueryPort').value.trim());
-            formData.append('rcon_host', document.getElementById('cfgRconHost').value.trim());
-            formData.append('rcon_port', document.getElementById('cfgRconPort').value.trim());
-            formData.append('rcon_password', document.getElementById('cfgRconPassword').value.trim());
-            formData.append('java_path', document.getElementById('cfgJavaPath').value.trim());
-            formData.append('java_xms', document.getElementById('cfgJavaXms').value.trim());
-            formData.append('java_xmx', document.getElementById('cfgJavaXmx').value.trim());
-            formData.append('start_command', document.getElementById('cfgStartCommand').value.trim());
-            formData.append('stop_command', document.getElementById('cfgStopCommand').value.trim());
+            const cfgKeys = ['mc_server_path','mc_host','mc_port','query_port','rcon_host','rcon_port','rcon_password','java_path','java_xms','java_xmx','start_command','stop_command','backup_path'];
+            const cfgMap = {
+                mc_server_path: 'cfgMcServerPath', mc_host: 'cfgMcHost', mc_port: 'cfgMcPort',
+                query_port: 'cfgQueryPort', rcon_host: 'cfgRconHost', rcon_port: 'cfgRconPort',
+                rcon_password: 'cfgRconPassword', java_path: 'cfgJavaPath', java_xms: 'cfgJavaXms',
+                java_xmx: 'cfgJavaXmx', start_command: 'cfgStartCommand', stop_command: 'cfgStopCommand',
+                backup_path: 'cfgBackupPath',
+            };
+            cfgKeys.forEach(function(k) {
+                const el = document.getElementById(cfgMap[k]);
+                if (el) formData.append(k, el.value.trim());
+            });
             formData.append('auto_restart', document.getElementById('cfgAutoRestart').value);
-            formData.append('backup_path', document.getElementById('cfgBackupPath').value.trim());
             const res = await fetch('{{ route("admin.console.config.update") }}', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
@@ -523,30 +598,14 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>测试中</span>';
 
-        try {
-            const formData = new FormData();
-            formData.append('command', 'list');
-            const res = await fetch('{{ route("admin.rcon") }}', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                credentials: 'same-origin',
-                body: formData,
-            });
-            const data = await res.json();
-            if (data && data.ok) {
-                appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 连接测试成功</span>');
-                setStatus('已连接', 'green');
-            } else {
-                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 连接测试失败: ' + escapeHtml(data.message || '') + '</span>');
-                setStatus('未连接', 'red');
-            }
-        } catch(e) {
-            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 测试网络错误: ' + escapeHtml(e.message) + '</span>');
-            setStatus('未连接', 'red');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = orig;
+        const ok = await testConnection();
+        if (ok) {
+            appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 连接测试成功</span>');
+        } else {
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 连接测试失败</span>');
         }
+        btn.disabled = false;
+        btn.innerHTML = orig;
     });
 
     function scrollToBottom() {
@@ -1037,7 +1096,7 @@
     checkServerStatus();
     setInterval(checkServerStatus, 30000);
 
-    // 测试 RCON 连接（静默，仅更新状态）
+    // 测试 RCON 连接（静默，仅更新状态），返回 true/false
     async function testConnection() {
         try {
             const formData = new FormData();
@@ -1049,9 +1108,12 @@
                 body: formData,
             });
             const data = await res.json();
-            setStatus(data && data.ok ? '已连接' : '未连接', data && data.ok ? 'green' : 'red');
+            const ok = data && data.ok;
+            setStatus(ok ? '已连接' : '未连接', ok ? 'green' : 'red');
+            return ok;
         } catch(e) {
             setStatus('未连接', 'red');
+            return false;
         }
     }
     testConnection();
@@ -1072,6 +1134,120 @@
         logInfo.textContent = '从缓存恢复 · ' + formatSize(logFileSize);
     }
     runLogPoll();
+
+    // ====== 系统监控面板 ======
+    const refreshMetricsBtn = document.getElementById('refreshMetricsBtn');
+    const monitorUpdateStatus = document.getElementById('monitorUpdateStatus');
+    let metricsTimer = null;
+    let metricsPolling = false;
+
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+        return (bytes / 1073741824).toFixed(2) + ' GB';
+    }
+
+    async function loadMetrics() {
+        if (metricsPolling) return;
+        metricsPolling = true;
+        try {
+            const res = await fetch('{{ route("admin.console.metrics") }}', { credentials: 'same-origin' });
+            const d = await res.json();
+            if (d && d.ok) renderMetrics(d);
+        } catch(e) {}
+        metricsPolling = false;
+        scheduleMetricsPoll();
+    }
+
+    function scheduleMetricsPoll() {
+        if (metricsTimer) clearTimeout(metricsTimer);
+        metricsTimer = setTimeout(loadMetrics, 15000);
+    }
+
+    function renderMetrics(d) {
+        // 系统环境
+        const sys = d.system || {};
+        const sysRows = [
+            ['操作系统', sys.os],
+            ['Web 服务', sys.server_software],
+            ['PHP 版本', sys.php_version],
+            ['PHP 运行', sys.sapi],
+            ['Laravel', sys.laravel_version],
+            ['数据库驱动', sys.db_driver],
+            ['MC 服务器', (sys.mc_host || 'localhost') + ':' + (sys.mc_port || 25565)],
+            ['时区', sys.timezone],
+        ];
+        document.getElementById('monitorSystem').innerHTML = sysRows.map(([k, v]) =>
+            '<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">' + k + '</span><span class="text-slate-900 font-mono">' + escapeHtml(v || '-') + '</span></div>'
+        ).join('');
+
+        // PHP 资源
+        document.getElementById('monitorPhp').innerHTML = [
+            ['内存限制', sys.php_memory_limit || '-'],
+            ['当前使用', (d.php_memory_usage || 0) + ' MB'],
+            ['内存峰值', (d.php_memory_peak || 0) + ' MB'],
+            ['上传最大', sys.php_upload_max || '-'],
+            ['POST 最大', sys.php_post_max || '-'],
+            ['执行超时', sys.php_max_exec || '-'],
+        ].map(([k, v]) =>
+            '<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">' + k + '</span><span class="text-slate-900 font-mono font-medium">' + escapeHtml(v) + '</span></div>'
+        ).join('');
+
+        // 系统负载
+        if (d.load) {
+            document.getElementById('monitorLoadCard').style.display = '';
+            document.getElementById('monitorLoad').innerHTML =
+                '<div class="grid grid-cols-3 gap-2 text-center text-xs">' +
+                '<div><div class="text-slate-500">1分钟</div><div class="text-primary-600 font-bold text-base">' + (d.load[0] || 0).toFixed(2) + '</div></div>' +
+                '<div><div class="text-slate-500">5分钟</div><div class="text-primary-600 font-bold text-base">' + (d.load[1] || 0).toFixed(2) + '</div></div>' +
+                '<div><div class="text-slate-500">15分钟</div><div class="text-primary-600 font-bold text-base">' + (d.load[2] || 0).toFixed(2) + '</div></div>' +
+                '</div>';
+        } else {
+            document.getElementById('monitorLoadCard').style.display = 'none';
+        }
+
+        // 磁盘空间
+        if (d.disk) {
+            const pct = d.disk.percent;
+            document.getElementById('monitorDiskCard').style.display = '';
+            document.getElementById('monitorDisk').innerHTML =
+                '<div class="grid grid-cols-3 gap-2 mb-3 text-xs">' +
+                '<div><div class="text-slate-500">已用</div><div class="text-base font-bold text-amber-600">' + d.disk.used + ' GB</div></div>' +
+                '<div><div class="text-slate-500">可用</div><div class="text-base font-bold text-primary-600">' + d.disk.free + ' GB</div></div>' +
+                '<div><div class="text-slate-500">总量</div><div class="text-base font-bold text-slate-900">' + d.disk.total + ' GB</div></div>' +
+                '</div>' +
+                '<div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">' +
+                '<div class="h-full rounded-full transition-all" style="width: min(' + pct + '%, 100%); background: linear-gradient(90deg, #10b981 0%, #22c55e 50%, #f59e0b 80%, #ef4444 100%);"></div></div>' +
+                '<div class="text-right mt-1 text-xs font-medium ' + (pct > 85 ? 'text-red-500' : (pct > 60 ? 'text-amber-600' : 'text-slate-500')) + '">使用率 ' + pct + '%</div>';
+        } else {
+            document.getElementById('monitorDiskCard').style.display = 'none';
+        }
+
+        // 应用指标
+        const app = d.app || {};
+        document.getElementById('monitorApp').innerHTML =
+            '<div class="rounded-md bg-slate-50 p-2 sm:p-3 border border-slate-200">' +
+            '<div class="text-slate-500">今日新帖</div><div class="text-lg font-bold text-primary-600">' + (app.today_threads || 0) + '</div></div>' +
+            '<div class="rounded-md bg-slate-50 p-2 sm:p-3 border border-slate-200">' +
+            '<div class="text-slate-500">今日注册</div><div class="text-lg font-bold text-primary-600">' + (app.today_users || 0) + '</div></div>' +
+            '<div class="rounded-md bg-slate-50 p-2 sm:p-3 border border-slate-200">' +
+            '<div class="text-slate-500">总帖子数</div><div class="text-lg font-bold text-slate-900">' + (app.total_threads || 0) + '</div></div>' +
+            '<div class="rounded-md bg-slate-50 p-2 sm:p-3 border border-slate-200">' +
+            '<div class="text-slate-500">总用户数</div><div class="text-lg font-bold text-slate-900">' + (app.total_users || 0) + '</div></div>';
+
+        document.getElementById('monitorMetricsTime').textContent = '更新于 ' + (d.time || '');
+        monitorUpdateStatus.textContent = '已更新 · ' + (d.time || '');
+    }
+
+    refreshMetricsBtn.addEventListener('click', function() {
+        if (metricsTimer) clearTimeout(metricsTimer);
+        metricsPolling = false;
+        loadMetrics();
+    });
+
+    // 开始监控轮询
+    scheduleMetricsPoll();
 
     // ====== server.properties 面板 ======
     const loadPropsBtn = document.getElementById('loadPropsBtn');

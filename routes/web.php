@@ -73,7 +73,10 @@ Route::middleware('auth')->group(function () {
 // MC 服务器成员名单
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 
-Route::get('/admin/monitor', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'index'])->name('admin.monitor')->middleware('auth');
+// 服务器监控已合并到控制台，保留路由重定向
+Route::get('/admin/monitor', function () {
+    return redirect()->route('admin.console');
+})->name('admin.monitor')->middleware('auth');
 Route::get('/admin/console', function () {
     if (! auth()->check() || ! auth()->user()->isAdmin()) {
         abort(403, '仅管理员可访问');
@@ -534,7 +537,67 @@ Route::get('/admin/console/world-download', function () {
     ]);
 })->name('admin.console.world-download')->middleware('auth');
 
-Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
+// 控制台系统监控指标 API
+Route::get('/admin/console/metrics', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可访问'], 403);
+    }
+
+    $data = [
+        'ok' => true,
+        'time' => now()->toDateTimeString(),
+        'php_memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2),
+        'php_memory_peak' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
+    ];
+
+    // 系统负载
+    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && function_exists('sys_getloadavg')) {
+        $data['load'] = sys_getloadavg();
+    } else {
+        $data['load'] = null;
+    }
+
+    // 磁盘空间
+    $diskFree = @disk_free_space(base_path());
+    $diskTotal = @disk_total_space(base_path());
+    if ($diskFree !== false && $diskTotal !== false) {
+        $data['disk'] = [
+            'free' => round($diskFree / 1024 / 1024 / 1024, 2),
+            'total' => round($diskTotal / 1024 / 1024 / 1024, 2),
+            'used' => round(($diskTotal - $diskFree) / 1024 / 1024 / 1024, 2),
+            'percent' => $diskTotal > 0 ? round(($diskTotal - $diskFree) * 100 / $diskTotal, 1) : 0,
+        ];
+    } else {
+        $data['disk'] = null;
+    }
+
+    // 系统环境
+    $data['system'] = [
+        'os' => php_uname('s') . ' ' . php_uname('r'),
+        'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? php_uname('s'),
+        'php_version' => PHP_VERSION,
+        'sapi' => PHP_SAPI,
+        'laravel_version' => app()->version(),
+        'db_driver' => config('database.default'),
+        'mc_host' => config('services.minecraft.host', 'localhost'),
+        'mc_port' => (int) config('services.minecraft.port', 25565),
+        'timezone' => config('app.timezone'),
+        'php_memory_limit' => ini_get('memory_limit'),
+        'php_upload_max' => ini_get('upload_max_filesize'),
+        'php_post_max' => ini_get('post_max_size'),
+        'php_max_exec' => ini_get('max_execution_time') . 's',
+    ];
+
+    // 应用统计
+    $data['app'] = [
+        'today_threads' => \App\Models\Thread::where('created_at', '>=', now()->startOfDay())->count(),
+        'today_users' => \App\Models\User::where('created_at', '>=', now()->startOfDay())->count(),
+        'total_threads' => \App\Models\Thread::count(),
+        'total_users' => \App\Models\User::count(),
+    ];
+
+    return response()->json($data);
+})->name('admin.console.metrics')->middleware('auth');
 
 // 管理员用户管理（列表、详情、封禁、解封）
 Route::middleware('auth')->prefix('admin/users')->name('admin.users.')->group(function () {

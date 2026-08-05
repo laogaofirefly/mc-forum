@@ -33,122 +33,122 @@
     </div>
 
     {{-- 服务器配置面板 --}}
-    <div id="configPanel" class="card p-3 sm:p-4 hidden">
-        <div class="flex items-center justify-between mb-3">
+    <div id="configPanel" class="card p-0 hidden">
+        {{-- 标题栏 --}}
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <p class="font-medium text-slate-900 text-sm flex items-center gap-1.5">
                 @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4'])服务器配置
             </p>
             <span id="configStatus" class="text-xs text-slate-400"></span>
         </div>
 
-        {{-- 基础连接 --}}
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            @include('layouts.partials.icons', ['name' => 'link', 'class' => 'w-3.5 h-3.5'])基础连接
+        {{-- Tab 导航 --}}
+        <div class="flex border-b border-slate-100 bg-slate-50/50 px-4">
+            <button type="button" class="config-tab active" data-tab="tabServer">
+                @include('layouts.partials.icons', ['name' => 'server', 'class' => 'w-3.5 h-3.5'])服务器设置
+            </button>
+            <button type="button" class="config-tab" data-tab="tabGame">
+                @include('layouts.partials.icons', ['name' => 'gamepad', 'class' => 'w-3.5 h-3.5'])游戏规则
+            </button>
+            <button type="button" class="config-tab" data-tab="tabJava">
+                @include('layouts.partials.icons', ['name' => 'chip', 'class' => 'w-3.5 h-3.5'])Java / 启动
+            </button>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">MC 服务器主机</label>
-                <input type="text" id="cfgMcHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
-                <p class="text-[11px] text-slate-400 mt-0.5">用于端口检测和状态查询</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">MC 服务器端口</label>
-                <input type="text" id="cfgMcPort" placeholder="25565" class="input w-full text-sm py-2">
-                <p class="text-[11px] text-slate-400 mt-0.5">默认 25565</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">查询端口 (Query)</label>
-                <input type="text" id="cfgQueryPort" placeholder="25565" class="input w-full text-sm py-2">
-                <p class="text-[11px] text-slate-400 mt-0.5">需在 server.properties 开启 enable-query</p>
-            </div>
-            <div class="sm:col-span-2">
-                <label class="block text-xs text-slate-500 mb-1">MC 服务器路径</label>
-                <input type="text" id="cfgMcServerPath" placeholder="/home/mc/server" class="input w-full text-sm py-2">
-                <p class="text-[11px] text-slate-400 mt-0.5">日志、玩家数据等文件的根目录</p>
+
+        {{-- Tab 1: 服务器设置 --}}
+        <div id="tabServer" class="config-tab-content p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs text-slate-500 mb-1">MC 服务器路径</label>
+                    <input type="text" id="cfgMcServerPath" placeholder="/home/mc/server" class="input w-full text-sm py-2">
+                    <p class="text-[11px] text-slate-400 mt-0.5">日志、玩家数据、server.properties 等文件的根目录</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">MC 服务器主机</label>
+                    <input type="text" id="cfgMcHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">MC 服务器端口</label>
+                    <input type="text" id="cfgMcPort" placeholder="25565" class="input w-full text-sm py-2">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">RCON 主机</label>
+                    <input type="text" id="cfgRconHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">RCON 端口</label>
+                    <input type="text" id="cfgRconPort" placeholder="25575" class="input w-full text-sm py-2">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs text-slate-500 mb-1">RCON 密码</label>
+                    <input type="password" id="cfgRconPassword" placeholder="输入 RCON 密码" class="input w-full text-sm py-2">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">查询端口 (Query)</label>
+                    <input type="text" id="cfgQueryPort" placeholder="25565" class="input w-full text-sm py-2">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">备份路径</label>
+                    <input type="text" id="cfgBackupPath" placeholder="/home/mc/backups" class="input w-full text-sm py-2">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">自动重启</label>
+                    <select id="cfgAutoRestart" class="input w-full text-sm py-2">
+                        <option value="false">关闭</option>
+                        <option value="true">开启</option>
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-0.5">崩溃或停止后自动重启服务器</p>
+                </div>
             </div>
         </div>
 
-        {{-- RCON 设置 --}}
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-3.5 h-3.5'])RCON 远程控制
+        {{-- Tab 2: 游戏规则 --}}
+        <div id="tabGame" class="config-tab-content hidden p-4">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs text-slate-500">server.properties — 改变游戏玩法</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="loadPropsBtn" class="btn-secondary text-xs px-3 py-1.5">读取配置</button>
+                    <button type="button" id="savePropsBtn" class="btn-primary text-xs px-3 py-1.5 hidden">保存规则</button>
+                </div>
+            </div>
+            <div id="propsContent" class="text-xs text-slate-500">点击「读取配置」加载 server.properties</div>
+            <div id="propsSaveMsg" class="text-xs mt-2 hidden"></div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">RCON 主机</label>
-                <input type="text" id="cfgRconHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
+
+        {{-- Tab 3: Java / 启动 --}}
+        <div id="tabJava" class="config-tab-content hidden p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">Java 路径</label>
+                    <input type="text" id="cfgJavaPath" placeholder="java" class="input w-full text-sm py-2 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">最小内存 (Xms)</label>
+                    <input type="text" id="cfgJavaXms" placeholder="1G" class="input w-full text-sm py-2 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">最大内存 (Xmx)</label>
+                    <input type="text" id="cfgJavaXmx" placeholder="4G" class="input w-full text-sm py-2 font-mono">
+                </div>
             </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">RCON 端口</label>
-                <input type="text" id="cfgRconPort" placeholder="25575" class="input w-full text-sm py-2">
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">RCON 密码</label>
-                <input type="password" id="cfgRconPassword" placeholder="输入 RCON 密码" class="input w-full text-sm py-2">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">启动命令</label>
+                    <input type="text" id="cfgStartCommand" placeholder="cd /home/mc/server && java -Xms1G -Xmx4G -jar server.jar nogui" class="input w-full text-sm py-2 font-mono">
+                    <p class="text-[11px] text-slate-400 mt-0.5">仅在服务器未运行时可使用「启动服务器」按钮执行</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">停止命令</label>
+                    <input type="text" id="cfgStopCommand" placeholder="stop" class="input w-full text-sm py-2 font-mono">
+                    <p class="text-[11px] text-slate-400 mt-0.5">通过 RCON 发送此命令停止服务器</p>
+                </div>
             </div>
         </div>
 
-        {{-- Java 与性能 --}}
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            @include('layouts.partials.icons', ['name' => 'chip', 'class' => 'w-3.5 h-3.5'])Java 与性能
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">Java 路径</label>
-                <input type="text" id="cfgJavaPath" placeholder="java" class="input w-full text-sm py-2 font-mono">
-                <p class="text-[11px] text-slate-400 mt-0.5">自定义 Java 可执行文件路径</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">最小内存 (Xms)</label>
-                <input type="text" id="cfgJavaXms" placeholder="1G" class="input w-full text-sm py-2 font-mono">
-                <p class="text-[11px] text-slate-400 mt-0.5">如 512M、1G、2G</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">最大内存 (Xmx)</label>
-                <input type="text" id="cfgJavaXmx" placeholder="4G" class="input w-full text-sm py-2 font-mono">
-                <p class="text-[11px] text-slate-400 mt-0.5">如 2G、4G、8G</p>
-            </div>
-        </div>
-
-        {{-- 启动与停止 --}}
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-3.5 h-3.5'])启动与停止
-        </div>
-        <div class="grid grid-cols-1 gap-3 mb-4">
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">启动命令</label>
-                <input type="text" id="cfgStartCommand" placeholder="cd /home/mc/server && java -Xms1G -Xmx4G -jar server.jar nogui" class="input w-full text-sm py-2 font-mono">
-                <p class="text-[11px] text-slate-400 mt-0.5">仅在服务器未运行时可使用「启动服务器」按钮执行</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">停止命令</label>
-                <input type="text" id="cfgStopCommand" placeholder="stop" class="input w-full text-sm py-2 font-mono">
-                <p class="text-[11px] text-slate-400 mt-0.5">通过 RCON 发送此命令停止服务器</p>
-            </div>
-        </div>
-
-        {{-- 维护与备份 --}}
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            @include('layouts.partials.icons', ['name' => 'archive', 'class' => 'w-3.5 h-3.5'])维护与备份
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">备份路径</label>
-                <input type="text" id="cfgBackupPath" placeholder="/home/mc/backups" class="input w-full text-sm py-2">
-                <p class="text-[11px] text-slate-400 mt-0.5">服务器自动备份存储目录</p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">自动重启</label>
-                <select id="cfgAutoRestart" class="input w-full text-sm py-2">
-                    <option value="false">关闭</option>
-                    <option value="true">开启</option>
-                </select>
-                <p class="text-[11px] text-slate-400 mt-0.5">崩溃或停止后自动重启服务器</p>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+        {{-- 底部操作栏 --}}
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/50">
             <button type="button" id="saveConfigBtn" class="btn-primary text-xs px-4 py-2">
-                @include('layouts.partials.icons', ['name' => 'check', 'class' => 'w-3.5 h-3.5 mr-1'])保存配置
+                @include('layouts.partials.icons', ['name' => 'check', 'class' => 'w-3.5 h-3.5 mr-1'])保存全部
             </button>
             <button type="button" id="testRconBtn" class="btn-secondary text-xs px-4 py-2">
                 @include('layouts.partials.icons', ['name' => 'link', 'class' => 'w-3.5 h-3.5 mr-1'])测试 RCON
@@ -223,19 +223,6 @@
         </div>
     </div>
 
-    {{-- 服务器配置 ──}}
-    <div class="card p-3 sm:p-4" id="serverPropsPanel">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-sm font-medium text-slate-700">⚙️ 服务器配置（server.properties）</p>
-            <div class="flex items-center gap-2">
-                <button type="button" id="loadPropsBtn" class="btn-secondary text-xs px-3 py-1">读取配置</button>
-                <button type="button" id="savePropsBtn" class="btn-primary text-xs px-3 py-1 hidden">保存</button>
-            </div>
-        </div>
-        <div id="propsContent" class="text-xs text-slate-500">点击「读取配置」加载 server.properties</div>
-        <div id="propsSaveMsg" class="text-xs mt-2 hidden"></div>
-    </div>
-
     {{-- 图例 --}}
     <div class="card p-3 sm:p-4">
         <div class="flex flex-wrap gap-3 text-xs text-slate-500">
@@ -305,6 +292,48 @@
         border-radius: 50%;
         cursor: pointer;
     }
+
+    /* 配置面板 Tab 样式 */
+    .config-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.625rem 1rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: #64748b;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        margin-bottom: -1px;
+    }
+    .config-tab:hover {
+        color: #334155;
+        border-bottom-color: #cbd5e1;
+    }
+    .config-tab.active {
+        color: #059669;
+        border-bottom-color: #10b981;
+    }
+    .config-tab-content {
+        animation: tabFadeIn 0.15s ease;
+    }
+    @keyframes tabFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .dark .config-tab {
+        color: #94a3b8;
+    }
+    .dark .config-tab:hover {
+        color: #cbd5e1;
+        border-bottom-color: #475569;
+    }
+    .dark .config-tab.active {
+        color: #34d399;
+        border-bottom-color: #34d399;
+    }
 </style>
 
 <script>
@@ -370,7 +399,10 @@
         configPanel.classList.toggle('hidden');
         const isOpen = !configPanel.classList.contains('hidden');
         try { localStorage.setItem(CONFIG_PANEL_KEY, isOpen); } catch(e) {}
-        if (isOpen) loadServerConfig();
+        if (isOpen) {
+            loadServerConfig();
+            loadProperties();
+        }
     });
 
     // 恢复配置面板状态
@@ -378,8 +410,23 @@
         if (localStorage.getItem(CONFIG_PANEL_KEY) === 'true') {
             configPanel.classList.remove('hidden');
             loadServerConfig();
+            loadProperties();
         }
     } catch(e) {}
+
+    // Tab 切换
+    document.querySelectorAll('.config-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.config-tab').forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            document.querySelectorAll('.config-tab-content').forEach(function(c) { c.classList.add('hidden'); });
+            document.getElementById(this.getAttribute('data-tab')).classList.remove('hidden');
+            // 切换到游戏规则 tab 时自动加载
+            if (this.getAttribute('data-tab') === 'tabGame') {
+                loadProperties();
+            }
+        });
+    });
 
     async function loadServerConfig() {
         try {
@@ -439,10 +486,8 @@
             const data = await res.json();
             if (data && data.ok) {
                 document.getElementById('configStatus').textContent = '已保存';
-                appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 配置已保存</span>');
-                // 重新检测服务器状态
+                appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 服务器配置已保存</span>');
                 checkServerStatus();
-                // 重新测试 RCON
                 testConnection();
             } else {
                 document.getElementById('configStatus').textContent = '保存失败';
@@ -891,61 +936,131 @@
     const propsSaveMsg = document.getElementById('propsSaveMsg');
     let originalProps = {};
 
-    // 常见配置项 + 中文说明
+    // 配置项中文说明 & 描述提示
     const propLabels = {
-        'motd':              '服务器标题 (motd)',
-        'server-name':       '服务器名称',
+        // 游戏模式
         'gamemode':          '游戏模式',
         'difficulty':        '难度',
+        'hardcore':          '硬核模式',
+        'difficulty-lock':   '锁定难度',
+        'force-gamemode':    '强制游戏模式',
+        // 玩家管理
         'max-players':       '最大玩家数',
-        'max-world-size':    '世界大小',
+        'online-mode':       '正版验证',
+        'white-list':        '白名单',
+        'enforce-whitelist': '强制白名单',
+        'player-idle-timeout': '挂机超时踢出（分钟）',
+        'hide-online-players': '隐藏在线玩家',
+        'prevent-proxy-connections': '防代理/VPN',
+        // 世界设置
+        'level-name':        '地图名称',
+        'level-seed':        '世界种子',
+        'level-type':        '世界类型',
+        'generator-settings': '自定义生成器',
+        'max-world-size':    '世界边界大小',
+        'max-build-height':  '最大建筑高度',
         'spawn-protection':  '出生点保护半径',
-        'pvp':               'PVP',
+        'view-distance':     '视距（区块）',
+        'simulation-distance': '模拟距离（区块）',
+        // 玩法规则
+        'pvp':               'PVP 玩家对战',
         'allow-nether':      '允许下界',
         'allow-flight':      '允许飞行',
         'enable-command-block': '命令方块',
-        'white-list':        '白名单',
-        'enforce-whitelist': '强制白名单',
-        'hardcore':          '硬核模式',
-        'force-gamemode':    '强制游戏模式',
-        'view-distance':     '视距',
-        'simulation-distance': '模拟距离',
+        'op-permission-level': 'OP 权限等级',
+        'function-permission-level': '函数权限等级',
+        // 生物与建筑
         'spawn-animals':     '生成动物',
         'spawn-monsters':    '生成怪物',
-        'spawn-npcs':        '生成NPC',
-        'generate-structures': '生成建筑',
-        'level-seed':         '世界种子',
-        'level-name':         '地图名',
-        'level-type':         '世界类型',
-        'enable-rcon':       'RCON',
-        'rcon.password':     'RCON密码',
-        'rcon.port':         'RCON端口',
+        'spawn-npcs':        '生成村民',
+        'generate-structures': '生成村庄/遗迹',
+        // 性能优化
+        'max-tick-time':     '最大 Tick 时间（ms）',
+        'sync-chunk-writes': '同步区块写入',
+        'network-compression-threshold': '网络压缩阈值',
+        'entity-broadcast-range-percentage': '实体广播范围%',
+        'rate-limit':        '速率限制',
+        'max-chained-neighbor-updates': '最大连锁更新',
+        'use-native-transport': '原生网络传输',
+        // 网络连接
+        'server-ip':         '服务器 IP',
         'server-port':       '服务器端口',
-        'server-ip':         '服务器IP',
         'query.port':        '查询端口',
+        'enable-query':      '启用 GameSpy 查询',
+        'enable-status':     '启用服务器列表状态',
+        'enable-rcon':       '启用 RCON',
+        'rcon.port':         'RCON 端口',
+        'rcon.password':     'RCON 密码',
+        // 广播与监控
+        'broadcast-console-to-ops': '控制台广播给 OP',
+        'broadcast-rcon-to-ops': 'RCON 广播给 OP',
+        'enable-jmx-monitoring': 'JMX 性能监控',
+        'text-filtering-config': '聊天文本过滤',
+        'previews-chat':     '聊天预览',
+        // 资源包
+        'require-resource-pack': '强制资源包',
+        'resource-pack':     '资源包下载地址',
+        'resource-pack-prompt': '资源包提示语',
+        'resource-pack-sha1': '资源包 SHA1 校验',
+        // 显示
+        'motd':              '服务器 MOTD 标题',
+        'server-name':       '服务器名称',
+    };
+    // 配置项描述提示（hover 显示）
+    const propHints = {
+        'online-mode': '关闭后盗版玩家可进入，但安全性降低',
+        'hardcore': '开启后玩家死亡即被封禁，无法重生',
+        'difficulty-lock': '开启后锁定难度，游戏中无法更改',
+        'force-gamemode': '开启后每次登录强制恢复为默认游戏模式',
+        'hide-online-players': '开启后玩家列表不显示其他在线玩家',
+        'prevent-proxy-connections': '开启后阻止使用 VPN/代理的玩家连接',
+        'player-idle-timeout': '玩家挂机超过此时间（分钟）将被自动踢出，0=禁用',
+        'enforce-whitelist': '开启后不在白名单的玩家会被立即踢出',
+        'max-tick-time': '单个 tick 超过此时间会触发看门狗崩溃，-1=禁用',
+        'sync-chunk-writes': '关闭可提升写入性能，但崩溃时可能丢失区块数据',
+        'entity-broadcast-range-percentage': '控制实体可见范围，降低可减少网络负载',
+        'use-native-transport': '使用 Linux epoll / Windows IOCP 优化网络性能',
+        'broadcast-console-to-ops': '开启后控制台命令会广播给所有 OP 玩家',
+        'broadcast-rcon-to-ops': '开启后 RCON 命令会广播给所有 OP 玩家',
+        'require-resource-pack': '开启后玩家必须使用指定资源包才能进入',
+        'max-chained-neighbor-updates': '限制连锁方块更新数量，防止红石机器卡服',
+        'enable-jmx-monitoring': '开启 JMX 端口，允许外部工具监控 JVM 性能',
+        'text-filtering-config': '启用聊天文本过滤（需客户端配合）',
+        'previews-chat': '开启后输入聊天时显示预览',
+        'enable-status': '关闭后服务器不会出现在多人游戏列表中',
+        'enable-query': '启用 UDP 查询协议，支持外部工具获取服务器信息',
     };
     const selectOptions = {
         'gamemode': { 'survival': '生存', 'creative': '创造', 'adventure': '冒险', 'spectator': '旁观' },
         'difficulty': { 'peaceful': '和平', 'easy': '简单', 'normal': '普通', 'hard': '困难' },
-        'level-type': { 'default': '默认', 'flat': '超平坦', 'largebiomes': '大型生物群系', 'amplified': '放大化' },
+        'level-type': { 'default': '默认', 'flat': '超平坦', 'largebiomes': '大型生物群系', 'amplified': '放大化', 'buffet': '自定义', 'caves': '洞穴' },
+        'op-permission-level': { '1': '1 - 绕过出生点保护', '2': '2 - 命令方块+踢人封禁', '3': '3 - 多数管理命令', '4': '4 - 所有命令(含停止)' },
+        'function-permission-level': { '1': '1 - 基础', '2': '2 - 中级', '3': '3 - 高级', '4': '4 - 全部' },
     };
+    const booleanKeys = ['pvp', 'allow-flight', 'allow-nether', 'enable-command-block', 'white-list', 'enforce-whitelist', 'hardcore', 'force-gamemode', 'spawn-animals', 'spawn-monsters', 'spawn-npcs', 'generate-structures', 'enable-rcon', 'online-mode', 'hide-online-players', 'prevent-proxy-connections', 'difficulty-lock', 'enable-query', 'enable-status', 'sync-chunk-writes', 'use-native-transport', 'broadcast-console-to-ops', 'broadcast-rcon-to-ops', 'enable-jmx-monitoring', 'text-filtering-config', 'previews-chat', 'require-resource-pack'];
+    const numberKeys = ['max-players', 'max-world-size', 'max-build-height', 'spawn-protection', 'view-distance', 'simulation-distance', 'server-port', 'query.port', 'rcon.port', 'player-idle-timeout', 'max-tick-time', 'network-compression-threshold', 'entity-broadcast-range-percentage', 'rate-limit', 'max-chained-neighbor-updates', 'op-permission-level', 'function-permission-level'];
 
     function renderForm(properties) {
         const categories = [
-            { title: '基础设置', icon: '🎮', keys: ['motd', 'server-name', 'gamemode', 'difficulty', 'max-players', 'hardcore'] },
-            { title: '世界设置', icon: '🌍', keys: ['level-name', 'level-seed', 'level-type', 'max-world-size', 'spawn-protection', 'view-distance', 'simulation-distance'] },
-            { title: '游戏规则', icon: '⚔️', keys: ['pvp', 'allow-flight', 'allow-nether', 'enable-command-block', 'force-gamemode', 'white-list', 'enforce-whitelist'] },
+            { title: '游戏模式', icon: '🎮', keys: ['gamemode', 'difficulty', 'hardcore', 'difficulty-lock', 'force-gamemode'] },
+            { title: '玩家管理', icon: '👥', keys: ['max-players', 'online-mode', 'white-list', 'enforce-whitelist', 'player-idle-timeout', 'hide-online-players', 'prevent-proxy-connections'] },
+            { title: '世界设置', icon: '🌍', keys: ['level-name', 'level-seed', 'level-type', 'generator-settings', 'max-world-size', 'max-build-height', 'spawn-protection', 'view-distance', 'simulation-distance'] },
+            { title: '玩法规则', icon: '⚔️', keys: ['pvp', 'allow-flight', 'allow-nether', 'enable-command-block', 'op-permission-level', 'function-permission-level'] },
             { title: '生物与建筑', icon: '🐄', keys: ['spawn-animals', 'spawn-monsters', 'spawn-npcs', 'generate-structures'] },
-            { title: '网络与 RCON', icon: '🌐', keys: ['server-ip', 'server-port', 'query.port', 'enable-rcon', 'rcon.port', 'rcon.password'] },
+            { title: '性能优化', icon: '⚡', keys: ['max-tick-time', 'sync-chunk-writes', 'network-compression-threshold', 'entity-broadcast-range-percentage', 'rate-limit', 'max-chained-neighbor-updates', 'use-native-transport'] },
+            { title: '网络连接', icon: '🌐', keys: ['server-ip', 'server-port', 'query.port', 'enable-query', 'enable-status', 'enable-rcon', 'rcon.port', 'rcon.password'] },
+            { title: '广播与监控', icon: '📡', keys: ['broadcast-console-to-ops', 'broadcast-rcon-to-ops', 'enable-jmx-monitoring', 'text-filtering-config', 'previews-chat'] },
+            { title: '资源包', icon: '📦', keys: ['require-resource-pack', 'resource-pack', 'resource-pack-prompt', 'resource-pack-sha1'] },
+            { title: '服务器显示', icon: '🏷️', keys: ['motd', 'server-name'] },
         ];
-        const booleanKeys = ['pvp', 'allow-flight', 'allow-nether', 'enable-command-block', 'white-list', 'enforce-whitelist', 'hardcore', 'force-gamemode', 'spawn-animals', 'spawn-monsters', 'spawn-npcs', 'generate-structures', 'enable-rcon'];
         const used = new Set();
-        let html = '<div class="space-y-4">';
+        let html = '<div class="space-y-3">';
 
         function renderField(k) {
             if (!(k in properties)) return '';
             used.add(k);
             const label = propLabels[k] || k;
+            const hint = propHints[k] || '';
             const val = properties[k] == null ? '' : String(properties[k]);
             const id = 'prop_' + k.replace(/[^a-zA-Z0-9_-]/g, '_');
             let control = '';
@@ -954,43 +1069,48 @@
                 const checked = ['true', '1', 'yes', 'on'].includes(val.toLowerCase());
                 control = '<label class="relative inline-flex items-center cursor-pointer">' +
                     '<input type="checkbox" class="sr-only peer prop-control" id="' + id + '" data-prop-key="' + escapeHtml(k) + '" ' + (checked ? 'checked' : '') + '>' +
-                    '<span class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-primary-500 after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></span>' +
-                    '<span class="ml-2 text-xs text-slate-500">' + (checked ? '已开启' : '已关闭') + '</span></label>';
+                    '<span class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:bg-emerald-500 after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></span>' +
+                    '<span class="ml-2.5 text-xs font-medium ' + (checked ? 'text-emerald-600' : 'text-slate-400') + '">' + (checked ? '开启' : '关闭') + '</span></label>';
             } else if (selectOptions[k]) {
-                control = '<select class="input text-sm prop-control" id="' + id + '" data-prop-key="' + escapeHtml(k) + '">';
+                control = '<select class="input text-xs py-1.5 px-2 prop-control w-44" id="' + id + '" data-prop-key="' + escapeHtml(k) + '">';
                 Object.entries(selectOptions[k]).forEach(([optVal, optLabel]) => {
                     control += '<option value="' + escapeHtml(optVal) + '"' + (val === optVal ? ' selected' : '') + '>' + escapeHtml(optLabel) + '</option>';
                 });
                 if (!Object.prototype.hasOwnProperty.call(selectOptions[k], val)) control += '<option value="' + escapeHtml(val) + '" selected>' + escapeHtml(val) + '</option>';
                 control += '</select>';
             } else {
-                const type = ['max-players', 'max-world-size', 'spawn-protection', 'view-distance', 'simulation-distance', 'server-port', 'query.port', 'rcon.port'].includes(k) ? 'number' : 'text';
-                control = '<input type="' + type + '" class="input text-sm prop-control" id="' + id + '" data-prop-key="' + escapeHtml(k) + '" value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(k) + '">';
+                const type = numberKeys.includes(k) ? 'number' : 'text';
+                const cls = type === 'number' ? 'input text-xs py-1.5 px-2 prop-control w-28 font-mono' : 'input text-xs py-1.5 px-2 prop-control font-mono';
+                control = '<input type="' + type + '" class="' + cls + '" id="' + id + '" data-prop-key="' + escapeHtml(k) + '" value="' + escapeHtml(val) + '" placeholder="' + escapeHtml(k) + '">';
             }
-            return '<div class="rounded-xl border border-slate-200 bg-white p-3 hover:border-primary-300 transition"><div class="flex items-center justify-between gap-3"><div><label class="block text-sm font-medium text-slate-700" for="' + id + '">' + escapeHtml(label) + '</label><span class="text-[11px] text-slate-400">' + escapeHtml(k) + '</span></div>' + control + '</div></div>';
+            const hintHtml = hint ? '<span class="text-[10px] text-slate-400 mt-0.5 block leading-tight" title="' + escapeHtml(hint) + '">' + escapeHtml(hint) + '</span>' : '';
+            return '<div class="bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition px-3 py-2.5"><div class="flex items-center justify-between gap-2"><div class="min-w-0 flex-1"><label class="block text-xs font-medium text-slate-700 truncate" for="' + id + '">' + escapeHtml(label) + '</label><span class="text-[10px] text-slate-400">' + escapeHtml(k) + '</span>' + hintHtml + '</div><div class="flex-shrink-0">' + control + '</div></div></div>';
         }
 
         categories.forEach(function(category) {
             const fields = category.keys.filter(k => k in properties);
             if (!fields.length) return;
-            html += '<section class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"><h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3"><span class="text-lg">' + category.icon + '</span>' + category.title + '</h3><div class="grid grid-cols-1 lg:grid-cols-2 gap-3">';
+            html += '<div class="rounded-xl border border-slate-200 bg-slate-50/60 overflow-hidden"><div class="flex items-center gap-2 px-3 py-2.5 bg-white border-b border-slate-100"><span class="text-base">' + category.icon + '</span><h3 class="text-sm font-semibold text-slate-700">' + category.title + '</h3><span class="text-[11px] text-slate-400 ml-auto">' + fields.length + ' 项</span></div><div class="p-2.5 space-y-1.5">';
             fields.forEach(k => { html += renderField(k); });
-            html += '</div></section>';
+            html += '</div></div>';
         });
 
-        Object.keys(properties).filter(k => !used.has(k)).forEach(function(k) {
-            if (!used.size) html += '<section class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3"><h3 class="text-sm font-semibold text-slate-800 mb-3">其他设置</h3><div class="grid grid-cols-1 lg:grid-cols-2 gap-3">';
-            html += renderField(k);
-        });
-        if (Object.keys(properties).some(k => !used.has(k))) html += '</div></section>';
+        // 未分类的配置
+        const uncategorized = Object.keys(properties).filter(k => !used.has(k));
+        if (uncategorized.length) {
+            html += '<div class="rounded-xl border border-slate-200 bg-slate-50/60 overflow-hidden"><div class="flex items-center gap-2 px-3 py-2.5 bg-white border-b border-slate-100"><span class="text-base">📋</span><h3 class="text-sm font-semibold text-slate-700">其他设置</h3><span class="text-[11px] text-slate-400 ml-auto">' + uncategorized.length + ' 项</span></div><div class="p-2.5 space-y-1.5">';
+            uncategorized.forEach(k => { html += renderField(k); });
+            html += '</div></div>';
+        }
         html += '</div>';
         propsContent.innerHTML = html;
         savePropsBtn.classList.remove('hidden');
 
+        // 复选框切换文本
         propsContent.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
             el.addEventListener('change', function() {
                 const text = this.parentElement.querySelector('span:last-child');
-                if (text) text.textContent = this.checked ? '已开启' : '已关闭';
+                if (text) { text.textContent = this.checked ? '开启' : '关闭'; text.className = 'ml-2.5 text-xs font-medium ' + (this.checked ? 'text-emerald-600' : 'text-slate-400'); }
             });
         });
     }
@@ -1016,11 +1136,15 @@
 
     async function saveProperties() {
         const updates = {};
-        const keys = Object.keys(originalProps).concat(Object.keys(selectOptions).filter(k => !originalProps.hasOwnProperty(k)));
         Object.keys(originalProps).forEach(k => {
-            const el = document.getElementById('prop_' + k);
+            const el = document.getElementById('prop_' + k.replace(/[^a-zA-Z0-9_-]/g, '_'));
             if (!el) return;
-            const newVal = el.value.trim();
+            let newVal;
+            if (el.type === 'checkbox') {
+                newVal = el.checked ? 'true' : 'false';
+            } else {
+                newVal = el.value.trim();
+            }
             if (newVal !== originalProps[k]) updates[k] = newVal;
         });
         if (!Object.keys(updates).length) {
@@ -1055,61 +1179,14 @@
             propsSaveMsg.textContent = '保存失败：' + e.message;
         } finally {
             savePropsBtn.disabled = false;
-            savePropsBtn.textContent = '保存';
+            savePropsBtn.textContent = '保存规则';
         }
     }
 
     // 按钮事件绑定
     loadPropsBtn.addEventListener('click', loadProperties);
     savePropsBtn.addEventListener('click', saveProperties);
-    // 从导航栏进入“服务器配置”时自动定位并加载面板，避免看起来像入口失效。
-    if (window.location.hash === '#serverPropsPanel' || new URLSearchParams(window.location.search).get('section') === 'properties') {
-        setTimeout(function() {
-            document.getElementById('serverPropsPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            loadProperties();
-        }, 100);
-    }
 })();
 </script>
-<script>
-// 独立的配置面板兜底初始化：即使控制台日志脚本异常，也不影响配置按钮。
-(function () {
-    function initServerPropertiesPanel() {
-        const load = document.getElementById('loadPropsBtn');
-        const save = document.getElementById('savePropsBtn');
-        const content = document.getElementById('propsContent');
-        if (!load || !content || load.dataset.bound === '1') return;
-        load.dataset.bound = '1';
-        load.addEventListener('click', async function () {
-            load.disabled = true;
-            load.textContent = '加载中...';
-            try {
-                const response = await fetch('{{ route("admin.console.properties") }}?_=' + Date.now(), {
-                    credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' }
-                });
-                const data = await response.json();
-                if (!data.ok) throw new Error(data.message || '读取配置失败');
-                const props = data.properties || {};
-                content.innerHTML = Object.entries(props).map(function ([key, value]) {
-                    return '<label class="block mb-2"><span class="block text-xs text-slate-500 mb-1">' + escapeHtml(key) + '</span><input class="input text-sm w-full" data-fallback-prop="' + escapeHtml(key) + '" value="' + escapeHtml(value) + '"></label>';
-                }).join('') || '<span class="text-slate-500">配置文件为空</span>';
-                if (save) save.classList.remove('hidden');
-            } catch (error) {
-                content.innerHTML = '<span class="text-red-500">加载失败：' + escapeHtml(error.message) + '</span>';
-            } finally {
-                load.disabled = false;
-                load.textContent = '读取配置';
-            }
-        });
-        if (window.location.hash === '#serverPropsPanel' || new URLSearchParams(window.location.search).get('section') === 'properties') load.click();
-    }
-    function escapeHtml(value) {
-        const node = document.createElement('div');
-        node.textContent = value == null ? '' : String(value);
-        return node.innerHTML;
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initServerPropertiesPanel);
-    else initServerPropertiesPanel();
-})();
-</script>
+
 @endsection

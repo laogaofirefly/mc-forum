@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-5">
     {{-- 个人信息卡片 --}}
-    <div class="card overflow-hidden">
+    <div class="card overflow-hidden animate-fade-in-down">
         {{-- 顶部横幅 --}}
         <div style="height: 96px; background: linear-gradient(135deg, #34d399 0%, #059669 100%);"></div>
 
@@ -71,7 +71,7 @@
             </div>
 
             {{-- 统计数据 --}}
-            <div class="grid grid-cols-3 gap-3 mt-5">
+            <div class="grid grid-cols-3 gap-3 mt-5 stagger-children">
                 <div class="rounded-xl bg-slate-50 p-3 text-center">
                     <div class="text-xl font-bold text-primary-600">{{ $user->threads()->count() }}</div>
                     <div class="text-xs text-slate-500 mt-0.5">帖子</div>
@@ -107,7 +107,7 @@
         <h2 class="text-base font-bold text-slate-900 mb-3 flex items-center">
             @include('layouts.partials.icons', ['name' => 'document', 'class' => 'w-4 h-4 mr-2'])最近发布的帖子
         </h2>
-        <div class="space-y-3">
+        <div class="space-y-3 stagger-children">
             @foreach($threads as $thread)
                 @include('partials.thread-card', ['thread' => $thread])
             @endforeach

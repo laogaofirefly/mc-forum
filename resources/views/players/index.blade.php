@@ -5,7 +5,7 @@
 @section('content')
 <div class="space-y-5">
     {{-- 顶部标题与统计 --}}
-    <div class="flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center justify-between flex-wrap gap-3 animate-fade-in-down">
         <div>
             <h1 class="page-title text-slate-900 flex items-center">
                 @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])服务器成员
@@ -53,9 +53,9 @@
 
         {{-- 成员列表 --}}
         @if(count($players) > 0)
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 stagger-children">
                 @foreach($players as $player)
-                    <div class="card p-4 text-center card-hover {{ $player['online'] ? 'ring-2 ring-green-200' : '' }}">
+                    <div class="card p-4 text-center card-hover hover-lift {{ $player['online'] ? 'ring-2 ring-green-200' : '' }}">
                         <div class="relative inline-block">
                             @if($player['bound'])
                                 <a href="{{ route('profile.show', $player['bound_user_id']) }}" title="查看网站主页：{{ $player['bound_user_name'] }}">

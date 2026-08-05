@@ -231,7 +231,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         const avatarFallback = m.avatar_fallback || '';
         const avatarImg = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(m.player_name) + '" data-fallback="' + escapeHtml(avatarFallback) + '" onerror="var f=this.getAttribute(\'data-fallback\');if(f){this.src=f;this.onerror=null;}" class="' + AVATAR_CLASS + '">' : '';
         const row = document.createElement('div');
-        row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
+        row.className = 'chat-row flex items-start chat-msg-enter ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
         row.dataset.id = m.id;
         var html = '';
         if (showName) {

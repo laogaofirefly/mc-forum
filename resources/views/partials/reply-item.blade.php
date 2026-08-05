@@ -1,4 +1,4 @@
-<div class="card p-4" id="reply-{{ $reply->id }}">
+<div class="card hover-lift p-4" id="reply-{{ $reply->id }}">
     <div class="flex items-start space-x-3">
         <img src="{{ $reply->user->getAvatarUrl() }}" alt="{{ $reply->user->name }}" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-slate-100 flex-shrink-0">
         <div class="flex-1 min-w-0">

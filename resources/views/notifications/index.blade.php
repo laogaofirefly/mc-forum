@@ -2,7 +2,7 @@
 @section('title', '消息通知')
 @section('content')
 <div class="space-y-5">
-    <div class="flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center justify-between flex-wrap gap-2 animate-fade-in-down">
         <div>
             <h1 class="page-title text-slate-900 flex items-center">
                 @include('layouts.partials.icons', ['name' => 'bell', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])消息通知
@@ -18,7 +18,7 @@
         @endif
     </div>
 
-    <div class="space-y-3">
+    <div class="space-y-3 stagger-children">
         @forelse($notifications as $notif)
             <div class="card p-4 {{ $notif->is_read ? '' : 'border-l-4 border-l-primary-500 bg-primary-50/30' }}">
                 <div class="flex items-start gap-3">

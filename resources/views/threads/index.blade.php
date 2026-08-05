@@ -21,9 +21,9 @@
         </button>
     </form>
 
-    <div class="space-y-3">
+    <div class="space-y-3 stagger-children">
         @foreach($threads as $thread)
-            <a href="{{ route('threads.show', $thread->slug) }}" class="card card-hover p-3 sm:p-4 block group">
+            <a href="{{ route('threads.show', $thread->slug) }}" class="card card-hover hover-lift p-3 sm:p-4 block group">
                 <div class="flex items-start space-x-3">
                     <img src="{{ $thread->user->getAvatarUrl() }}" alt="{{ $thread->user->name }}" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-slate-100 flex-shrink-0">
                     <div class="flex-1 min-w-0">

@@ -256,6 +256,7 @@
         {{-- 命令输入区 --}}
         <div class="border-t border-slate-700 bg-slate-900 px-3 py-2.5 flex items-center gap-2">
             <span class="text-cyan-400 font-mono font-bold text-sm flex-shrink-0 select-none">$</span>
+            <span class="cursor-blink text-cyan-400 font-mono text-sm select-none">▌</span>
             <input
                 type="text"
                 id="consoleInput"

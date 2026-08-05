@@ -1,4 +1,4 @@
-<div class="card card-hover p-4">
+<div class="card card-hover hover-lift p-4">
     <div class="flex items-start space-x-3">
         <img src="{{ $thread->user->getAvatarUrl() }}" alt="{{ $thread->user->name }}" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-slate-100 flex-shrink-0">
         <div class="flex-1 min-w-0">

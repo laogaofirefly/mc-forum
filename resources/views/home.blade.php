@@ -6,7 +6,7 @@
 <div class="space-y-5 sm:space-y-6">
 
     {{-- 顶部欢迎+发帖入口 --}}
-    <div class="card p-5 sm:p-7 bg-gradient-to-br from-primary-500 to-primary-700 border-0">
+    <div class="card p-5 sm:p-7 bg-gradient-to-br from-primary-500 to-primary-700 border-0 animate-fade-in-down">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mb-1.5 flex items-center">
@@ -32,7 +32,7 @@
     </div>
 
     {{-- 最新帖子（显示4个） --}}
-    <div class="card p-4 sm:p-5">
+    <div class="card p-4 sm:p-5 reveal">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center">
                 <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

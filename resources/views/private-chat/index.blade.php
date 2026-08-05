@@ -275,7 +275,7 @@ $bubbleOther = 'bg-white shadow-sm text-slate-700 rounded-bl-md';
         var avatarUrl = m.avatar_url || '';
 
         var row = document.createElement('div');
-        row.className = 'chat-row flex items-start ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
+        row.className = 'chat-row flex items-start chat-msg-enter ' + (isMine ? 'justify-end' : 'justify-start') + ' px-2 ' + (showName ? 'py-1' : 'py-0.5');
         row.dataset.id = m.id;
 
         if (showName) {

@@ -83,7 +83,7 @@
 
     <div>
         <h2 class="text-base sm:text-lg font-bold text-slate-900 mb-4">回复 ({{ $replyCount }})</h2>
-        <div class="space-y-3">
+        <div class="space-y-3 stagger-children">
             @foreach($thread->replies as $reply)
                 @include('partials.reply-item', ['reply' => $reply])
             @endforeach

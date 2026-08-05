@@ -295,6 +295,108 @@
         .dark .text-slate-300 { color: #cbd5e1 !important; }
         .dark .text-slate-200 { color: #e2e8f0 !important; }
         .dark .bg-slate-100 { background-color: #1e293b !important; }
+
+        /* ====== 全局动画 ====== */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes bounce-in {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        @keyframes countUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease both; }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease both; }
+        .animate-fade-in-down { animation: fadeInDown 0.4s ease both; }
+        .animate-fade-in-left { animation: fadeInLeft 0.5s ease both; }
+        .animate-fade-in-right { animation: fadeInRight 0.5s ease both; }
+        .animate-scale-in { animation: scaleIn 0.4s ease both; }
+        .animate-bounce-in { animation: bounce-in 0.5s ease both; }
+        .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+        .animate-shimmer {
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+
+        /* 交错动画（列表项逐条出现） */
+        .stagger-children > * { opacity: 0; animation: fadeInUp 0.4s ease forwards; }
+        .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+        .stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+        .stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+        .stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+        .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+        .stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+        .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+        .stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+        .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
+        .stagger-children > *:nth-child(10) { animation-delay: 0.5s; }
+
+        /* 滚动触发动画（默认隐藏，由 JS 触发） */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-left { opacity: 0; transform: translateX(-24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal-left.visible { opacity: 1; transform: translateX(0); }
+        .reveal-right { opacity: 0; transform: translateX(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal-right.visible { opacity: 1; transform: translateX(0); }
+        .reveal-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .reveal-scale.visible { opacity: 1; transform: scale(1); }
+
+        /* 导航链接下划线动画 */
+        .nav-link-underline { position: relative; }
+        .nav-link-underline::after {
+            content: ''; position: absolute; bottom: 4px; left: 50%; width: 0; height: 2px;
+            background: #10b981; border-radius: 1px; transition: all 0.25s ease; transform: translateX(-50%);
+        }
+        .nav-link-underline:hover::after, .nav-link-underline.active::after { width: 60%; }
+
+        /* 按钮波纹效果 */
+        .btn-ripple { position: relative; overflow: hidden; }
+        .btn-ripple::after {
+            content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, transparent 10%);
+            background-position: center; background-repeat: no-repeat; opacity: 0; transition: opacity 0.4s, background-size 0.4s;
+        }
+        .btn-ripple:active::after { background-size: 400%; opacity: 1; transition: 0s; }
+
+        /* 图片加载渐入 */
+        img[loading="lazy"] { opacity: 0; transition: opacity 0.4s ease; }
+        img[loading="lazy"].loaded { opacity: 1; }
+
+        /* 聊天消息进入动画 */
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .chat-msg-enter { animation: msgIn 0.35s ease both; }
+
+        /* 统计数字跳动 */
+        .stat-number { display: inline-block; animation: countUp 0.5s ease both; }
+
+        /* 页面切换过渡 */
+        .page-transition { animation: fadeIn 0.35s ease both; }
+        .content-wrapper { animation: fadeInUp 0.45s ease both; }
+
+        /* 终端光标闪烁 */
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .cursor-blink { animation: blink 1s step-end infinite; }
+
+        /* 悬停浮起效果 */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .dark .hover-lift:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+
+        /* 悬停缩放 */
+        .hover-scale { transition: transform 0.2s ease; }
+        .hover-scale:hover { transform: scale(1.03); }
     </style>
 </head>
 <body class="min-h-screen text-slate-800 antialiased flex flex-col">
@@ -426,6 +528,7 @@
     </nav>
 
     <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div class="content-wrapper">
         @if(session('success'))
             <div class="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-xl text-primary-800 flex items-center" style="background-color: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2);">
                 <svg class="w-5 h-5 mr-2.5 flex-shrink-0 text-primary-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -465,6 +568,7 @@
                 </div>
             </div>
         @endif
+        </div>
     </main>
     <footer style="background-color: var(--footer-bg); border-color: var(--footer-border);" class="border-t">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -699,6 +803,33 @@
             .catch(function() {});
         };
         @endauth
+
+        // ========== 滚动触发动画 (Intersection Observer) ==========
+        (function() {
+            if (!('IntersectionObserver' in window)) return;
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // 不再观察已显示的
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+            document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale').forEach(function(el) {
+                observer.observe(el);
+            });
+        })();
+
+        // ========== 图片懒加载渐入 ==========
+        (function() {
+            document.querySelectorAll('img[loading="lazy"]').forEach(function(img) {
+                if (img.complete) return img.classList.add('loaded');
+                img.addEventListener('load', function() { img.classList.add('loaded'); });
+                img.addEventListener('error', function() { img.classList.add('loaded'); });
+            });
+        })();
     </script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="space-y-5">
-    <div class="flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center justify-between flex-wrap gap-2 animate-fade-in-down">
         <div>
             <h1 class="page-title text-slate-900 flex items-center">
                 @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])用户管理
@@ -17,28 +17,28 @@
     </div>
 
     {{-- 统计卡片 --}}
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
-        <a href="{{ route('admin.users.index') }}" class="card p-3 sm:p-4 card-hover {{ $filter === 'all' ? 'ring-2 ring-primary-400' : '' }}">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3 stagger-children">
+        <a href="{{ route('admin.users.index') }}" class="card p-3 sm:p-4 card-hover hover-lift {{ $filter === 'all' ? 'ring-2 ring-primary-400' : '' }}">
             <div class="text-xs sm:text-sm text-slate-500">总用户</div>
             <div class="text-xl sm:text-2xl font-bold text-slate-900">{{ $stats['total'] }}</div>
             <div class="text-xs text-slate-400 mt-1">今日 +{{ $stats['today'] }}</div>
         </a>
-        <a href="{{ route('admin.users.index', ['filter' => 'blocked']) }}{{ $search ? '&q=' . urlencode($search) : '' }}" class="card p-3 sm:p-4 card-hover {{ $filter === 'blocked' ? 'ring-2 ring-red-400' : '' }}">
+        <a href="{{ route('admin.users.index', ['filter' => 'blocked']) }}{{ $search ? '&q=' . urlencode($search) : '' }}" class="card p-3 sm:p-4 card-hover hover-lift {{ $filter === 'blocked' ? 'ring-2 ring-red-400' : '' }}">
             <div class="text-xs sm:text-sm text-slate-500">已封禁</div>
             <div class="text-xl sm:text-2xl font-bold text-red-600">{{ $stats['blocked'] }}</div>
             <div class="text-xs text-slate-400 mt-1">点击查看</div>
         </a>
-        <a href="{{ route('admin.users.index', ['filter' => 'admin']) }}{{ $search ? '&q=' . urlencode($search) : '' }}" class="card p-3 sm:p-4 card-hover {{ $filter === 'admin' ? 'ring-2 ring-amber-400' : '' }}">
+        <a href="{{ route('admin.users.index', ['filter' => 'admin']) }}{{ $search ? '&q=' . urlencode($search) : '' }}" class="card p-3 sm:p-4 card-hover hover-lift {{ $filter === 'admin' ? 'ring-2 ring-amber-400' : '' }}">
             <div class="text-xs sm:text-sm text-slate-500">管理员</div>
             <div class="text-xl sm:text-2xl font-bold text-amber-600">{{ $stats['admins'] }}</div>
             <div class="text-xs text-slate-400 mt-1">点击查看</div>
         </a>
-        <a href="{{ route('admin.users.index', ['filter' => 'mc_bound']) }}{{ $search ? '&q=' . urlencode($search) : '' }}" class="card p-3 sm:p-4 card-hover {{ $filter === 'mc_bound' ? 'ring-2 ring-primary-400' : '' }}">
+        <a href="{{ route('admin.users.index', ['filter' => 'mc_bound']) }}{{ $search ? '&q=' . urlencode($search) : '' }}" class="card p-3 sm:p-4 card-hover hover-lift {{ $filter === 'mc_bound' ? 'ring-2 ring-primary-400' : '' }}">
             <div class="text-xs sm:text-sm text-slate-500">已绑 MC</div>
             <div class="text-xl sm:text-2xl font-bold text-primary-600">{{ $stats['mc_bound'] }}</div>
             <div class="text-xs text-slate-400 mt-1">点击查看</div>
         </a>
-        <div class="card p-3 sm:p-4">
+        <div class="card p-3 sm:p-4 hover-lift">
             <div class="text-xs sm:text-sm text-slate-500">今日新增</div>
             <div class="text-xl sm:text-2xl font-bold text-emerald-600">{{ $stats['today'] }}</div>
             <div class="text-xs text-slate-400 mt-1">{{ now()->format('m-d') }}</div>
@@ -57,7 +57,7 @@
     </form>
 
     {{-- 用户列表 --}}
-    <div class="card overflow-hidden">
+    <div class="card overflow-hidden reveal">
         {{-- 桌面端表格 --}}
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-sm">

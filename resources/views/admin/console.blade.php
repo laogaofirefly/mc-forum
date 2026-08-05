@@ -683,8 +683,8 @@
                     cls = 'text-red-400';
                     bg = 'bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4';
                 } else if (/\bRCON (Client|Listener)\b/i.test(raw)) {
-                    cls = 'text-slate-700';
-                    bg = 'opacity-40';
+                    // 完全屏蔽 RCON 连接/断开日志噪音
+                    return;
                 }
 
                 const div = document.createElement('div');

@@ -225,10 +225,19 @@ Route::get('/admin/console/config', function () {
         'ok' => true,
         'config' => [
             'mc_server_path' => config('services.minecraft.log_path', ''),
+            'mc_host' => config('services.minecraft.host', '127.0.0.1'),
+            'mc_port' => config('services.minecraft.port', 25565),
+            'query_port' => config('services.minecraft.query_port', 25565),
             'rcon_host' => config('services.minecraft.rcon.host', '127.0.0.1'),
             'rcon_port' => config('services.minecraft.rcon.port', '25575'),
             'rcon_password' => config('services.minecraft.rcon.password', ''),
             'start_command' => config('services.minecraft.start_command', ''),
+            'stop_command' => config('services.minecraft.stop_command', 'stop'),
+            'java_path' => config('services.minecraft.java_path', 'java'),
+            'java_xms' => config('services.minecraft.java_xms', '1G'),
+            'java_xmx' => config('services.minecraft.java_xmx', '4G'),
+            'auto_restart' => config('services.minecraft.auto_restart', false),
+            'backup_path' => config('services.minecraft.backup_path', ''),
         ],
     ]);
 })->name('admin.console.config')->middleware('auth');
@@ -241,10 +250,19 @@ Route::post('/admin/console/config', function (\Illuminate\Http\Request $request
 
     $request->validate([
         'mc_server_path' => 'nullable|string|max:500',
+        'mc_host' => 'nullable|string|max:255',
+        'mc_port' => 'nullable|string|max:10',
+        'query_port' => 'nullable|string|max:10',
         'rcon_host' => 'nullable|string|max:255',
         'rcon_port' => 'nullable|string|max:10',
         'rcon_password' => 'nullable|string|max:255',
         'start_command' => 'nullable|string|max:1000',
+        'stop_command' => 'nullable|string|max:200',
+        'java_path' => 'nullable|string|max:500',
+        'java_xms' => 'nullable|string|max:20',
+        'java_xmx' => 'nullable|string|max:20',
+        'auto_restart' => 'nullable|string|max:10',
+        'backup_path' => 'nullable|string|max:500',
     ]);
 
     $envPath = base_path('.env');
@@ -257,10 +275,19 @@ Route::post('/admin/console/config', function (\Illuminate\Http\Request $request
 
     $map = [
         'MC_SERVER_PATH' => $request->input('mc_server_path', ''),
+        'MINECRAFT_SERVER_HOST' => $request->input('mc_host', '127.0.0.1'),
+        'MINECRAFT_SERVER_PORT' => $request->input('mc_port', '25565'),
+        'MC_QUERY_PORT' => $request->input('query_port', '25565'),
         'MC_RCON_HOST' => $request->input('rcon_host', '127.0.0.1'),
         'MC_RCON_PORT' => $request->input('rcon_port', '25575'),
         'MC_RCON_PASSWORD' => $request->input('rcon_password', ''),
         'MC_START_COMMAND' => $request->input('start_command', ''),
+        'MC_STOP_COMMAND' => $request->input('stop_command', 'stop'),
+        'MC_JAVA_PATH' => $request->input('java_path', 'java'),
+        'MC_JAVA_XMS' => $request->input('java_xms', '1G'),
+        'MC_JAVA_XMX' => $request->input('java_xmx', '4G'),
+        'MC_AUTO_RESTART' => $request->input('auto_restart', 'false'),
+        'MC_BACKUP_PATH' => $request->input('backup_path', ''),
     ];
 
     foreach ($map as $key => $value) {
@@ -278,10 +305,19 @@ Route::post('/admin/console/config', function (\Illuminate\Http\Request $request
 
     // 同步运行时配置，避免需要重启服务器
     config()->set('services.minecraft.log_path', $request->input('mc_server_path', ''));
+    config()->set('services.minecraft.host', $request->input('mc_host', '127.0.0.1'));
+    config()->set('services.minecraft.port', (int) $request->input('mc_port', 25565));
+    config()->set('services.minecraft.query_port', (int) $request->input('query_port', 25565));
     config()->set('services.minecraft.rcon.host', $request->input('rcon_host', '127.0.0.1'));
     config()->set('services.minecraft.rcon.port', (int) $request->input('rcon_port', 25575));
     config()->set('services.minecraft.rcon.password', $request->input('rcon_password', ''));
     config()->set('services.minecraft.start_command', $request->input('start_command', ''));
+    config()->set('services.minecraft.stop_command', $request->input('stop_command', 'stop'));
+    config()->set('services.minecraft.java_path', $request->input('java_path', 'java'));
+    config()->set('services.minecraft.java_xms', $request->input('java_xms', '1G'));
+    config()->set('services.minecraft.java_xmx', $request->input('java_xmx', '4G'));
+    config()->set('services.minecraft.auto_restart', $request->input('auto_restart', 'false'));
+    config()->set('services.minecraft.backup_path', $request->input('backup_path', ''));
 
     // 清除 opcache
     if (function_exists('opcache_reset')) @opcache_reset();

@@ -40,6 +40,13 @@ return [
         'port' => env('MINECRAFT_SERVER_PORT', 25565),
         'log_path' => env('MC_SERVER_PATH', ''),
         'start_command' => env('MC_START_COMMAND', ''),
+        'java_path' => env('MC_JAVA_PATH', 'java'),
+        'java_xms' => env('MC_JAVA_XMS', '1G'),
+        'java_xmx' => env('MC_JAVA_XMX', '4G'),
+        'stop_command' => env('MC_STOP_COMMAND', 'stop'),
+        'auto_restart' => env('MC_AUTO_RESTART', false),
+        'backup_path' => env('MC_BACKUP_PATH', ''),
+        'query_port' => env('MC_QUERY_PORT', 25565),
         'rcon' => [
             'host' => env('MC_RCON_HOST', '127.0.0.1'),
             'port' => (int) env('MC_RCON_PORT', 25575),

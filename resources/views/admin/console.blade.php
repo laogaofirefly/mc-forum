@@ -40,12 +40,39 @@
             </p>
             <span id="configStatus" class="text-xs text-slate-400"></span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+        {{-- 基础连接 --}}
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            @include('layouts.partials.icons', ['name' => 'link', 'class' => 'w-3.5 h-3.5'])基础连接
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div>
+                <label class="block text-xs text-slate-500 mb-1">MC 服务器主机</label>
+                <input type="text" id="cfgMcHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
+                <p class="text-[11px] text-slate-400 mt-0.5">用于端口检测和状态查询</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">MC 服务器端口</label>
+                <input type="text" id="cfgMcPort" placeholder="25565" class="input w-full text-sm py-2">
+                <p class="text-[11px] text-slate-400 mt-0.5">默认 25565</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">查询端口 (Query)</label>
+                <input type="text" id="cfgQueryPort" placeholder="25565" class="input w-full text-sm py-2">
+                <p class="text-[11px] text-slate-400 mt-0.5">需在 server.properties 开启 enable-query</p>
+            </div>
+            <div class="sm:col-span-2">
                 <label class="block text-xs text-slate-500 mb-1">MC 服务器路径</label>
                 <input type="text" id="cfgMcServerPath" placeholder="/home/mc/server" class="input w-full text-sm py-2">
                 <p class="text-[11px] text-slate-400 mt-0.5">日志、玩家数据等文件的根目录</p>
             </div>
+        </div>
+
+        {{-- RCON 设置 --}}
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-3.5 h-3.5'])RCON 远程控制
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div>
                 <label class="block text-xs text-slate-500 mb-1">RCON 主机</label>
                 <input type="text" id="cfgRconHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
@@ -58,13 +85,68 @@
                 <label class="block text-xs text-slate-500 mb-1">RCON 密码</label>
                 <input type="password" id="cfgRconPassword" placeholder="输入 RCON 密码" class="input w-full text-sm py-2">
             </div>
-            <div class="sm:col-span-2">
-                <label class="block text-xs text-slate-500 mb-1">启动命令</label>
-                <input type="text" id="cfgStartCommand" placeholder="cd /home/mc/server && java -Xmx4G -jar server.jar nogui" class="input w-full text-sm py-2 font-mono">
-                <p class="text-[11px] text-slate-400 mt-0.5">仅在服务器未运行时可使用「启动服务器」按钮执行</p>
+        </div>
+
+        {{-- Java 与性能 --}}
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            @include('layouts.partials.icons', ['name' => 'chip', 'class' => 'w-3.5 h-3.5'])Java 与性能
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">Java 路径</label>
+                <input type="text" id="cfgJavaPath" placeholder="java" class="input w-full text-sm py-2 font-mono">
+                <p class="text-[11px] text-slate-400 mt-0.5">自定义 Java 可执行文件路径</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">最小内存 (Xms)</label>
+                <input type="text" id="cfgJavaXms" placeholder="1G" class="input w-full text-sm py-2 font-mono">
+                <p class="text-[11px] text-slate-400 mt-0.5">如 512M、1G、2G</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">最大内存 (Xmx)</label>
+                <input type="text" id="cfgJavaXmx" placeholder="4G" class="input w-full text-sm py-2 font-mono">
+                <p class="text-[11px] text-slate-400 mt-0.5">如 2G、4G、8G</p>
             </div>
         </div>
-        <div class="flex items-center gap-2 mt-3">
+
+        {{-- 启动与停止 --}}
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-3.5 h-3.5'])启动与停止
+        </div>
+        <div class="grid grid-cols-1 gap-3 mb-4">
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">启动命令</label>
+                <input type="text" id="cfgStartCommand" placeholder="cd /home/mc/server && java -Xms1G -Xmx4G -jar server.jar nogui" class="input w-full text-sm py-2 font-mono">
+                <p class="text-[11px] text-slate-400 mt-0.5">仅在服务器未运行时可使用「启动服务器」按钮执行</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">停止命令</label>
+                <input type="text" id="cfgStopCommand" placeholder="stop" class="input w-full text-sm py-2 font-mono">
+                <p class="text-[11px] text-slate-400 mt-0.5">通过 RCON 发送此命令停止服务器</p>
+            </div>
+        </div>
+
+        {{-- 维护与备份 --}}
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            @include('layouts.partials.icons', ['name' => 'archive', 'class' => 'w-3.5 h-3.5'])维护与备份
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">备份路径</label>
+                <input type="text" id="cfgBackupPath" placeholder="/home/mc/backups" class="input w-full text-sm py-2">
+                <p class="text-[11px] text-slate-400 mt-0.5">服务器自动备份存储目录</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">自动重启</label>
+                <select id="cfgAutoRestart" class="input w-full text-sm py-2">
+                    <option value="false">关闭</option>
+                    <option value="true">开启</option>
+                </select>
+                <p class="text-[11px] text-slate-400 mt-0.5">崩溃或停止后自动重启服务器</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
             <button type="button" id="saveConfigBtn" class="btn-primary text-xs px-4 py-2">
                 @include('layouts.partials.icons', ['name' => 'check', 'class' => 'w-3.5 h-3.5 mr-1'])保存配置
             </button>
@@ -90,7 +172,7 @@
         </div>
 
         {{-- 终端输出区 --}}
-        <div id="consoleOutput" class="bg-slate-950 text-green-400 font-mono text-xs sm:text-sm p-3 sm:p-4 overflow-y-auto overflow-x-hidden" style="height:calc(100vh - 380px);min-height:400px;">
+        <div id="consoleOutput" class="bg-slate-950 text-green-400 font-mono text-xs sm:text-sm p-3 sm:p-4 overflow-y-auto overflow-x-hidden" style="height:calc(100vh - 440px);min-height:300px;">
             <div class="text-slate-500">Minecraft 服务器控制台 — 实时日志 + 命令执行</div>
             <div class="text-slate-600">输入命令按 Enter 执行，日志自动流式显示</div>
             <div class="text-slate-700">---</div>
@@ -304,11 +386,21 @@
             const res = await fetch('{{ route("admin.console.config") }}', { credentials: 'same-origin' });
             const data = await res.json();
             if (data && data.ok) {
-                document.getElementById('cfgMcServerPath').value = data.config.mc_server_path || '';
-                document.getElementById('cfgRconHost').value = data.config.rcon_host || '127.0.0.1';
-                document.getElementById('cfgRconPort').value = data.config.rcon_port || '25575';
-                document.getElementById('cfgRconPassword').value = data.config.rcon_password || '';
-                document.getElementById('cfgStartCommand').value = data.config.start_command || '';
+                const c = data.config;
+                document.getElementById('cfgMcServerPath').value = c.mc_server_path || '';
+                document.getElementById('cfgMcHost').value = c.mc_host || '127.0.0.1';
+                document.getElementById('cfgMcPort').value = c.mc_port || '25565';
+                document.getElementById('cfgQueryPort').value = c.query_port || '25565';
+                document.getElementById('cfgRconHost').value = c.rcon_host || '127.0.0.1';
+                document.getElementById('cfgRconPort').value = c.rcon_port || '25575';
+                document.getElementById('cfgRconPassword').value = c.rcon_password || '';
+                document.getElementById('cfgJavaPath').value = c.java_path || 'java';
+                document.getElementById('cfgJavaXms').value = c.java_xms || '1G';
+                document.getElementById('cfgJavaXmx').value = c.java_xmx || '4G';
+                document.getElementById('cfgStartCommand').value = c.start_command || '';
+                document.getElementById('cfgStopCommand').value = c.stop_command || 'stop';
+                document.getElementById('cfgAutoRestart').value = c.auto_restart ? 'true' : 'false';
+                document.getElementById('cfgBackupPath').value = c.backup_path || '';
                 document.getElementById('configStatus').textContent = '已加载';
             }
         } catch(e) {
@@ -325,10 +417,19 @@
         try {
             const formData = new FormData();
             formData.append('mc_server_path', document.getElementById('cfgMcServerPath').value.trim());
+            formData.append('mc_host', document.getElementById('cfgMcHost').value.trim());
+            formData.append('mc_port', document.getElementById('cfgMcPort').value.trim());
+            formData.append('query_port', document.getElementById('cfgQueryPort').value.trim());
             formData.append('rcon_host', document.getElementById('cfgRconHost').value.trim());
             formData.append('rcon_port', document.getElementById('cfgRconPort').value.trim());
             formData.append('rcon_password', document.getElementById('cfgRconPassword').value.trim());
+            formData.append('java_path', document.getElementById('cfgJavaPath').value.trim());
+            formData.append('java_xms', document.getElementById('cfgJavaXms').value.trim());
+            formData.append('java_xmx', document.getElementById('cfgJavaXmx').value.trim());
             formData.append('start_command', document.getElementById('cfgStartCommand').value.trim());
+            formData.append('stop_command', document.getElementById('cfgStopCommand').value.trim());
+            formData.append('auto_restart', document.getElementById('cfgAutoRestart').value);
+            formData.append('backup_path', document.getElementById('cfgBackupPath').value.trim());
             const res = await fetch('{{ route("admin.console.config.update") }}', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },

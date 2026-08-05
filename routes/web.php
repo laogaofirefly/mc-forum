@@ -473,6 +473,67 @@ Route::post('/admin/console/properties', function (\Illuminate\Http\Request $r) 
     return response()->json(['ok' => true, 'message' => '已保存 ' . count($updated) . ' 项（需重启服务器生效）', 'updated' => $updated, 'backup' => basename($bak)]);
 })->name('admin.console.properties.save')->middleware('auth');
 
+// ── 世界存档下载 ──
+Route::get('/admin/console/world-download', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
+
+    $mcPath = config('services.minecraft.log_path', '');
+    if (empty($mcPath)) return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH'], 500);
+    $basePath = rtrim((string) $mcPath, '\\/');
+
+    // 从 server.properties 读取 world 文件夹名
+    $propFile = $basePath . '/server.properties';
+    $worldName = 'world'; // 默认
+    if (file_exists($propFile)) {
+        foreach (file($propFile) ?: [] as $line) {
+            $t = trim($line);
+            if (str_starts_with($t, 'level-name=')) {
+                $worldName = trim(substr($t, strlen('level-name=')));
+                break;
+            }
+        }
+    }
+    $worldPath = $basePath . '/' . $worldName;
+    if (! is_dir($worldPath)) {
+        return response()->json(['ok' => false, 'message' => '世界存档目录不存在：' . $worldPath], 404);
+    }
+
+    // 创建临时 zip 文件
+    $tempDir = sys_get_temp_dir();
+    $zipName = $worldName . '_' . date('Ymd_His') . '.zip';
+    $zipPath = $tempDir . '/' . $zipName;
+
+    // 使用 shell zip 命令（比 PHP ZipArchive 更省内存，适合大文件）
+    $cmd = sprintf(
+        'cd %s && zip -r -q %s %s 2>&1',
+        escapeshellarg($basePath),
+        escapeshellarg($zipPath),
+        escapeshellarg($worldName)
+    );
+    exec($cmd, $output, $exitCode);
+
+    if ($exitCode !== 0 || ! file_exists($zipPath)) {
+        return response()->json(['ok' => false, 'message' => '压缩失败，请检查磁盘空间和权限'], 500);
+    }
+
+    $fileSize = filesize($zipPath);
+
+    // 流式下载，下载完成后自动删除临时文件
+    return response()->streamDownload(function () use ($zipPath) {
+        $handle = fopen($zipPath, 'rb');
+        while (! feof($handle)) {
+            echo fread($handle, 8192);
+            flush();
+        }
+        fclose($handle);
+        // 下载完成后删除临时文件
+        @unlink($zipPath);
+    }, $zipName, [
+        'Content-Type' => 'application/zip',
+        'Content-Length' => $fileSize,
+    ]);
+})->name('admin.console.world-download')->middleware('auth');
+
 Route::get('/admin/monitor/metrics', [\App\Http\Controllers\Admin\ServerMonitorController::class, 'metrics'])->name('admin.monitor.metrics')->middleware('auth');
 
 // 管理员用户管理（列表、详情、封禁、解封）

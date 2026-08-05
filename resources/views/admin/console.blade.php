@@ -29,6 +29,9 @@
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])清屏
             </button>
+            <button type="button" id="downloadWorldBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5" title="下载世界存档">
+                @include('layouts.partials.icons', ['name' => 'download', 'class' => 'w-4 h-4'])下载存档
+            </button>
         </div>
     </div>
 
@@ -953,6 +956,67 @@
             appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 网络错误: ' + escapeHtml(e.message) + '</span>');
             startServerBtn.disabled = false;
             startServerBtn.innerHTML = origText;
+        }
+    });
+
+    // ========== 世界存档下载 ==========
+    const downloadWorldBtn = document.getElementById('downloadWorldBtn');
+    let downloading = false;
+    downloadWorldBtn.addEventListener('click', async function() {
+        if (downloading) return;
+        const confirmed = confirm(
+            '即将下载 MC 服务器世界存档。\n\n' +
+            '注意：服务器运行中下载可能导致存档损坏！\n' +
+            '建议先停止服务器再下载。\n\n' +
+            '压缩打包可能需要几分钟，确定继续？'
+        );
+        if (!confirmed) return;
+
+        downloading = true;
+        downloadWorldBtn.disabled = true;
+        const origHtml = downloadWorldBtn.innerHTML;
+        downloadWorldBtn.innerHTML = '<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>打包中...';
+
+        appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 正在打包世界存档，请稍候...</span>');
+
+        try {
+            // 发起下载请求，后端会流式返回 zip 文件
+            const res = await fetch('{{ route("admin.console.world-download") }}', {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/zip' },
+            });
+
+            if (!res.ok) {
+                // 尝试解析 JSON 错误信息
+                const contentType = res.headers.get('content-type') || '';
+                if (contentType.includes('json')) {
+                    const err = await res.json();
+                    throw new Error(err.message || '下载失败');
+                }
+                throw new Error('下载失败 (HTTP ' + res.status + ')');
+            }
+
+            // 将响应转为 Blob 并触发浏览器下载
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // 从 Content-Disposition 头提取文件名，或使用默认名
+            const disposition = res.headers.get('content-disposition') || '';
+            const match = disposition.match(/filename="?([^";\n]+)"?/);
+            a.download = match ? match[1] : 'world_backup.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 世界存档下载完成！</span>');
+        } catch(e) {
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 下载失败: ' + escapeHtml(e.message) + '</span>');
+        } finally {
+            downloading = false;
+            downloadWorldBtn.disabled = false;
+            downloadWorldBtn.innerHTML = origHtml;
         }
     });
 

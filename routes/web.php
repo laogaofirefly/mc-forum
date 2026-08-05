@@ -87,7 +87,7 @@ Route::get('/admin/console/log', function (\Illuminate\Http\Request $request) {
         return response()->json(['ok' => false, 'message' => '仅管理员可访问'], 403);
     }
 
-    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $mcPath = config('services.minecraft.log_path', '');
     if (empty($mcPath)) {
         return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH']);
     }
@@ -216,6 +216,83 @@ Route::get('/admin/console/status', function () {
     ]);
 })->name('admin.console.status')->middleware('auth');
 
+// 服务器配置读取 API
+Route::get('/admin/console/config', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可访问'], 403);
+    }
+    return response()->json([
+        'ok' => true,
+        'config' => [
+            'mc_server_path' => config('services.minecraft.log_path', ''),
+            'rcon_host' => config('services.minecraft.rcon.host', '127.0.0.1'),
+            'rcon_port' => config('services.minecraft.rcon.port', '25575'),
+            'rcon_password' => config('services.minecraft.rcon.password', ''),
+            'start_command' => config('services.minecraft.start_command', ''),
+        ],
+    ]);
+})->name('admin.console.config')->middleware('auth');
+
+// 服务器配置更新 API
+Route::post('/admin/console/config', function (\Illuminate\Http\Request $request) {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) {
+        return response()->json(['ok' => false, 'message' => '仅管理员可操作'], 403);
+    }
+
+    $request->validate([
+        'mc_server_path' => 'nullable|string|max:500',
+        'rcon_host' => 'nullable|string|max:255',
+        'rcon_port' => 'nullable|string|max:10',
+        'rcon_password' => 'nullable|string|max:255',
+        'start_command' => 'nullable|string|max:1000',
+    ]);
+
+    $envPath = base_path('.env');
+    if (! file_exists($envPath) || ! is_writable($envPath)) {
+        return response()->json(['ok' => false, 'message' => '.env 文件不可写，请检查权限'], 500);
+    }
+
+    $content = file_get_contents($envPath);
+    $updated = [];
+
+    $map = [
+        'MC_SERVER_PATH' => $request->input('mc_server_path', ''),
+        'MC_RCON_HOST' => $request->input('rcon_host', '127.0.0.1'),
+        'MC_RCON_PORT' => $request->input('rcon_port', '25575'),
+        'MC_RCON_PASSWORD' => $request->input('rcon_password', ''),
+        'MC_START_COMMAND' => $request->input('start_command', ''),
+    ];
+
+    foreach ($map as $key => $value) {
+        $updated[$key] = $value;
+        $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
+        $line = $key . '=' . $value;
+        if (preg_match($pattern, $content)) {
+            $content = preg_replace($pattern, $line, $content);
+        } else {
+            $content .= "\n" . $line;
+        }
+    }
+
+    file_put_contents($envPath, $content);
+
+    // 同步运行时配置，避免需要重启服务器
+    config()->set('services.minecraft.log_path', $request->input('mc_server_path', ''));
+    config()->set('services.minecraft.rcon.host', $request->input('rcon_host', '127.0.0.1'));
+    config()->set('services.minecraft.rcon.port', (int) $request->input('rcon_port', 25575));
+    config()->set('services.minecraft.rcon.password', $request->input('rcon_password', ''));
+    config()->set('services.minecraft.start_command', $request->input('start_command', ''));
+
+    // 清除 opcache
+    if (function_exists('opcache_reset')) @opcache_reset();
+
+    return response()->json([
+        'ok' => true,
+        'message' => '配置已保存，如已修改路径或密码，请刷新页面后重试相关功能',
+        'updated' => $updated,
+    ]);
+})->name('admin.console.config.update')->middleware('auth');
+
 // 启动 MC 服务器 API
 Route::post('/admin/console/start', function () {
     if (! auth()->check() || ! auth()->user()->isAdmin()) {
@@ -223,7 +300,7 @@ Route::post('/admin/console/start', function () {
     }
 
     $command = trim((string) config('services.minecraft.start_command', ''));
-    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $mcPath = config('services.minecraft.log_path', '');
     $cwd = ! empty($mcPath) ? rtrim((string) $mcPath, '\\/') : null;
     // 未显式配置时自动识别常见启动脚本或服务端 JAR，仍可直接从网页启动。
     if ($command === '' && $cwd && is_dir($cwd)) {
@@ -273,7 +350,7 @@ Route::post('/admin/console/start', function () {
     }
 
     // 执行启动命令（后台运行）
-    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $mcPath = config('services.minecraft.log_path', '');
     $cwd = ! empty($mcPath) ? rtrim($mcPath, '\\/') : null;
 
     try {
@@ -308,7 +385,7 @@ Route::post('/admin/console/start', function () {
 // ── server.properties 读写 ──
 Route::get('/admin/console/properties', function () {
     if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
-    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $mcPath = config('services.minecraft.log_path', '');
     if (empty($mcPath)) return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH'], 200);
     $file = rtrim((string) $mcPath, '\\/') . '/server.properties';
     if (! file_exists($file) || ! is_readable($file)) return response()->json(['ok' => false, 'message' => '文件不可读：' . $file], 200);
@@ -325,7 +402,7 @@ Route::get('/admin/console/properties', function () {
 
 Route::post('/admin/console/properties', function (\Illuminate\Http\Request $r) {
     if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
-    $mcPath = config('services.minecraft.log_path', env('MC_SERVER_PATH'));
+    $mcPath = config('services.minecraft.log_path', '');
     if (empty($mcPath)) return response()->json(['ok' => false, 'message' => '未配置 MC_SERVER_PATH'], 500);
     $propPath = rtrim((string) $mcPath, '\\/') . '/server.properties';
     if (! file_exists($propPath)) return response()->json(['ok' => false, 'message' => '文件不存在：' . $propPath], 200);
@@ -417,7 +494,7 @@ Route::get('/api/server-status', [ServerStatusController::class, 'index'])->name
 
 // 临时：成员列表诊断页（访问 /players-test 查看原始数据，定位重复玩家）
 Route::get('/players-test', function () {
-    $basePath = rtrim((string) config('services.minecraft.log_path', env('MC_SERVER_PATH')), '\\/');
+    $basePath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
     $out = [];
 
     $out[] = '=== 配置 ===';

@@ -9,7 +9,7 @@
             <h1 class="page-title text-slate-900 flex items-center">
                 @include('layouts.partials.icons', ['name' => 'terminal', 'class' => 'w-6 h-6 mr-2 flex-shrink-0'])服务器控制台
             </h1>
-            <p class="text-slate-500 text-xs sm:text-sm mt-1" id="pageSubtitle">实时日志 + RCON 命令控制台</p>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1" id="pageSubtitle">实时日志 + RCON 命令 + 服务器配置</p>
         </div>
         <div class="flex items-center gap-2">
             <span id="serverStatus" class="badge text-xs sm:text-sm px-2.5 py-1 border bg-slate-100 text-slate-600 border-slate-200">
@@ -20,14 +20,56 @@
                 <span class="inline-block w-2 h-2 bg-slate-400 rounded-full mr-1"></span>
                 未连接
             </span>
-            <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5" title="启动 MC 服务器">
+<button type="button" id="configToggleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
+                @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4'])配置
+            </button>
+            <button type="button" id="startServerBtn" class="btn-primary text-xs sm:text-sm px-3 py-1.5 hidden" title="启动 MC 服务器">
                 @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])启动服务器
             </button>
-            <a href="{{ route('admin.console') }}?section=properties#serverPropsPanel" id="openPropsTopBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5 inline-flex items-center" title="打开服务器配置">
-                @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4 mr-1'])服务器配置
-            </a>
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])清屏
+            </button>
+        </div>
+    </div>
+
+    {{-- 服务器配置面板 --}}
+    <div id="configPanel" class="card p-3 sm:p-4 hidden">
+        <div class="flex items-center justify-between mb-3">
+            <p class="font-medium text-slate-900 text-sm flex items-center gap-1.5">
+                @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4'])服务器配置
+            </p>
+            <span id="configStatus" class="text-xs text-slate-400"></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">MC 服务器路径</label>
+                <input type="text" id="cfgMcServerPath" placeholder="/home/mc/server" class="input w-full text-sm py-2">
+                <p class="text-[11px] text-slate-400 mt-0.5">日志、玩家数据等文件的根目录</p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">RCON 主机</label>
+                <input type="text" id="cfgRconHost" placeholder="127.0.0.1" class="input w-full text-sm py-2">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">RCON 端口</label>
+                <input type="text" id="cfgRconPort" placeholder="25575" class="input w-full text-sm py-2">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">RCON 密码</label>
+                <input type="password" id="cfgRconPassword" placeholder="输入 RCON 密码" class="input w-full text-sm py-2">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs text-slate-500 mb-1">启动命令</label>
+                <input type="text" id="cfgStartCommand" placeholder="cd /home/mc/server && java -Xmx4G -jar server.jar nogui" class="input w-full text-sm py-2 font-mono">
+                <p class="text-[11px] text-slate-400 mt-0.5">仅在服务器未运行时可使用「启动服务器」按钮执行</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 mt-3">
+            <button type="button" id="saveConfigBtn" class="btn-primary text-xs px-4 py-2">
+                @include('layouts.partials.icons', ['name' => 'check', 'class' => 'w-3.5 h-3.5 mr-1'])保存配置
+            </button>
+            <button type="button" id="testRconBtn" class="btn-secondary text-xs px-4 py-2">
+                @include('layouts.partials.icons', ['name' => 'link', 'class' => 'w-3.5 h-3.5 mr-1'])测试 RCON
             </button>
         </div>
     </div>
@@ -193,15 +235,8 @@
     const statusEl = document.getElementById('rconStatus');
     const serverStatusEl = document.getElementById('serverStatus');
     const startServerBtn = document.getElementById('startServerBtn');
-    const openPropsTopBtn = document.getElementById('openPropsTopBtn');
-    if (openPropsTopBtn) {
-        openPropsTopBtn.addEventListener('click', function() {
-            const panel = document.getElementById('serverPropsPanel');
-            if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            const btn = document.getElementById('loadPropsBtn');
-            if (btn) btn.click();
-        });
-    }
+    const configToggleBtn = document.getElementById('configToggleBtn');
+    const configPanel = document.getElementById('configPanel');
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     // 日志控制
@@ -222,6 +257,7 @@
 
     // ========== localStorage 缓存 ==========
     const CACHE_KEY = 'mc_console_state';
+    const CONFIG_PANEL_KEY = 'mc_console_config_panel';
     function saveState() {
         try {
             localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -237,7 +273,6 @@
             const raw = localStorage.getItem(CACHE_KEY);
             if (!raw) return;
             const state = JSON.parse(raw);
-            // 只恢复 30 分钟内的缓存
             if (state.ts && Date.now() - state.ts < 30 * 60 * 1000) {
                 if (typeof state.logPos === 'number' && state.logPos > 0) logPos = state.logPos;
                 if (typeof state.logAutoScroll === 'boolean') logAutoScroll = state.logAutoScroll;
@@ -247,6 +282,111 @@
         } catch(e) {}
         return false;
     }
+
+    // ========== 服务器配置面板 ==========
+    configToggleBtn.addEventListener('click', function() {
+        configPanel.classList.toggle('hidden');
+        const isOpen = !configPanel.classList.contains('hidden');
+        try { localStorage.setItem(CONFIG_PANEL_KEY, isOpen); } catch(e) {}
+        if (isOpen) loadServerConfig();
+    });
+
+    // 恢复配置面板状态
+    try {
+        if (localStorage.getItem(CONFIG_PANEL_KEY) === 'true') {
+            configPanel.classList.remove('hidden');
+            loadServerConfig();
+        }
+    } catch(e) {}
+
+    async function loadServerConfig() {
+        try {
+            const res = await fetch('{{ route("admin.console.config") }}', { credentials: 'same-origin' });
+            const data = await res.json();
+            if (data && data.ok) {
+                document.getElementById('cfgMcServerPath').value = data.config.mc_server_path || '';
+                document.getElementById('cfgRconHost').value = data.config.rcon_host || '127.0.0.1';
+                document.getElementById('cfgRconPort').value = data.config.rcon_port || '25575';
+                document.getElementById('cfgRconPassword').value = data.config.rcon_password || '';
+                document.getElementById('cfgStartCommand').value = data.config.start_command || '';
+                document.getElementById('configStatus').textContent = '已加载';
+            }
+        } catch(e) {
+            document.getElementById('configStatus').textContent = '加载失败';
+        }
+    }
+
+    document.getElementById('saveConfigBtn').addEventListener('click', async function() {
+        const btn = this;
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>保存中</span>';
+
+        try {
+            const formData = new FormData();
+            formData.append('mc_server_path', document.getElementById('cfgMcServerPath').value.trim());
+            formData.append('rcon_host', document.getElementById('cfgRconHost').value.trim());
+            formData.append('rcon_port', document.getElementById('cfgRconPort').value.trim());
+            formData.append('rcon_password', document.getElementById('cfgRconPassword').value.trim());
+            formData.append('start_command', document.getElementById('cfgStartCommand').value.trim());
+            const res = await fetch('{{ route("admin.console.config.update") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: formData,
+            });
+            const data = await res.json();
+            if (data && data.ok) {
+                document.getElementById('configStatus').textContent = '已保存';
+                appendHtml('<span class="text-purple-400 bg-purple-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 配置已保存</span>');
+                // 重新检测服务器状态
+                checkServerStatus();
+                // 重新测试 RCON
+                testConnection();
+            } else {
+                document.getElementById('configStatus').textContent = '保存失败';
+                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 配置保存失败: ' + escapeHtml(data.message || '未知错误') + '</span>');
+            }
+        } catch(e) {
+            document.getElementById('configStatus').textContent = '网络错误';
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] 网络错误: ' + escapeHtml(e.message) + '</span>');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    });
+
+    document.getElementById('testRconBtn').addEventListener('click', async function() {
+        const btn = this;
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>测试中</span>';
+
+        try {
+            const formData = new FormData();
+            formData.append('command', 'list');
+            const res = await fetch('{{ route("admin.rcon") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: formData,
+            });
+            const data = await res.json();
+            if (data && data.ok) {
+                appendHtml('<span class="text-green-400 bg-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 连接测试成功</span>');
+                setStatus('已连接', 'green');
+            } else {
+                appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 连接测试失败: ' + escapeHtml(data.message || '') + '</span>');
+                setStatus('未连接', 'red');
+            }
+        } catch(e) {
+            appendHtml('<span class="text-red-400 bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[系统] RCON 测试网络错误: ' + escapeHtml(e.message) + '</span>');
+            setStatus('未连接', 'red');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    });
 
     function scrollToBottom() {
         if (!logAutoScroll) return;
@@ -353,6 +493,10 @@
                 } else if (/\b(WARN|ERROR|Exception|FATAL|SEVERE)\b/i.test(raw)) {
                     cls = 'text-red-400';
                     bg = 'bg-red-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4';
+                } else if (/\bRCON (Client|Listener)\b/i.test(raw)) {
+                    // 屏蔽 RCON 连接/断开日志
+                    cls = 'text-slate-700';
+                    bg = 'opacity-40';
                 }
 
                 appendHtml(timePrefix + '<span class="' + cls + (bg ? ' ' + bg : '') + '">' + escapeHtml(raw) + '</span>');
@@ -414,7 +558,6 @@
         }
         cmdHistoryIndex = cmdHistory.length;
 
-        // 暂停日志滚动防止被命令输出打断
         const wasAutoScroll = logAutoScroll;
         logAutoScroll = true;
 
@@ -426,7 +569,6 @@
         const now = new Date();
         const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
 
-        // 命令输入行：青色背景高亮
         appendHtml('<span class="text-amber-400 bg-amber-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4">[' + timeStr + '] <span class="text-amber-300 font-bold">$</span> ' + escapeHtml(command) + '</span>');
 
         try {
@@ -496,7 +638,6 @@
         output.innerHTML = '';
         logLineCount = 0;
         logPos = 0;
-        // 清除 localStorage 缓存
         try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
     }
 
@@ -517,7 +658,6 @@
         });
     });
 
-    // 初始焦点
     input.focus();
 
     // ========== 服务器状态检测与启动 ==========
@@ -528,9 +668,7 @@
             if (data && data.ok) {
                 updateServerStatusUI(data.running);
             }
-        } catch(e) {
-            // 静默失败
-        }
+        } catch(e) {}
     }
 
     function updateServerStatusUI(running) {
@@ -609,7 +747,7 @@
     setInterval(checkServerStatus, 30000);
 
     // 测试 RCON 连接（静默，仅更新状态）
-    (async function testConnection() {
+    async function testConnection() {
         try {
             const formData = new FormData();
             formData.append('command', 'list');
@@ -624,18 +762,16 @@
         } catch(e) {
             setStatus('未连接', 'red');
         }
-    })();
+    }
+    testConnection();
 
     // 启动日志轮询
-    // 恢复缓存状态
     const restored = loadState();
 
-    // 恢复暂停按钮状态
     if (logPaused) {
         logPauseBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>继续';
     }
 
-    // 恢复自动滚动按钮状态
     if (!logAutoScroll) {
         logAutoScrollBtn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>已锁定';
         logJumpBottomBtn.classList.remove('hidden');

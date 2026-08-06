@@ -61,6 +61,7 @@ class ServerStatusController extends Controller
             $name = isset($p['name']) ? preg_replace('/§./', '', $p['name']) : '';
             $uuid = $p['id'] ?? ($p['uuid'] ?? '');
             $p['avatar'] = PlayerAvatarService::url($name, $uuid);
+            $p['avatar_fallback'] = PlayerAvatarService::initialAvatar($name);
             return $p;
         }, $players);
     }

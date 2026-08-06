@@ -126,6 +126,8 @@ Route::get('/admin/console/log', function (\Illuminate\Http\Request $request) {
     }
 
     $lines = [];
+    // 解析器只创建一次，避免每一行都解析 Laravel 容器造成控制台首次加载缓慢。
+    $chatParser = app(\App\Services\MinecraftLogSyncService::class);
     $pos = ftell($handle);
     $lineNum = 0;
 
@@ -136,8 +138,7 @@ Route::get('/admin/console/log', function (\Illuminate\Http\Request $request) {
 
         // 解析是否为聊天消息
         $chat = null;
-        $service = app(\App\Services\MinecraftLogSyncService::class);
-        $parsed = $service->parseLine($line);
+        $parsed = $chatParser->parseLine($line);
         if ($parsed) {
             $chat = ['player' => $parsed['player'], 'message' => $parsed['message']];
         }
@@ -161,6 +162,42 @@ Route::get('/admin/console/log', function (\Illuminate\Http\Request $request) {
         'log_path' => $logPath,
     ]);
 })->name('admin.console.log')->middleware('auth');
+
+// 下载当前 MC 世界存档（管理员）。使用 PHP ZipArchive 在 Windows 下直接打包。
+Route::get('/admin/console/world-download', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
+    if (! class_exists(\ZipArchive::class)) return response('服务器未启用 PHP zip 扩展，无法下载存档。', 500);
+    $mcPath = rtrim((string) config('services.minecraft.log_path', env('MC_SERVER_PATH')), '\\/');
+    if ($mcPath === '' || ! is_dir($mcPath)) return response('MC_SERVER_PATH 目录不存在。', 404);
+    $worldName = 'world';
+    $properties = $mcPath . DIRECTORY_SEPARATOR . 'server.properties';
+    if (is_readable($properties)) {
+        foreach (file($properties, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            if (str_starts_with(trim($line), 'level-name=')) { $worldName = trim(substr(trim($line), 11)); break; }
+        }
+    }
+    $worldName = basename(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $worldName));
+    $worldPath = $mcPath . DIRECTORY_SEPARATOR . $worldName;
+    if (! is_dir($worldPath)) return response('未找到世界存档目录：' . $worldName, 404);
+    $temp = tempnam(sys_get_temp_dir(), 'mc-world-');
+    if ($temp === false) return response('无法创建临时下载文件。', 500);
+    @unlink($temp);
+    $zipPath = $temp . '.zip';
+    try {
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) throw new \RuntimeException('无法创建 ZIP 文件。');
+        $root = rtrim($worldPath, '\\/') . DIRECTORY_SEPARATOR;
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($worldPath, \FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            if ($file->isFile()) $zip->addFile($file->getPathname(), $worldName . '/' . substr($file->getPathname(), strlen($root)));
+        }
+        $zip->close();
+        return response()->download($zipPath, $worldName . '-backup-' . now()->format('Ymd-His') . '.zip')->deleteFileAfterSend(true);
+    } catch (\Throwable $e) {
+        @unlink($zipPath);
+        return response('存档打包失败：' . $e->getMessage(), 500);
+    }
+})->name('admin.console.world-download')->middleware('auth');
 
 // 服务器状态检测 API
 Route::get('/admin/console/status', function () {

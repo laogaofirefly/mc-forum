@@ -50,7 +50,7 @@
                                 $avatarUrl = \App\Services\PlayerAvatarService::url($playerName, $playerUuid);
                             @endphp
                             <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg pl-1 pr-2 py-1">
-                                <img src="{{ $avatarUrl }}" alt="{{ $playerName }}" class="w-6 h-6 rounded-md mr-1.5 object-cover bg-white flex-shrink-0" loading="lazy">
+                                <img src="{{ $avatarUrl }}" alt="{{ $playerName }}" data-fallback="{{ \App\Services\PlayerAvatarService::initialAvatar($playerName) }}" onerror="this.src=this.dataset.fallback;this.onerror=null" class="w-6 h-6 rounded-md mr-1.5 object-cover bg-white flex-shrink-0" loading="lazy">
                                 <span class="text-slate-700 text-sm">{{ $playerName }}</span>
                             </div>
                         @endforeach
@@ -116,7 +116,7 @@
                     const name = (p.name || '未知').replace(/§./g, '');
                     const avatar = p.avatar || '';
                     return '<div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg pl-1 pr-2 py-1">' +
-                        (avatar ? '<img src="' + escapeHtml(avatar) + '" alt="' + escapeHtml(name) + '" class="w-6 h-6 rounded-md mr-1.5 object-cover bg-white flex-shrink-0" loading="lazy">' : '') +
+                        (avatar ? '<img src="' + escapeHtml(avatar) + '" alt="' + escapeHtml(name) + '" data-fallback="' + escapeHtml(p.avatar_fallback || '') + '" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.onerror=null}" class="w-6 h-6 rounded-md mr-1.5 object-cover bg-white flex-shrink-0" loading="lazy">' : '') +
                         '<span class="text-slate-700 text-sm">' + escapeHtml(name) + '</span></div>';
                 }).join('') + '</div>'
                 : (data.players_online > 0

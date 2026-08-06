@@ -26,13 +26,12 @@ class GameChatController extends Controller
     {
         // 页面轮询时增量同步日志，避免依赖常驻的 chat:sync --watch 进程。
         $lockKey = 'mc_chat_log_sync_lock';
-        if (Cache::add($lockKey, 1, now()->addSeconds(1))) {
+        // 两秒节流：避免每个浏览器轮询都重复打开和扫描同一份日志。
+        if (Cache::add($lockKey, 1, now()->addSeconds(2))) {
             try {
                 $syncService->sync();
             } catch (\Throwable $e) {
                 Log::warning('游戏聊天日志同步失败', ['error' => $e->getMessage()]);
-            } finally {
-                Cache::forget($lockKey);
             }
         }
 

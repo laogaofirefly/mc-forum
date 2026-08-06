@@ -26,6 +26,12 @@
             <button type="button" id="startServerBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5 hidden" title="启动 MC 服务器" disabled>
                 @include('layouts.partials.icons', ['name' => 'play', 'class' => 'w-4 h-4 mr-1'])检测中...
             </button>
+            <a href="{{ route('admin.console') }}?section=properties#serverPropsPanel" id="openPropsTopBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5 inline-flex items-center" title="打开服务器配置">
+                @include('layouts.partials.icons', ['name' => 'cog', 'class' => 'w-4 h-4 mr-1'])服务器配置
+            </a>
+            <a href="{{ route('admin.console.world-download') }}" class="btn-secondary text-xs sm:text-sm px-3 py-1.5 inline-flex items-center" title="下载当前世界存档">
+                下载存档
+            </a>
             <button type="button" id="clearConsoleBtn" class="btn-secondary text-xs sm:text-sm px-3 py-1.5">
                 @include('layouts.partials.icons', ['name' => 'scroll', 'class' => 'w-4 h-4'])清屏
             </button>
@@ -431,7 +437,6 @@
     const logAutoScrollBtn = document.getElementById('logAutoScrollBtn');
     const logInfo = document.getElementById('logInfo');
 
-    // ========== 自适应日志轮询 ==========
     let logPaused = false;
     let logAutoScroll = true;
     let logTimer = null;
@@ -454,7 +459,6 @@
     const LOG_BURST_MAX = 3;               // 最多连续快速轮询次数
     const LOG_IDLE_THRESHOLD = 6;          // 连续 N 次无数据后降速
 
-    // ========== localStorage 缓存 ==========
     const CACHE_KEY = 'mc_console_state';
     const CONFIG_PANEL_KEY = 'mc_console_config_panel';
     function saveState() {
@@ -482,7 +486,6 @@
         return false;
     }
 
-    // ========== 服务器配置面板 ==========
     configToggleBtn.addEventListener('click', function() {
         configPanel.classList.toggle('hidden');
         const isOpen = !configPanel.classList.contains('hidden');
@@ -664,7 +667,6 @@
         return d.innerHTML;
     }
 
-    // ========== 自适应日志轮询（核心） ==========
     function getLogPollInterval() {
         if (document.hidden) return LOG_POLL_HIDDEN;
         if (logErrorCount > 0) return Math.min(LOG_POLL_ERROR_BASE * Math.pow(2, logErrorCount - 1), 30000);
@@ -824,7 +826,6 @@
         output.scrollTop = output.scrollHeight;
     });
 
-    // ========== 命令执行 ==========
     async function executeCommand(cmd) {
         if (executing) return;
         const command = cmd.trim();
@@ -937,7 +938,6 @@
 
     input.focus();
 
-    // ========== 服务器状态检测与启动 ==========
     async function checkServerStatus() {
         try {
             const res = await fetch('{{ route("admin.console.status") }}', { credentials: 'same-origin' });
@@ -1032,7 +1032,6 @@
         }
     });
 
-    // ========== 世界存档下载 ==========
     const downloadWorldBtn = document.getElementById('downloadWorldBtn');
     let downloading = false;
     downloadWorldBtn.addEventListener('click', async function() {

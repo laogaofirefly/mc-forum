@@ -113,27 +113,41 @@ Route::get('/map/data', function () {
             $localCandidates = [
                 $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_config.json',
                 $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_world.json',
+                // 很多 Dynmap 版本使用 JS 包装数据，而不是 .json 文件。
+                $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'config.js',
+                $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_config.js',
                 $webPath . DIRECTORY_SEPARATOR . 'dynmap_config.json',
                 $webPath . DIRECTORY_SEPARATOR . 'dynmap_world.json',
+                $webPath . DIRECTORY_SEPARATOR . 'config.js',
             ];
+            $decodeDynmapData = static function (string $contents): ?array {
+                $json = json_decode($contents, true);
+                if (is_array($json)) return $json;
+                // 兼容 var config = {...};、var dynmapconfig = {...}; 这样的 standalone 输出。
+                if (preg_match('/(?:var\\s+)?[A-Za-z_$][\\w$]*\\s*=\\s*(\\{.*\\}|\\[.*\\])\\s*;?\\s*$/s', trim($contents), $match)) {
+                    $json = json_decode($match[1], true);
+                    if (is_array($json)) return $json;
+                }
+                return null;
+            };
             foreach ($localCandidates as $file) {
                 if (is_file($file) && is_readable($file)) {
-                    $json = json_decode((string) file_get_contents($file), true);
+                    $json = $decodeDynmapData((string) file_get_contents($file));
                     if (is_array($json)) return $json;
                 }
             }
 
             $attempts = [];
-            foreach (['/standalone/dynmap_config.json', '/standalone/dynmap_world.json'] as $path) {
+            foreach (['/standalone/dynmap_config.json', '/standalone/dynmap_world.json', '/standalone/config.js', '/standalone/dynmap_config.js'] as $path) {
                 try {
-                    $response = Http::connectTimeout(2)->timeout(5)->acceptJson()->get($dynmapUrl . $path);
+                    $response = Http::connectTimeout(2)->timeout(5)->get($dynmapUrl . $path);
                     $attempts[] = $path . ' (HTTP ' . $response->status() . ')';
-                    if ($response->successful() && is_array($response->json())) return $response->json();
+                    if ($response->successful() && ($json = $decodeDynmapData($response->body()))) return $json;
                 } catch (\Throwable $e) {
                     $attempts[] = $path . ' (' . $e->getMessage() . ')';
                 }
             }
-            throw new \RuntimeException('Dynmap 未返回可用 JSON。已尝试本地目录：' . $webPath . '；HTTP：' . implode('，', $attempts));
+            throw new \RuntimeException('Dynmap 未返回可识别的数据。已尝试本地目录：' . $webPath . '；HTTP：' . implode('，', $attempts));
         });
 
         return response()->json(['ok' => true, 'data' => $data])

@@ -120,6 +120,30 @@ Route::get('/map/data', function () {
     }
 })->name('dynmap.data');
 
+// 原生地图瓦片代理：浏览器只访问论坛同源接口，且严格限制为 Dynmap tiles 目录下的安全路径。
+Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $map, string $tile) {
+    $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');
+    $safeSegment = static fn (string $value): bool => preg_match('/^[A-Za-z0-9_-]+$/', $value) === 1;
+    if ($dynmapUrl === '' || ! $safeSegment($world) || ! $safeSegment($map)
+        || str_contains($tile, '..') || preg_match('/^[A-Za-z0-9_\/-]+\.png$/', $tile) !== 1) {
+        abort(404);
+    }
+
+    try {
+        $response = Http::timeout(5)->get($dynmapUrl . '/tiles/' . rawurlencode($world) . '/' . rawurlencode($map) . '/' . $tile);
+        if (! $response->successful()) {
+            abort($response->status() === 404 ? 404 : 502);
+        }
+        return response($response->body(), 200, [
+            'Content-Type' => $response->header('Content-Type', 'image/png'),
+            'Cache-Control' => 'public, max-age=300',
+        ]);
+    } catch (\Throwable $e) {
+        report($e);
+        abort(502, '地图瓦片加载失败');
+    }
+})->where(['world' => '[A-Za-z0-9_-]+', 'map' => '[A-Za-z0-9_-]+', 'tile' => '[A-Za-z0-9_\\/-]+\\.png'])->name('dynmap.tile');
+
 // 服务器监控已合并到控制台，保留路由重定向
 Route::get('/admin/monitor', function () {
     return redirect()->route('admin.console');

@@ -236,6 +236,37 @@ Route::get('/map/tiles-manifest/{world}/{map}', function (string $world, string 
     return response()->json(['ok' => true, 'tiles' => $tiles])->header('Cache-Control', 'no-store');
 })->name('dynmap.tiles-manifest');
 
+// 管理员诊断接口：手机浏览器也可直接查看 Dynmap 目录、世界、图层和真实瓦片路径。
+Route::get('/map/debug', function () {
+    if (! auth()->check() || ! auth()->user()->isAdmin()) abort(403);
+    $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+    $webPath = rtrim((string) config('services.minecraft.dynmap_web_path', ''), '\\/');
+    if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
+    $tilesPath = $webPath . DIRECTORY_SEPARATOR . 'tiles';
+    $files = [];
+    if (is_dir($tilesPath) && is_readable($tilesPath)) {
+        try {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($tilesPath, \FilesystemIterator::SKIP_DOTS)) as $file) {
+                if ($file->isFile()) {
+                    $files[] = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($tilesPath) + 1));
+                    if (count($files) >= 30) break;
+                }
+            }
+        } catch (\Throwable $e) {
+            $files[] = '扫描异常：' . $e->getMessage();
+        }
+    }
+    return response()->json([
+        'mc_server_path' => $mcPath,
+        'dynmap_web_path' => $webPath,
+        'web_directory_exists' => is_dir($webPath),
+        'tiles_path' => $tilesPath,
+        'tiles_directory_exists' => is_dir($tilesPath),
+        'tiles_directory_readable' => is_readable($tilesPath),
+        'sample_files' => $files,
+    ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+})->name('dynmap.debug')->middleware('auth');
+
 // 使用查询参数代理瓦片，避免 Windows/Dynmap 的嵌套瓦片路径中的 / 被 Laravel 路由截断。
 Route::get('/map/tile-file', function (\Illuminate\Http\Request $request) {
     $world = (string) $request->query('world', '');

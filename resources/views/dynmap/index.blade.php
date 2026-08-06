@@ -1,37 +1,19 @@
 @extends('layouts.app')
-
 @section('title', '在线地图')
-
 @section('content')
 <div class="space-y-5 sm:space-y-6">
-    <div class="card p-5 sm:p-6 bg-gradient-to-br from-emerald-500 to-teal-700 border-0 text-white">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h1 class="text-2xl font-bold flex items-center gap-2">
-                    <span aria-hidden="true">🗺️</span> Minecraft 在线地图
-                </h1>
-                <p class="mt-1 text-emerald-50">实时浏览服务器世界、玩家位置和地标。</p>
-            </div>
-            <a href="{{ $dynmapUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50">
-                在新窗口打开地图 ↗
-            </a>
-        </div>
-    </div>
-
-    <div class="card overflow-hidden">
-        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
-            <h2 class="font-bold text-slate-800">Dynmap</h2>
-            <a href="{{ $dynmapUrl }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-primary-600 hover:text-primary-700">无法加载？新窗口打开</a>
-        </div>
-        <iframe
-            src="{{ $dynmapUrl }}"
-            title="Minecraft Dynmap 在线地图"
-            class="block h-[72vh] min-h-[560px] w-full border-0 bg-slate-100"
-            loading="eager"
-            referrerpolicy="strict-origin-when-cross-origin"
-        >
-            你的浏览器不支持内嵌地图。请使用上方“在新窗口打开地图”。
-        </iframe>
-    </div>
+ <section class="card overflow-hidden border-0 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-5 text-white sm:p-7"><div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center"><div><p class="text-sm font-semibold tracking-wider text-emerald-100">DYNMAP · LIVE</p><h1 class="mt-1 text-2xl font-bold sm:text-3xl">服务器在线地图</h1><p class="mt-2 text-emerald-50">论坛原生地图中心：世界、图层与实时状态统一展示。</p></div><a href="{{ $dynmapUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 font-semibold text-emerald-700 shadow transition hover:bg-emerald-50">打开完整 Dynmap ↗</a></div></section>
+ <section class="grid gap-4 sm:grid-cols-3"><div class="card p-5"><p class="text-sm text-slate-500">地图服务</p><p id="mapConnection" class="mt-1 text-xl font-bold text-slate-700">连接中…</p></div><div class="card p-5"><p class="text-sm text-slate-500">世界数量</p><p id="worldCount" class="mt-1 text-xl font-bold text-slate-700">—</p></div><div class="card p-5"><p class="text-sm text-slate-500">最后同步</p><p id="lastSync" class="mt-1 text-xl font-bold text-slate-700">—</p></div></section>
+ <section class="card overflow-hidden"><div class="flex items-center justify-between border-b border-slate-100 px-5 py-4"><div><h2 class="font-bold text-slate-800">世界与图层</h2><p class="mt-0.5 text-sm text-slate-500">由 Dynmap 自动读取</p></div><button id="refreshMapData" type="button" class="rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-100">刷新</button></div><div id="worldList" class="divide-y divide-slate-100"><div class="p-8 text-center text-slate-400">正在读取地图数据…</div></div></section>
+ <section class="card p-5"><h2 class="font-bold text-slate-800">使用说明</h2><p class="mt-2 text-sm leading-6 text-slate-500">此页面使用论坛原生界面展示 Dynmap 服务信息和世界图层。完整的缩放、平移、标记及渲染由“打开完整 Dynmap”提供，避免跨域 iframe 的加载与安全策略问题。</p></section>
 </div>
+<script>
+(() => {
+ const list=document.getElementById('worldList'),status=document.getElementById('mapConnection'),count=document.getElementById('worldCount'),sync=document.getElementById('lastSync');
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'"',"'":'&#039;'}[c]));
+ const worldsOf=d=>{const s=d.worlds||d.world||d.maps||[];return Array.isArray(s)?s:(s&&typeof s==='object'?Object.entries(s).map(([name,item])=>({name,...(item||{})})):[])};
+ async function load(){status.textContent='连接中…';try{const r=await fetch('{{ route('dynmap.data') }}?_='+Date.now(),{cache:'no-store'}),p=await r.json();if(!r.ok||!p.ok)throw Error(p.message||'读取失败');const ws=worldsOf(p.data);status.textContent='运行正常';status.className='mt-1 text-xl font-bold text-emerald-600';count.textContent=ws.length;sync.textContent=new Date().toLocaleTimeString();list.innerHTML=ws.length?ws.map(w=>{const n=w.title||w.name||w.id||'未命名世界',ms=Array.isArray(w.maps)?w.maps:(Array.isArray(w.map)?w.map:[]),layers=ms.map(m=>esc(m.title||m.name||m.prefix||'默认图层')).join('、')||'默认图层';return `<div class="flex items-center gap-4 p-5"><div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl">🌍</div><div class="min-w-0"><h3 class="font-semibold text-slate-800">${esc(n)}</h3><p class="mt-1 truncate text-sm text-slate-500">图层：${layers}</p></div></div>`}).join(''):'<div class="p-8 text-center text-slate-400">Dynmap 已连接，但尚未返回世界列表。</div>'}catch(e){status.textContent='连接失败';status.className='mt-1 text-xl font-bold text-red-600';list.innerHTML=`<div class="p-8 text-center text-slate-500">${esc(e.message)}。请检查 DYNMAP_URL 和 Dynmap 服务。</div>`}}
+ document.getElementById('refreshMapData').addEventListener('click',load);load();setInterval(load,30000);
+})();
+</script>
 @endsection

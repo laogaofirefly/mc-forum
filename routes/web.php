@@ -13,6 +13,8 @@ use App\Http\Controllers\ServerStatusController;
 use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -85,19 +87,38 @@ Route::middleware('auth')->group(function () {
 // MC 服务器成员名单
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 
-// Dynmap 在线地图：仅嵌入已由服务器管理员配置的公开地图地址。
+// Dynmap 原生地图：Laravel 从同机 Dynmap 读取数据，再由论坛页面渲染，避免 iframe 限制。
 Route::get('/map', function () {
-    $dynmapUrl = trim((string) config('services.minecraft.dynmap_url', ''));
-    if ($dynmapUrl === '') {
+    $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');
+    if ($dynmapUrl === '' || ! filter_var($dynmapUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($dynmapUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
         abort(503, '在线地图暂未配置');
     }
 
-    if (! filter_var($dynmapUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($dynmapUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
-        abort(503, '在线地图地址配置无效');
+    return view('dynmap.index', ['dynmapUrl' => $dynmapUrl]);
+})->name('dynmap.index');
+
+Route::get('/map/data', function () {
+    $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');
+    if ($dynmapUrl === '' || ! filter_var($dynmapUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($dynmapUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
+        return response()->json(['ok' => false, 'message' => '在线地图暂未配置'], 503);
     }
 
-    return view('dynmap.index', ['dynmapUrl' => rtrim($dynmapUrl, '/')]);
-})->name('dynmap.index');
+    try {
+        $data = Cache::remember('dynmap.component.data', now()->addSeconds(3), function () use ($dynmapUrl) {
+            $response = Http::timeout(4)->acceptJson()->get($dynmapUrl . '/standalone/dynmap_world.json');
+            if (! $response->successful()) {
+                throw new \RuntimeException('Dynmap 数据接口响应异常（HTTP ' . $response->status() . '）');
+            }
+            return $response->json();
+        });
+
+        return response()->json(['ok' => true, 'data' => $data])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    } catch (\Throwable $e) {
+        report($e);
+        return response()->json(['ok' => false, 'message' => '无法连接 Dynmap 数据接口，请确认 Dynmap 已启动且 standalone 文件已启用'], 502);
+    }
+})->name('dynmap.data');
 
 // 服务器监控已合并到控制台，保留路由重定向
 Route::get('/admin/monitor', function () {

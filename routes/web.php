@@ -121,12 +121,31 @@ Route::get('/map/data', function () {
                 $webPath . DIRECTORY_SEPARATOR . 'config.js',
             ];
             $decodeDynmapData = static function (string $contents): ?array {
+                $contents = preg_replace('/^\xEF\xBB\xBF/', '', trim($contents));
                 $json = json_decode($contents, true);
                 if (is_array($json)) return $json;
-                // 兼容 var config = {...};、var dynmapconfig = {...}; 这样的 standalone 输出。
-                if (preg_match('/(?:var\\s+)?[A-Za-z_$][\\w$]*\\s*=\\s*(\\{.*\\}|\\[.*\\])\\s*;?\\s*$/s', trim($contents), $match)) {
-                    $json = json_decode($match[1], true);
-                    if (is_array($json)) return $json;
+
+                // config.js 在不同 Dynmap 版本中可能带注释、尾部脚本或 var config = 前缀。
+                // 不依赖“文件必须以 }; 结尾”的正则，直接提取首个完整 JSON 对象。
+                $start = strcspn($contents, '{[');
+                if ($start >= strlen($contents)) return null;
+                $open = $contents[$start];
+                $close = $open === '{' ? '}' : ']';
+                $depth = 0; $quoted = false; $escaped = false;
+                for ($i = $start, $len = strlen($contents); $i < $len; $i++) {
+                    $char = $contents[$i];
+                    if ($quoted) {
+                        if ($escaped) { $escaped = false; continue; }
+                        if ($char === '\\') { $escaped = true; continue; }
+                        if ($char === '"') $quoted = false;
+                        continue;
+                    }
+                    if ($char === '"') { $quoted = true; continue; }
+                    if ($char === $open) $depth++;
+                    if ($char === $close && --$depth === 0) {
+                        $json = json_decode(substr($contents, $start, $i - $start + 1), true);
+                        return is_array($json) ? $json : null;
+                    }
                 }
                 return null;
             };

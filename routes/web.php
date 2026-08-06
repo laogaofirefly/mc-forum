@@ -216,6 +216,26 @@ Route::get('/map/config-script', function () {
     }
 })->name('dynmap.config-script');
 
+// 返回指定图层中真实存在的瓦片文件名。不同 Dynmap 版本的瓦片目录层级不同，前端不再猜测文件名。
+Route::get('/map/tiles-manifest/{world}/{map}', function (string $world, string $map) {
+    if (preg_match('/^[A-Za-z0-9_-]+$/', $world) !== 1 || preg_match('/^[A-Za-z0-9_-]+$/', $map) !== 1) abort(404);
+    $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+    $webPath = rtrim((string) config('services.minecraft.dynmap_web_path', ''), '\\/');
+    if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
+    $base = $webPath . DIRECTORY_SEPARATOR . 'tiles' . DIRECTORY_SEPARATOR . $world . DIRECTORY_SEPARATOR . $map;
+    if (! is_dir($base) || ! is_readable($base)) return response()->json(['ok' => true, 'tiles' => []]);
+
+    $tiles = [];
+    $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS));
+    foreach ($iterator as $file) {
+        if (! $file->isFile() || strtolower($file->getExtension()) !== 'png') continue;
+        $path = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($base) + 1));
+        $tiles[] = $path;
+        if (count($tiles) >= 2500) break;
+    }
+    return response()->json(['ok' => true, 'tiles' => $tiles])->header('Cache-Control', 'no-store');
+})->name('dynmap.tiles-manifest');
+
 // 原生地图瓦片代理：浏览器只访问论坛同源接口，且严格限制为 Dynmap tiles 目录下的安全路径。
 Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $map, string $tile) {
     $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');

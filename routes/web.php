@@ -177,6 +177,28 @@ Route::get('/map/data', function () {
     }
 })->name('dynmap.data');
 
+// Dynmap 原始 config.js 同源代理：其内容可能是 JavaScript 而非严格 JSON，交由浏览器原生执行。
+Route::get('/map/config-script', function () {
+    $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');
+    $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+    $webPath = rtrim((string) config('services.minecraft.dynmap_web_path', ''), '\\/');
+    if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
+    $localFile = $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'config.js';
+    try {
+        if (is_file($localFile) && is_readable($localFile)) {
+            $body = (string) file_get_contents($localFile);
+        } else {
+            $response = Http::connectTimeout(2)->timeout(5)->get($dynmapUrl . '/standalone/config.js');
+            if (! $response->successful()) abort(502, 'Dynmap config.js 不可访问');
+            $body = $response->body();
+        }
+        return response($body, 200, ['Content-Type' => 'application/javascript; charset=UTF-8', 'Cache-Control' => 'no-store']);
+    } catch (\Throwable $e) {
+        report($e);
+        abort(502, 'Dynmap config.js 加载失败');
+    }
+})->name('dynmap.config-script');
+
 // 原生地图瓦片代理：浏览器只访问论坛同源接口，且严格限制为 Dynmap tiles 目录下的安全路径。
 Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $map, string $tile) {
     $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');

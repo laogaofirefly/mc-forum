@@ -8,7 +8,7 @@
 <style>#tileLayer{transform-origin:0 0}.dyn-tile{position:absolute;width:128px;height:128px;image-rendering:auto}</style>
 <script>
 (() => {
- const dataUrl='{{ route('dynmap.data') }}', tileBase='{{ url('/map/tile') }}';
+ const dataUrl='{{ route('dynmap.data') }}', configScriptUrl='{{ route('dynmap.config-script') }}', tileBase='{{ url('/map/tile') }}';
  const viewport=document.getElementById('mapViewport'),layer=document.getElementById('tileLayer'),loading=document.getElementById('mapLoading'),worldSel=document.getElementById('worldSelect'),mapSel=document.getElementById('mapSelect'),hint=document.getElementById('mapHint');
  let worlds=[],currentWorld=null,currentMap=null,state={x:0,y:0,scale:1},drag=null;
  const safe=s=>encodeURIComponent(String(s||''));
@@ -19,7 +19,7 @@
  function apply(){layer.style.transform=`translate(${state.x}px,${state.y}px) scale(${state.scale})`;}
  function center(){state={x:viewport.clientWidth/2,y:viewport.clientHeight/2,scale:1};apply()}
  function choose(){currentWorld=worlds[worldSel.value];const maps=mapsOf(currentWorld);mapSel.innerHTML=maps.map((m,i)=>`<option value="${i}">${m.title||m.name||m.prefix||'默认图层'}</option>`).join('');currentMap=maps[0]||{name:'flat',prefix:'flat'};center();render()}
- async function boot(){try{const r=await fetch(dataUrl+'?_='+Date.now(),{cache:'no-store'}),p=await r.json();if(!r.ok||!p.ok)throw Error(p.message||'Dynmap 数据读取失败');worlds=getWorlds(p.data);if(!worlds.length)throw Error('Dynmap 未返回世界数据');worldSel.innerHTML=worlds.map((w,i)=>`<option value="${i}">${w.title||w.name||w.id||'世界'}</option>`).join('');choose()}catch(e){loading.textContent=e.message;hint.textContent='连接失败'}}
+ async function boot(){try{let data;const r=await fetch(dataUrl+'?_='+Date.now(),{cache:'no-store'}),p=await r.json();if(r.ok&&p.ok)data=p.data;else{await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=configScriptUrl+'?_='+Date.now();s.onload=resolve;s.onerror=()=>reject(Error('Dynmap config.js 加载失败'));document.head.appendChild(s)});data=window.config||window.dynmapconfig||window.DynmapConfig;if(!data)throw Error(p.message||'Dynmap 配置数据读取失败')}worlds=getWorlds(data);if(!worlds.length)throw Error('Dynmap 未返回世界数据');worldSel.innerHTML=worlds.map((w,i)=>`<option value="${i}">${w.title||w.name||w.id||'世界'}</option>`).join('');choose()}catch(e){loading.textContent=e.message;hint.textContent='连接失败'}}
  worldSel.onchange=choose;mapSel.onchange=()=>{currentMap=mapsOf(currentWorld)[mapSel.value]||currentMap;center();render()};document.getElementById('homeMap').onclick=center;
  viewport.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,ox:state.x,oy:state.y};viewport.setPointerCapture(e.pointerId);viewport.classList.replace('cursor-grab','cursor-grabbing')});viewport.addEventListener('pointermove',e=>{if(!drag)return;state.x=drag.ox+e.clientX-drag.x;state.y=drag.oy+e.clientY-drag.y;apply()});viewport.addEventListener('pointerup',()=>{drag=null;viewport.classList.replace('cursor-grabbing','cursor-grab')});viewport.addEventListener('wheel',e=>{e.preventDefault();const before=state.scale,stateNew=Math.max(.4,Math.min(3,before*(e.deltaY<0?1.15:.87))),rect=viewport.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;state.x=mx-(mx-state.x)*(stateNew/before);state.y=my-(my-state.y)*(stateNew/before);state.scale=stateNew;apply()},{passive:false});window.addEventListener('resize',center);boot();
 })();

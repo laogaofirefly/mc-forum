@@ -8,7 +8,8 @@
 <style>#tileLayer{transform-origin:0 0}.dyn-tile{position:absolute;width:128px;height:128px;image-rendering:auto}</style>
 <script>
 (() => {
- const dataUrl='{{ route('dynmap.data') }}', configScriptUrl='{{ route('dynmap.config-script') }}', tileBase='{{ url('/map/tile') }}', tileFileUrl='{{ route('dynmap.tile-file') }}';
+ // 全部使用相对地址，避免 Windows 部署中 APP_URL 为 localhost/旧域名时，访客请求到错误服务器而出现 404。
+ const dataUrl='/map/data', configScriptUrl='/map/config-script', tileBase='/map/tile', tileFileUrl='/map/tile-file';
  const viewport=document.getElementById('mapViewport'),layer=document.getElementById('tileLayer'),loading=document.getElementById('mapLoading'),worldSel=document.getElementById('worldSelect'),mapSel=document.getElementById('mapSelect'),hint=document.getElementById('mapHint');
  let worlds=[],currentWorld=null,currentMap=null,state={x:0,y:0,scale:1},drag=null;
  const safe=s=>encodeURIComponent(String(s||''));

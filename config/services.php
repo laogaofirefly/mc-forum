@@ -49,6 +49,8 @@ return [
         'query_port' => env('MC_QUERY_PORT', 25565),
         // Dynmap 对外访问地址，例如 https://map.example.com 或 http://127.0.0.1:8123
         'dynmap_url' => env('DYNMAP_URL', ''),
+        // 可选：Dynmap 的 web 输出目录；留空时自动使用 MC_SERVER_PATH/plugins/dynmap/web。
+        'dynmap_web_path' => env('DYNMAP_WEB_PATH', ''),
         'rcon' => [
             'host' => env('MC_RCON_HOST', '127.0.0.1'),
             'port' => (int) env('MC_RCON_PORT', 25575),

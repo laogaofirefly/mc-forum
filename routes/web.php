@@ -107,9 +107,14 @@ Route::get('/map/data', function () {
         $data = Cache::remember('dynmap.component.data', now()->addSeconds(3), function () use ($dynmapUrl) {
             // 网站与 MC 同机时优先从 Dynmap 的 web 目录读取，避免 Web 服务端口、防火墙或绑定地址影响。
             $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+            $webPath = rtrim((string) config('services.minecraft.dynmap_web_path', ''), '\\/');
+            if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
+            // Dynmap 3.x/4.x 的输出格式有差异：配置有时在 standalone，有时直接在 web 根目录。
             $localCandidates = [
-                $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_config.json',
-                $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_world.json',
+                $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_config.json',
+                $webPath . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_world.json',
+                $webPath . DIRECTORY_SEPARATOR . 'dynmap_config.json',
+                $webPath . DIRECTORY_SEPARATOR . 'dynmap_world.json',
             ];
             foreach ($localCandidates as $file) {
                 if (is_file($file) && is_readable($file)) {
@@ -128,7 +133,7 @@ Route::get('/map/data', function () {
                     $attempts[] = $path . ' (' . $e->getMessage() . ')';
                 }
             }
-            throw new \RuntimeException('Dynmap 未返回可用 JSON：' . implode('，', $attempts));
+            throw new \RuntimeException('Dynmap 未返回可用 JSON。已尝试本地目录：' . $webPath . '；HTTP：' . implode('，', $attempts));
         });
 
         return response()->json(['ok' => true, 'data' => $data])
@@ -151,7 +156,9 @@ Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $ma
     try {
         // 同机部署优先读取磁盘瓦片，避免 Dynmap web 端口不可访问时原生地图失效。
         $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
-        $localTile = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'tiles' . DIRECTORY_SEPARATOR . $world . DIRECTORY_SEPARATOR . $map . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $tile);
+        $webPath = rtrim((string) config('services.minecraft.dynmap_web_path', ''), '\\/');
+        if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
+        $localTile = $webPath . DIRECTORY_SEPARATOR . 'tiles' . DIRECTORY_SEPARATOR . $world . DIRECTORY_SEPARATOR . $map . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $tile);
         if (is_file($localTile) && is_readable($localTile)) {
             return response((string) file_get_contents($localTile), 200, ['Content-Type' => 'image/png', 'Cache-Control' => 'public, max-age=300']);
         }

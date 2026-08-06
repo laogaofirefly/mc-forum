@@ -105,18 +105,37 @@ Route::get('/map/data', function () {
 
     try {
         $data = Cache::remember('dynmap.component.data', now()->addSeconds(3), function () use ($dynmapUrl) {
-            $response = Http::timeout(4)->acceptJson()->get($dynmapUrl . '/standalone/dynmap_world.json');
-            if (! $response->successful()) {
-                throw new \RuntimeException('Dynmap 数据接口响应异常（HTTP ' . $response->status() . '）');
+            // 网站与 MC 同机时优先从 Dynmap 的 web 目录读取，避免 Web 服务端口、防火墙或绑定地址影响。
+            $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+            $localCandidates = [
+                $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_config.json',
+                $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'standalone' . DIRECTORY_SEPARATOR . 'dynmap_world.json',
+            ];
+            foreach ($localCandidates as $file) {
+                if (is_file($file) && is_readable($file)) {
+                    $json = json_decode((string) file_get_contents($file), true);
+                    if (is_array($json)) return $json;
+                }
             }
-            return $response->json();
+
+            $attempts = [];
+            foreach (['/standalone/dynmap_config.json', '/standalone/dynmap_world.json'] as $path) {
+                try {
+                    $response = Http::connectTimeout(2)->timeout(5)->acceptJson()->get($dynmapUrl . $path);
+                    $attempts[] = $path . ' (HTTP ' . $response->status() . ')';
+                    if ($response->successful() && is_array($response->json())) return $response->json();
+                } catch (\Throwable $e) {
+                    $attempts[] = $path . ' (' . $e->getMessage() . ')';
+                }
+            }
+            throw new \RuntimeException('Dynmap 未返回可用 JSON：' . implode('，', $attempts));
         });
 
         return response()->json(['ok' => true, 'data' => $data])
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     } catch (\Throwable $e) {
         report($e);
-        return response()->json(['ok' => false, 'message' => '无法连接 Dynmap 数据接口，请确认 Dynmap 已启动且 standalone 文件已启用'], 502);
+        return response()->json(['ok' => false, 'message' => $e->getMessage()], 502);
     }
 })->name('dynmap.data');
 
@@ -130,7 +149,14 @@ Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $ma
     }
 
     try {
-        $response = Http::timeout(5)->get($dynmapUrl . '/tiles/' . rawurlencode($world) . '/' . rawurlencode($map) . '/' . $tile);
+        // 同机部署优先读取磁盘瓦片，避免 Dynmap web 端口不可访问时原生地图失效。
+        $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+        $localTile = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'tiles' . DIRECTORY_SEPARATOR . $world . DIRECTORY_SEPARATOR . $map . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $tile);
+        if (is_file($localTile) && is_readable($localTile)) {
+            return response((string) file_get_contents($localTile), 200, ['Content-Type' => 'image/png', 'Cache-Control' => 'public, max-age=300']);
+        }
+
+        $response = Http::connectTimeout(2)->timeout(5)->get($dynmapUrl . '/tiles/' . rawurlencode($world) . '/' . rawurlencode($map) . '/' . $tile);
         if (! $response->successful()) {
             abort($response->status() === 404 ? 404 : 502);
         }

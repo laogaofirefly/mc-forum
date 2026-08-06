@@ -17,14 +17,28 @@ class InstallDynmapForumTheme extends Command
         if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
         $targetDir = $webPath . DIRECTORY_SEPARATOR . 'css';
         $target = $targetDir . DIRECTORY_SEPARATOR . 'mc-forum-theme.css';
+        $indexFile = $webPath . DIRECTORY_SEPARATOR . 'index.html';
+        $themeTag = '<link rel="stylesheet" href="css/mc-forum-theme.css">';
 
         if (! is_dir($webPath)) return $this->error('Dynmap Web 目录不存在：' . $webPath) ?: self::FAILURE;
+        if (! is_file($indexFile) || ! is_readable($indexFile)) return $this->error('找不到 Dynmap 入口文件：' . $indexFile) ?: self::FAILURE;
         if (! is_dir($targetDir) && ! mkdir($targetDir, 0755, true) && ! is_dir($targetDir)) return $this->error('无法创建目录：' . $targetDir) ?: self::FAILURE;
-        if (is_file($target) && ! $this->option('force')) return $this->warn('主题已存在，使用 --force 覆盖：' . $target) ?: self::SUCCESS;
-        if (! copy($source, $target)) return $this->error('写入主题失败：' . $target) ?: self::FAILURE;
+        if ((! is_file($target) || $this->option('force')) && ! copy($source, $target)) return $this->error('写入主题失败：' . $target) ?: self::FAILURE;
 
-        $this->info('主题已安装：' . $target);
-        $this->line('请在 Dynmap 的 web/index.html 的 </head> 前加入：<link rel="stylesheet" href="css/mc-forum-theme.css">');
+        $html = (string) file_get_contents($indexFile);
+        if (! str_contains($html, 'mc-forum-theme.css')) {
+            $backup = $indexFile . '.mc-forum-theme.bak';
+            if (! is_file($backup)) copy($indexFile, $backup);
+            $updated = preg_replace('/<\/head\s*>/i', "    {$themeTag}\n</head>", $html, 1);
+            if ($updated === null || $updated === $html || file_put_contents($indexFile, $updated) === false) {
+                return $this->error('无法自动写入 index.html，请检查文件写入权限：' . $indexFile) ?: self::FAILURE;
+            }
+            $this->info('已自动注入主题标签（原文件备份：' . $backup . '）');
+        } else {
+            $this->line('index.html 已包含论坛主题标签。');
+        }
+
+        $this->info('Dynmap 论坛主题安装完成：' . $target);
         return self::SUCCESS;
     }
 }

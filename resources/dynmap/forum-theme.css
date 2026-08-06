@@ -1,0 +1,23 @@
+/* MC Forum theme for Dynmap. Loaded separately to survive most Dynmap updates. */
+:root { --forum-primary: #059669; --forum-primary-dark: #047857; --forum-surface: #ffffff; --forum-text: #1e293b; --forum-muted: #64748b; }
+body, .dynmap { font-family: Inter, "Microsoft YaHei", system-ui, sans-serif !important; color: var(--forum-text) !important; }
+#mcmap, .leaflet-container { background: #0f172a !important; }
+/* Dynmap control/sidebar surfaces across 3.x and 4.x */
+.leaflet-control, .dynmap .panel, .dynmap .sidebar, #sidebar, #toolbar, .sidebar, .panel, .ui-widget-content {
+  border: 1px solid rgba(148,163,184,.28) !important; border-radius: 12px !important;
+  background: rgba(255,255,255,.96) !important; box-shadow: 0 8px 24px rgba(15,23,42,.14) !important;
+  color: var(--forum-text) !important;
+}
+.leaflet-control a, button, .button, input[type=button], input[type=submit] {
+  border-radius: 8px !important; border: 0 !important; background: var(--forum-primary) !important;
+  color: #fff !important; box-shadow: none !important; transition: background .15s ease !important;
+}
+.leaflet-control a:hover, button:hover, .button:hover, input[type=button]:hover, input[type=submit]:hover { background: var(--forum-primary-dark) !important; }
+input, select, textarea, .ui-widget input, .ui-widget select { border: 1px solid #cbd5e1 !important; border-radius: 8px !important; color: var(--forum-text) !important; background: #fff !important; }
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(16,185,129,.25) !important; border-color: #10b981 !important; }
+.leaflet-control-layers-toggle { border-radius: 10px !important; background-color: #fff !important; }
+.leaflet-bar a { border-bottom-color: #e2e8f0 !important; color: var(--forum-primary-dark) !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { border-radius: 12px !important; box-shadow: 0 8px 24px rgba(15,23,42,.2) !important; }
+.leaflet-popup-content-wrapper { color: var(--forum-text) !important; }
+/* Keep map controls compact on phones. */
+@media (max-width: 640px) { .leaflet-control, #sidebar, .sidebar { border-radius: 10px !important; } }

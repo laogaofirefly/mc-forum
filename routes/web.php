@@ -26,7 +26,7 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 // 同源首字母头像：避免 data: SVG URI 被浏览器或服务器安全策略拦截。
 Route::get('/avatar/initial/{name}', function (string $name) {
-    $name = trim($name);
+    $name = rawurldecode(trim($name));
     $letter = mb_strtoupper(mb_substr($name, 0, 1)) ?: '?';
     $color = \App\Services\PlayerAvatarService::colorFor($name);
     $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">'

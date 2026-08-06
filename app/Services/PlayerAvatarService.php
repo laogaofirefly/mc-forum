@@ -74,7 +74,8 @@ class PlayerAvatarService
 
         // 不使用 data: URI：部分浏览器 / 安全策略会拦截它，导致在线玩家显示为破图。
         // 改由同源 SVG 接口提供，所有页面均可稳定加载。
-        return url('/avatar/initial/' . rawurlencode($name));
+        // 使用相对路径，避免 Windows 部署中 APP_URL 指向 localhost/旧域名时图片跨域或无法访问。
+        return '/avatar/initial/' . rawurlencode($name);
     }
 
     /**

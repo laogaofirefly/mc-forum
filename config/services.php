@@ -47,6 +47,8 @@ return [
         'auto_restart' => env('MC_AUTO_RESTART', false),
         'backup_path' => env('MC_BACKUP_PATH', ''),
         'query_port' => env('MC_QUERY_PORT', 25565),
+        // Dynmap 对外访问地址，例如 https://map.example.com 或 http://127.0.0.1:8123
+        'dynmap_url' => env('DYNMAP_URL', ''),
         'rcon' => [
             'host' => env('MC_RCON_HOST', '127.0.0.1'),
             'port' => (int) env('MC_RCON_PORT', 25575),

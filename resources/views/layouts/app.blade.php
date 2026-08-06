@@ -418,6 +418,7 @@
                     <a href="{{ route('home') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('home') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">首页</a>
                     <a href="{{ route('threads.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('threads.index') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">全部帖子</a>
                     <a href="{{ route('players.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('players.index') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">服务器成员</a>
+                    <a href="{{ route('dynmap.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('dynmap.index') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">在线地图</a>
                     <a href="{{ route('game-chat') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('game-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">游戏聊天</a>
                     <a href="{{ route('private-chat') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('private-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:text-primary-600 hover:bg-primary-50' }}">私聊</a>
                     @auth
@@ -481,6 +482,9 @@
                 </a>
                 <a href="{{ route('players.index') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('players.index') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
                     @include('layouts.partials.icons', ['name' => 'users', 'class' => 'w-5 h-5 flex-shrink-0']) 服务器成员
+                </a>
+                <a href="{{ route('dynmap.index') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('dynmap.index') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
+                    <span class="w-5 text-center text-base leading-5" aria-hidden="true">🗺️</span> 在线地图
                 </a>
                 <a href="{{ route('game-chat') }}" class="flex items-center gap-2.5 text-slate-700 hover:bg-primary-50 hover:text-primary-700 px-3 py-2.5 rounded-lg font-medium transition {{ request()->routeIs('game-chat') ? 'bg-primary-50 text-primary-700 font-semibold' : '' }}">
                     @include('layouts.partials.icons', ['name' => 'chat', 'class' => 'w-5 h-5 flex-shrink-0']) 游戏聊天

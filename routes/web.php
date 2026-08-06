@@ -85,6 +85,20 @@ Route::middleware('auth')->group(function () {
 // MC 服务器成员名单
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 
+// Dynmap 在线地图：仅嵌入已由服务器管理员配置的公开地图地址。
+Route::get('/map', function () {
+    $dynmapUrl = trim((string) config('services.minecraft.dynmap_url', ''));
+    if ($dynmapUrl === '') {
+        abort(503, '在线地图暂未配置');
+    }
+
+    if (! filter_var($dynmapUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($dynmapUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
+        abort(503, '在线地图地址配置无效');
+    }
+
+    return view('dynmap.index', ['dynmapUrl' => rtrim($dynmapUrl, '/')]);
+})->name('dynmap.index');
+
 // 服务器监控已合并到控制台，保留路由重定向
 Route::get('/admin/monitor', function () {
     return redirect()->route('admin.console');

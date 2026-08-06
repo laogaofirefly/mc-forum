@@ -251,11 +251,16 @@ Route::get('/map/debug', function () {
     if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
     $tilesPath = $webPath . DIRECTORY_SEPARATOR . 'tiles';
     $files = [];
+    $firstMapTile = null;
     if (is_dir($tilesPath) && is_readable($tilesPath)) {
         try {
             foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($tilesPath, \FilesystemIterator::SKIP_DOTS)) as $file) {
                 if ($file->isFile()) {
-                    $files[] = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($tilesPath) + 1));
+                    $relative = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($tilesPath) + 1));
+                    $files[] = $relative;
+                    if ($firstMapTile === null && preg_match('#^([^/]+)/([^/]+)/(.+\.(?:png|jpe?g|webp))$#i', $relative, $match) && $match[1] !== 'faces') {
+                        $firstMapTile = ['world' => $match[1], 'map' => $match[2], 'path' => $match[3]];
+                    }
                     if (count($files) >= 30) break;
                 }
             }
@@ -271,6 +276,8 @@ Route::get('/map/debug', function () {
         'tiles_directory_exists' => is_dir($tilesPath),
         'tiles_directory_readable' => is_readable($tilesPath),
         'sample_files' => $files,
+        'first_map_tile' => $firstMapTile,
+        'first_map_tile_url' => $firstMapTile ? url('/map/tile-file?world=' . rawurlencode($firstMapTile['world']) . '&map=' . rawurlencode($firstMapTile['map']) . '&path=' . rawurlencode($firstMapTile['path'])) : null,
     ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 })->name('dynmap.debug')->middleware('auth');
 

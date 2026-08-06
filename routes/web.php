@@ -24,6 +24,18 @@ Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
+// 同源首字母头像：避免 data: SVG URI 被浏览器或服务器安全策略拦截。
+Route::get('/avatar/initial/{name}', function (string $name) {
+    $name = trim($name);
+    $letter = mb_strtoupper(mb_substr($name, 0, 1)) ?: '?';
+    $color = \App\Services\PlayerAvatarService::colorFor($name);
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">'
+        . '<rect width="80" height="80" fill="' . $color . '"/>'
+        . '<text x="40" y="40" dy=".35em" text-anchor="middle" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#fff">'
+        . htmlspecialchars($letter, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</text></svg>';
+    return response($svg, 200, ['Content-Type' => 'image/svg+xml; charset=UTF-8', 'Cache-Control' => 'public, max-age=86400']);
+})->where('name', '.*')->name('avatar.initial');
+
 Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit')->middleware('auth');
 Route::post('/profile/edit', [ProfileController::class, 'update'])->name('profile.update')->middleware('auth');
 Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar')->middleware('auth');

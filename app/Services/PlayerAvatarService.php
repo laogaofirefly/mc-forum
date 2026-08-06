@@ -72,7 +72,9 @@ class PlayerAvatarService
             . htmlspecialchars($letter, ENT_XML1 | ENT_QUOTES, 'UTF-8')
             . '</text></svg>';
 
-        return 'data:image/svg+xml,' . rawurlencode($svg);
+        // 不使用 data: URI：部分浏览器 / 安全策略会拦截它，导致在线玩家显示为破图。
+        // 改由同源 SVG 接口提供，所有页面均可稳定加载。
+        return url('/avatar/initial/' . rawurlencode($name));
     }
 
     /**

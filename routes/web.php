@@ -156,6 +156,23 @@ Route::get('/map/data', function () {
                 }
             }
 
+            // 兜底：即使 config.js 没有世界数组，也可以从已渲染的 tiles 目录构造原生地图数据。
+            $tilesPath = $webPath . DIRECTORY_SEPARATOR . 'tiles';
+            if (is_dir($tilesPath) && is_readable($tilesPath)) {
+                $worlds = [];
+                foreach (new \DirectoryIterator($tilesPath) as $worldDir) {
+                    if (! $worldDir->isDir() || $worldDir->isDot()) continue;
+                    $maps = [];
+                    foreach (new \DirectoryIterator($worldDir->getPathname()) as $mapDir) {
+                        if ($mapDir->isDir() && ! $mapDir->isDot()) {
+                            $maps[] = ['name' => $mapDir->getFilename(), 'prefix' => $mapDir->getFilename(), 'title' => $mapDir->getFilename()];
+                        }
+                    }
+                    if ($maps) $worlds[] = ['name' => $worldDir->getFilename(), 'title' => $worldDir->getFilename(), 'maps' => $maps];
+                }
+                if ($worlds) return ['worlds' => $worlds, 'source' => 'local-tiles'];
+            }
+
             $attempts = [];
             foreach (['/standalone/dynmap_config.json', '/standalone/dynmap_world.json', '/standalone/config.js', '/standalone/dynmap_config.js'] as $path) {
                 try {

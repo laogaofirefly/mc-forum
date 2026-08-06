@@ -228,7 +228,7 @@ Route::get('/map/tiles-manifest/{world}/{map}', function (string $world, string 
     $tiles = [];
     $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS));
     foreach ($iterator as $file) {
-        if (! $file->isFile() || strtolower($file->getExtension()) !== 'png') continue;
+        if (! $file->isFile() || ! in_array(strtolower($file->getExtension()), ['png', 'jpg', 'jpeg', 'webp'], true)) continue;
         $path = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($base) + 1));
         $tiles[] = $path;
         if (count($tiles) >= 2500) break;
@@ -241,7 +241,7 @@ Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $ma
     $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');
     $safeSegment = static fn (string $value): bool => preg_match('/^[A-Za-z0-9_-]+$/', $value) === 1;
     if ($dynmapUrl === '' || ! $safeSegment($world) || ! $safeSegment($map)
-        || str_contains($tile, '..') || preg_match('/^[A-Za-z0-9_\/-]+\.png$/', $tile) !== 1) {
+        || str_contains($tile, '..') || preg_match('/^[A-Za-z0-9_\/-]+\.(png|jpe?g|webp)$/i', $tile) !== 1) {
         abort(404);
     }
 
@@ -252,7 +252,8 @@ Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $ma
         if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
         $localTile = $webPath . DIRECTORY_SEPARATOR . 'tiles' . DIRECTORY_SEPARATOR . $world . DIRECTORY_SEPARATOR . $map . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $tile);
         if (is_file($localTile) && is_readable($localTile)) {
-            return response((string) file_get_contents($localTile), 200, ['Content-Type' => 'image/png', 'Cache-Control' => 'public, max-age=300']);
+            $mime = function_exists('mime_content_type') ? (mime_content_type($localTile) ?: 'application/octet-stream') : 'application/octet-stream';
+            return response((string) file_get_contents($localTile), 200, ['Content-Type' => $mime, 'Cache-Control' => 'public, max-age=300']);
         }
 
         $response = Http::connectTimeout(2)->timeout(5)->get($dynmapUrl . '/tiles/' . rawurlencode($world) . '/' . rawurlencode($map) . '/' . $tile);
@@ -260,7 +261,7 @@ Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $ma
             abort($response->status() === 404 ? 404 : 502);
         }
         return response($response->body(), 200, [
-            'Content-Type' => $response->header('Content-Type', 'image/png'),
+            'Content-Type' => $response->header('Content-Type', 'application/octet-stream'),
             'Cache-Control' => 'public, max-age=300',
         ]);
     } catch (\Throwable $e) {

@@ -161,12 +161,19 @@ Route::get('/map/data', function () {
             if (is_dir($tilesPath) && is_readable($tilesPath)) {
                 $worlds = [];
                 foreach (new \DirectoryIterator($tilesPath) as $worldDir) {
-                    if (! $worldDir->isDir() || $worldDir->isDot()) continue;
+                    // faces 是 Dynmap 玩家头像缓存，不是游戏世界。
+                    if (! $worldDir->isDir() || $worldDir->isDot() || $worldDir->getFilename() === 'faces') continue;
                     $maps = [];
                     foreach (new \DirectoryIterator($worldDir->getPathname()) as $mapDir) {
-                        if ($mapDir->isDir() && ! $mapDir->isDot()) {
-                            $maps[] = ['name' => $mapDir->getFilename(), 'prefix' => $mapDir->getFilename(), 'title' => $mapDir->getFilename()];
-                        }
+                        if (! $mapDir->isDir() || $mapDir->isDot()) continue;
+                        // 只保留实际包含地图图片的图层，避免将空目录误当地图。
+                        $hasTile = false;
+                        try {
+                            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($mapDir->getPathname(), \FilesystemIterator::SKIP_DOTS)) as $tile) {
+                                if ($tile->isFile() && in_array(strtolower($tile->getExtension()), ['png', 'jpg', 'jpeg', 'webp'], true)) { $hasTile = true; break; }
+                            }
+                        } catch (\Throwable $e) { continue; }
+                        if ($hasTile) $maps[] = ['name' => $mapDir->getFilename(), 'prefix' => $mapDir->getFilename(), 'title' => $mapDir->getFilename()];
                     }
                     if ($maps) $worlds[] = ['name' => $worldDir->getFilename(), 'title' => $worldDir->getFilename(), 'maps' => $maps];
                 }

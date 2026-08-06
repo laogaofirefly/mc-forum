@@ -236,7 +236,23 @@ Route::get('/map/tiles-manifest/{world}/{map}', function (string $world, string 
     return response()->json(['ok' => true, 'tiles' => $tiles])->header('Cache-Control', 'no-store');
 })->name('dynmap.tiles-manifest');
 
-// 原生地图瓦片代理：浏览器只访问论坛同源接口，且严格限制为 Dynmap tiles 目录下的安全路径。
+// 使用查询参数代理瓦片，避免 Windows/Dynmap 的嵌套瓦片路径中的 / 被 Laravel 路由截断。
+Route::get('/map/tile-file', function (\Illuminate\Http\Request $request) {
+    $world = (string) $request->query('world', '');
+    $map = (string) $request->query('map', '');
+    $tile = str_replace('\\', '/', (string) $request->query('path', ''));
+    $safeSegment = static fn (string $value): bool => preg_match('/^[A-Za-z0-9_-]+$/', $value) === 1;
+    if (! $safeSegment($world) || ! $safeSegment($map) || str_contains($tile, '..') || preg_match('/^[A-Za-z0-9_\/-]+\.(png|jpe?g|webp)$/i', $tile) !== 1) abort(404);
+    $mcPath = rtrim((string) config('services.minecraft.log_path', ''), '\\/');
+    $webPath = rtrim((string) config('services.minecraft.dynmap_web_path', ''), '\\/');
+    if ($webPath === '') $webPath = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'web';
+    $file = $webPath . DIRECTORY_SEPARATOR . 'tiles' . DIRECTORY_SEPARATOR . $world . DIRECTORY_SEPARATOR . $map . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $tile);
+    if (! is_file($file) || ! is_readable($file)) abort(404);
+    $mime = function_exists('mime_content_type') ? (mime_content_type($file) ?: 'application/octet-stream') : 'application/octet-stream';
+    return response((string) file_get_contents($file), 200, ['Content-Type' => $mime, 'Cache-Control' => 'public, max-age=300']);
+})->name('dynmap.tile-file');
+
+// 原生地图瓦片代理：兼容简单路径的旧接口。
 Route::get('/map/tile/{world}/{map}/{tile}', function (string $world, string $map, string $tile) {
     $dynmapUrl = rtrim(trim((string) config('services.minecraft.dynmap_url', '')), '/');
     $safeSegment = static fn (string $value): bool => preg_match('/^[A-Za-z0-9_-]+$/', $value) === 1;

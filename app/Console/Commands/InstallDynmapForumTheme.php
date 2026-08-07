@@ -6,8 +6,8 @@ use Illuminate\Console\Command;
 
 class InstallDynmapForumTheme extends Command
 {
-    protected $signature = 'dynmap:install-forum-theme {--force : 覆盖已有主题文件}';
-    protected $description = '将论坛主题 CSS 安装到本机 Dynmap Web 目录';
+    protected $signature = 'dynmap:install-forum-theme {--force : 覆盖已有主题文件} {--disable-webchat : 同时在 Dynmap 服务端禁用网页向游戏内发送消息}';
+    protected $description = '将论坛主题安装到本机 Dynmap Web 目录';
 
     public function handle(): int
     {
@@ -23,8 +23,11 @@ class InstallDynmapForumTheme extends Command
         $workerSource = resource_path('dynmap/forum-theme-sw.js');
         $workerTarget = $webPath . DIRECTORY_SEPARATOR . 'mc-forum-theme-sw.js';
         $indexFile = $webPath . DIRECTORY_SEPARATOR . 'index.html';
-        $themeTag = '<link rel="stylesheet" href="css/mc-forum-theme.css">';
-        $scriptTag = '<script src="css/mc-forum-theme.js" defer></script>';
+        $themeVersion = substr(sha1_file($source) ?: (string) time(), 0, 12);
+        $scriptVersion = substr(sha1_file($scriptSource) ?: (string) time(), 0, 12);
+        // 版本参数强制浏览器取得新版资源，避免 Dynmap/手机浏览器继续使用旧主题缓存。
+        $themeTag = '<link rel="stylesheet" href="css/mc-forum-theme.css?v=' . $themeVersion . '">';
+        $scriptTag = '<script src="css/mc-forum-theme.js?v=' . $scriptVersion . '" defer></script>';
 
         if (! is_dir($webPath)) return $this->error('Dynmap Web 目录不存在：' . $webPath) ?: self::FAILURE;
         if (! is_file($indexFile) || ! is_readable($indexFile)) return $this->error('找不到 Dynmap 入口文件：' . $indexFile) ?: self::FAILURE;
@@ -34,6 +37,10 @@ class InstallDynmapForumTheme extends Command
         if ((! is_file($workerTarget) || $this->option('force')) && ! copy($workerSource, $workerTarget)) return $this->error('写入地图缓存脚本失败：' . $workerTarget) ?: self::FAILURE;
 
         $html = (string) file_get_contents($indexFile);
+        $originalHtml = $html;
+        // 每次安装均刷新已注入标签的版本号，确保 --force 的新版 CSS/JS 立即生效。
+        $html = (string) preg_replace('/<link\s+[^>]*href=["\']css\/mc-forum-theme\.css(?:\?[^"\']*)?["\'][^>]*>/i', $themeTag, $html);
+        $html = (string) preg_replace('/<script\s+[^>]*src=["\']css\/mc-forum-theme\.js(?:\?[^"\']*)?["\'][^>]*>\s*<\/script>/i', $scriptTag, $html);
         $needsCss = ! str_contains($html, 'mc-forum-theme.css');
         $needsScript = ! str_contains($html, 'mc-forum-theme.js');
         if ($needsCss || $needsScript) {
@@ -46,7 +53,26 @@ class InstallDynmapForumTheme extends Command
             }
             $this->info('已自动注入论坛主题及功能限制脚本（原文件备份：' . $backup . '）');
         } else {
-            $this->line('index.html 已包含论坛主题和功能限制脚本。');
+            if ($html !== $originalHtml && file_put_contents($indexFile, $html) === false) {
+                return $this->error('无法更新 index.html 中的资源版本，请检查文件写入权限：' . $indexFile) ?: self::FAILURE;
+            }
+            $this->line('index.html 已包含论坛主题和功能限制脚本，资源版本已刷新。');
+        }
+
+        if ($this->option('disable-webchat')) {
+            $configuration = $mcPath . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'dynmap' . DIRECTORY_SEPARATOR . 'configuration.txt';
+            if (! is_file($configuration) || ! is_readable($configuration) || ! is_writable($configuration)) {
+                $this->warn('未修改网页聊天服务端开关：无法读写 ' . $configuration);
+            } else {
+                $config = (string) file_get_contents($configuration);
+                $updatedConfig = preg_replace('/^(\s*allowwebchat\s*:\s*).*$/' . 'mi', '${1}false', $config, 1, $count);
+                if (($count ?? 0) === 0) $updatedConfig .= "\nallowwebchat: false\n";
+                if ($updatedConfig !== $config && file_put_contents($configuration, $updatedConfig) === false) {
+                    $this->warn('网页聊天服务端开关写入失败：' . $configuration);
+                } else {
+                    $this->info('已在 Dynmap 配置中禁用网页向游戏内发送消息；重启 Minecraft 服务器后生效。');
+                }
+            }
         }
 
         $this->info('Dynmap 论坛主题安装完成：' . $target);

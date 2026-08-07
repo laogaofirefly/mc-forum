@@ -19,6 +19,9 @@ class InstallDynmapForumTheme extends Command
         $target = $targetDir . DIRECTORY_SEPARATOR . 'mc-forum-theme.css';
         $scriptSource = resource_path('dynmap/forum-theme.js');
         $scriptTarget = $targetDir . DIRECTORY_SEPARATOR . 'mc-forum-theme.js';
+        // Service Worker 必须位于 Web 根目录，才能缓存 /tiles/ 下的地图瓦片。
+        $workerSource = resource_path('dynmap/forum-theme-sw.js');
+        $workerTarget = $webPath . DIRECTORY_SEPARATOR . 'mc-forum-theme-sw.js';
         $indexFile = $webPath . DIRECTORY_SEPARATOR . 'index.html';
         $themeTag = '<link rel="stylesheet" href="css/mc-forum-theme.css">';
         $scriptTag = '<script src="css/mc-forum-theme.js" defer></script>';
@@ -28,6 +31,7 @@ class InstallDynmapForumTheme extends Command
         if (! is_dir($targetDir) && ! mkdir($targetDir, 0755, true) && ! is_dir($targetDir)) return $this->error('无法创建目录：' . $targetDir) ?: self::FAILURE;
         if ((! is_file($target) || $this->option('force')) && ! copy($source, $target)) return $this->error('写入主题失败：' . $target) ?: self::FAILURE;
         if ((! is_file($scriptTarget) || $this->option('force')) && ! copy($scriptSource, $scriptTarget)) return $this->error('写入功能限制脚本失败：' . $scriptTarget) ?: self::FAILURE;
+        if ((! is_file($workerTarget) || $this->option('force')) && ! copy($workerSource, $workerTarget)) return $this->error('写入地图缓存脚本失败：' . $workerTarget) ?: self::FAILURE;
 
         $html = (string) file_get_contents($indexFile);
         $needsCss = ! str_contains($html, 'mc-forum-theme.css');

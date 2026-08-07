@@ -1,23 +1,72 @@
-/* MC Forum theme for Dynmap. Loaded separately to survive most Dynmap updates. */
-:root { --forum-primary: #059669; --forum-primary-dark: #047857; --forum-surface: #ffffff; --forum-text: #1e293b; --forum-muted: #64748b; }
-body, .dynmap { font-family: Inter, "Microsoft YaHei", system-ui, sans-serif !important; color: var(--forum-text) !important; }
-#mcmap, .leaflet-container { background: #0f172a !important; }
-/* Dynmap control/sidebar surfaces across 3.x and 4.x */
-.leaflet-control, .dynmap .panel, .dynmap .sidebar, #sidebar, #toolbar, .sidebar, .panel, .ui-widget-content {
-  border: 1px solid rgba(148,163,184,.28) !important; border-radius: 12px !important;
-  background: rgba(255,255,255,.96) !important; box-shadow: 0 8px 24px rgba(15,23,42,.14) !important;
-  color: var(--forum-text) !important;
+/* MC Forum theme for Dynmap - restrained, card-based visual alignment. */
+:root {
+  --forum-primary: #16a34a;
+  --forum-primary-hover: #15803d;
+  --forum-ink: #1e293b;
+  --forum-muted: #64748b;
+  --forum-line: #e2e8f0;
+  --forum-surface: #ffffff;
 }
-.leaflet-control a, button, .button, input[type=button], input[type=submit] {
-  border-radius: 8px !important; border: 0 !important; background: var(--forum-primary) !important;
-  color: #fff !important; box-shadow: none !important; transition: background .15s ease !important;
+html, body, .dynmap, .leaflet-container {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif !important;
+  color: var(--forum-ink) !important;
 }
-.leaflet-control a:hover, button:hover, .button:hover, input[type=button]:hover, input[type=submit]:hover { background: var(--forum-primary-dark) !important; }
-input, select, textarea, .ui-widget input, .ui-widget select { border: 1px solid #cbd5e1 !important; border-radius: 8px !important; color: var(--forum-text) !important; background: #fff !important; }
-input:focus, select:focus, textarea:focus { outline: 2px solid rgba(16,185,129,.25) !important; border-color: #10b981 !important; }
-.leaflet-control-layers-toggle { border-radius: 10px !important; background-color: #fff !important; }
-.leaflet-bar a { border-bottom-color: #e2e8f0 !important; color: var(--forum-primary-dark) !important; }
-.leaflet-popup-content-wrapper, .leaflet-popup-tip { border-radius: 12px !important; box-shadow: 0 8px 24px rgba(15,23,42,.2) !important; }
-.leaflet-popup-content-wrapper { color: var(--forum-text) !important; }
-/* Keep map controls compact on phones. */
-@media (max-width: 640px) { .leaflet-control, #sidebar, .sidebar { border-radius: 10px !important; } }
+/* Preserve the actual map canvas; only panels and controls receive the forum treatment. */
+#mcmap, .leaflet-container { background: #172033 !important; }
+#sidebar, .sidebar, .panel, .dynmap .panel, .ui-widget-content,
+.leaflet-control, .leaflet-popup-content-wrapper {
+  background: rgba(255,255,255,.97) !important;
+  color: var(--forum-ink) !important;
+  border: 1px solid var(--forum-line) !important;
+  box-shadow: 0 10px 28px rgba(15,23,42,.12) !important;
+}
+#sidebar, .sidebar, .panel, .dynmap .panel { border-radius: 12px !important; }
+.ui-widget-header, .ui-dialog-titlebar {
+  background: #f8fafc !important;
+  color: var(--forum-ink) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--forum-line) !important;
+}
+button, .button, input[type=button], input[type=submit],
+.ui-button, .leaflet-control a {
+  background: var(--forum-surface) !important;
+  color: #334155 !important;
+  border: 1px solid var(--forum-line) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease !important;
+}
+button:hover, .button:hover, input[type=button]:hover, input[type=submit]:hover,
+.ui-button:hover, .leaflet-control a:hover {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+  color: var(--forum-primary-hover) !important;
+}
+/* Primary actions retain the forum green without turning every Dynmap control green. */
+.ui-state-active, .active, .selected, button.primary, .button.primary,
+input[type=submit] {
+  background: var(--forum-primary) !important;
+  color: #fff !important;
+  border-color: var(--forum-primary) !important;
+}
+input, select, textarea, .ui-widget input, .ui-widget select, .ui-widget textarea {
+  background: #fff !important;
+  color: var(--forum-ink) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 0 !important;
+  border-color: #4ade80 !important;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.14) !important;
+}
+.leaflet-bar { border: 1px solid var(--forum-line) !important; border-radius: 9px !important; overflow: hidden; }
+.leaflet-bar a { border: 0 !important; border-bottom: 1px solid var(--forum-line) !important; }
+.leaflet-bar a:last-child { border-bottom: 0 !important; }
+.leaflet-popup-content-wrapper { border-radius: 10px !important; }
+.leaflet-popup-tip { background: var(--forum-surface) !important; }
+a { color: var(--forum-primary-hover) !important; }
+@media (max-width: 640px) {
+  #sidebar, .sidebar, .panel, .dynmap .panel { border-radius: 10px !important; }
+}
